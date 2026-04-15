@@ -4,7 +4,8 @@ import { TouchableOpacity } from 'react-native';
 import VectorIcon from '../components/VectorIcon';
 import { theme } from '../utils/theme';
 
-import HomeScreen from '../screens/home/HomeScreen';
+import StudentHomeScreen from '../screens/home/student/StudentHomeScreen';
+import TeacherHomeScreen from '../screens/home/teacher/TeacherHomeScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -12,7 +13,13 @@ const NoRippleButton = (props: any) => {
   return <TouchableOpacity {...props} activeOpacity={1} />;
 };
 
-const TabNavigator = () => {
+type TabRole = 'student' | 'teacher';
+
+const TabNavigator = ({ route }: any) => {
+  const role: TabRole = route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
+  const lastTabName = role === 'teacher' ? 'Attendance' : 'Fees';
+  const DashboardComponent = role === 'teacher' ? TeacherHomeScreen : StudentHomeScreen;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -49,6 +56,9 @@ const TabNavigator = () => {
             case 'Fees':
               iconName = focused ? 'card' : 'card-outline';
               break;
+            case 'Attendance':
+              iconName = focused ? 'clipboard' : 'clipboard-outline';
+              break;
             default:
               iconName = 'ellipse';
           }
@@ -70,11 +80,11 @@ const TabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={HomeScreen} />
-      <Tab.Screen name="Subjects" component={HomeScreen} />
-      <Tab.Screen name="QuickLinks" component={HomeScreen} />
-      <Tab.Screen name="Homework" component={HomeScreen} />
-      <Tab.Screen name="Fees" component={HomeScreen} />
+      <Tab.Screen name="Dashboard" component={DashboardComponent} />
+      <Tab.Screen name="Subjects" component={StudentHomeScreen} />
+      <Tab.Screen name="QuickLinks" component={StudentHomeScreen} />
+      <Tab.Screen name="Homework" component={StudentHomeScreen} />
+      <Tab.Screen name={lastTabName} component={StudentHomeScreen} />
     </Tab.Navigator>
   );
 };

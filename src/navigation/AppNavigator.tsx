@@ -6,6 +6,7 @@ import SelectUserScreen from '../screens/auth/SelectUserScreen';
 import LoginTeacherScreen from '../screens/auth/LoginTeacherScreen';
 import LoginStudentScreen from '../screens/auth/LoginStudentScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import SplashScreen from '../screens/splash/SplashScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,8 +14,9 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="Onboarding"
+      initialRouteName="Splash"
     >
+      <Stack.Screen name="Splash" component={SplashScreen} />
       {/* Onboarding */}
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
 

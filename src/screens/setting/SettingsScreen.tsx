@@ -2,26 +2,36 @@ import {
   StyleSheet,
   Text,
   View,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
 import React from 'react';
 import { theme } from '../../utils/theme';
 import VectorIcon from '../../components/VectorIcon';
+import Header from '../../components/Header';
+import { useNavigation } from '@react-navigation/native';
 
 const SettingsScreen = () => {
+  const navigation = useNavigation<any>();
+
   const items = [
-    { title: 'Profile', icon: 'person-outline' },
-    { title: 'Notifications', icon: 'notifications-outline' },
-    { title: 'Language', icon: 'language-outline' },
-    { title: 'Privacy Policy', icon: 'shield-checkmark-outline' },
+    {
+      title: 'Notification',
+      icon: 'notifications-outline',
+      route: 'NotificationSettings',
+    },
+    { title: 'Biometric', icon: 'finger-print-outline', route: 'BiometricSettings' },
+    {
+      title: 'Change Password',
+      icon: 'lock-closed-outline',
+      route: 'ChangePasswordSettings',
+    },
   ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
+      <Header title="Settings" onBackPress={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Settings</Text>
         <Text style={styles.subtitle}>Manage your account preferences</Text>
 
         <View style={styles.card}>
@@ -30,6 +40,7 @@ const SettingsScreen = () => {
               key={item.title}
               style={styles.row}
               activeOpacity={0.8}
+              onPress={() => navigation.navigate(item.route)}
             >
               <View style={styles.left}>
                 <View style={styles.iconBadge}>
@@ -52,7 +63,7 @@ const SettingsScreen = () => {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -66,15 +77,9 @@ const styles = StyleSheet.create({
   container: {
     padding: theme.spacing.lg,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
   subtitle: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    marginTop: 4,
     marginBottom: theme.spacing.lg,
   },
   card: {

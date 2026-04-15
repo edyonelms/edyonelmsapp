@@ -1,36 +1,66 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
 } from '@react-navigation/drawer';
+import { CommonActions } from '@react-navigation/native';
 import TabNavigator from './TabNavigator';
-import SettingsScreen from '../screens/home/SettingsScreen';
+import SettingsScreen from '../screens/setting/SettingsScreen';
 import { theme } from '../utils/theme';
 import VectorIcon from '../components/VectorIcon';
+import MenuPlaceholderScreen from '../screens/home/MenuPlaceholderScreen';
+import SettingDetailScreen from '../screens/setting/SettingDetailScreen';
 
 const Drawer = createDrawerNavigator();
 
-const DrawerNavigator = () => {
-  const CustomDrawer = (props: any) => {
-    const { navigation, state } = props;
+type DrawerRole = 'student' | 'teacher';
 
-    const menuItems = [
-      { name: 'Dashboard', label: 'Dashboard', icon: 'grid-outline' },
+type MenuItem = {
+  name: string;
+  label: string;
+  icon: string;
+  params?: Record<string, string>;
+  nestedRoute?: string;
+};
+
+const DrawerNavigator = ({ route }: any) => {
+  const role: DrawerRole = route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
+
+  const menuItems: MenuItem[] = useMemo(() => {
+    const studentMenuItems: MenuItem[] = [
+      { name: 'MainTabs', label: 'Dashboard', icon: 'grid-outline' },
       { name: 'Analytics', label: 'Analytics', icon: 'bar-chart-outline' },
-      {
-        name: 'Announcement',
-        label: 'Announcement',
-        icon: 'megaphone-outline',
-      },
+      { name: 'Fees', label: 'Fees', icon: 'card-outline' },
+      { name: 'Announcement', label: 'Announcement', icon: 'megaphone-outline' },
+      { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
+      { name: 'Transport', label: 'Transport', icon: 'bus-outline' },
+      { name: 'Homework', label: 'Homework', icon: 'book-outline' },
+      { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
+      { name: 'Attendance', label: 'Attendance', icon: 'clipboard-outline' },
+      { name: 'Subjects', label: 'Subjects', icon: 'library-outline' },
+      { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
+      { name: 'Content', label: 'Content', icon: 'folder-outline' },
+      { name: 'Quiz', label: 'Quiz', icon: 'help-circle-outline' },
+      { name: 'Book', label: 'Book', icon: 'bookmarks-outline' },
+      { name: 'Instructor', label: 'Instructor', icon: 'person-outline' },
+      { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
+      { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
+      { name: 'Exams', label: 'Exams', icon: 'create-outline' },
+      { name: 'Performance', label: 'Performance', icon: 'stats-chart-outline' },
+      { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
+      { name: 'Settings', label: 'Settings', icon: 'settings-outline' },
+      { name: 'More', label: 'More', icon: 'ellipsis-horizontal-outline' },
+    ];
+
+    const teacherMenuItems: MenuItem[] = [
+      { name: 'MainTabs', label: 'Dashboard', icon: 'grid-outline' },
+      { name: 'Analytics', label: 'Analytics', icon: 'bar-chart-outline' },
+      { name: 'Announcement', label: 'Announcement', icon: 'megaphone-outline' },
       { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
       { name: 'Homework', label: 'Homework', icon: 'book-outline' },
       { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
-      {
-        name: 'MarkAttendance',
-        label: 'Mark Attendance',
-        icon: 'checkbox-outline',
-      },
+      { name: 'MarkAttendance', label: 'Mark Attendance', icon: 'checkbox-outline' },
       { name: 'Attendance', label: 'Attendance', icon: 'clipboard-outline' },
       { name: 'Subjects', label: 'Subjects', icon: 'library-outline' },
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
@@ -40,53 +70,70 @@ const DrawerNavigator = () => {
       { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
       { name: 'Exams', label: 'Exams', icon: 'create-outline' },
-      {
-        name: 'UploadMarks',
-        label: 'Upload Marks',
-        icon: 'cloud-upload-outline',
-      },
-      { name: 'ExamCopies', label: 'Exam Copies', icon: 'copy-outline' },
       { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
-      { name: 'Settings', label: 'Setting', icon: 'settings-outline' },
+      { name: 'Settings', label: 'Settings', icon: 'settings-outline' },
       { name: 'More', label: 'More', icon: 'ellipsis-horizontal-outline' },
-      { name: 'Logout', label: 'Logout', icon: 'log-out-outline' },
     ];
 
-    return (
-      <DrawerContentScrollView
-        {...props}
-        contentContainerStyle={{ flexGrow: 1 }}
-      >
-        <View style={{ flex: 1 }}>
-          <View style={styles.header}>
-            <View style={styles.brandBadge}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="school-outline"
-                size={30}
-                color={theme.colors.primary}
-              />
-            </View>
-            <Text style={styles.appName}>Edyone LMS</Text>
-            <Text style={styles.userName}>
-              Current User
-            </Text>
-          </View>
+    return role === 'teacher' ? teacherMenuItems : studentMenuItems;
+  }, [role]);
 
-          <View style={styles.menu}>
-            {menuItems
-              .map((item, index) => {
+  const CustomDrawer = (props: any) => {
+    const { navigation, state } = props;
+    const [logoutVisible, setLogoutVisible] = useState(false);
+
+    const doLogout = () => {
+      setLogoutVisible(false);
+
+      const parentNav = navigation.getParent?.();
+      if (parentNav) {
+        parentNav.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'SelectUser' }],
+          }),
+        );
+        return;
+      }
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'SelectUser' }],
+        }),
+      );
+    };
+
+    return (
+      <>
+        <DrawerContentScrollView
+          {...props}
+          contentContainerStyle={{ flexGrow: 1, paddingTop: 0 }}
+        >
+          <View style={{ flex: 1 }}>
+            <View style={styles.header}>
+              <View style={styles.brandBadge}>
+                <Image source={{ uri: 'logo' }} style={styles.brandBadgeImage} />
+              </View>
+              <Text style={styles.appName}>Edyone LMS</Text>
+              <Text style={styles.userName}>Current User Role : {role === 'teacher' ? 'Teacher' : 'Student'}</Text>
+            </View>
+
+            <View style={styles.menu}>
+              {menuItems.map((item, index) => {
                 const isActive = state.routeNames[state.index] === item.name;
 
                 return (
                   <TouchableOpacity
                     key={index}
                     activeOpacity={0.7}
-                    onPress={() => navigation.navigate(item.name)}
+                    onPress={() => navigation.navigate(item.name, item.params)}
                     style={[
                       styles.menuItem,
                       {
-                        backgroundColor: isActive ? theme.colors.primaryLight : 'transparent',
+                        backgroundColor: isActive
+                          ? theme.colors.primaryLight
+                          : 'transparent',
                       },
                     ]}
                   >
@@ -94,13 +141,17 @@ const DrawerNavigator = () => {
                       iconSet="Ionicons"
                       iconName={item.icon}
                       size={20}
-                      color={isActive ? theme.colors.primary : theme.colors.textPrimary}
+                      color={
+                        isActive ? theme.colors.primary : theme.colors.textPrimary
+                      }
                     />
                     <Text
                       style={[
                         styles.menuText,
                         {
-                          color: isActive ? theme.colors.primary : theme.colors.textPrimary,
+                          color: isActive
+                            ? theme.colors.primary
+                            : theme.colors.textPrimary,
                           fontWeight: isActive ? '600' : '400',
                         },
                       ]}
@@ -110,26 +161,72 @@ const DrawerNavigator = () => {
                   </TouchableOpacity>
                 );
               })}
+            </View>
           </View>
-        </View>
 
-        <View style={styles.logoutContainer}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={() => {
-              console.log('Logout pressed');
-            }}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="log-out-outline"
-              size={20}
-              color={theme.colors.danger}
-            />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </DrawerContentScrollView>
+          <View style={styles.logoutContainer}>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={() => setLogoutVisible(true)}
+            >
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="log-out-outline"
+                size={20}
+                color={theme.colors.danger}
+              />
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </DrawerContentScrollView>
+
+        <Modal
+          transparent
+          visible={logoutVisible}
+          animationType="fade"
+          onRequestClose={() => setLogoutVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalIconWrap}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="log-out-outline"
+                  size={28}
+                  color={theme.colors.danger}
+                />
+              </View>
+
+              <Text style={styles.modalTitle}>Logout</Text>
+              <Text style={styles.modalDesc}>
+                Are you sure you want to sign out of your account?
+              </Text>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnGhost]}
+                  activeOpacity={0.85}
+                  onPress={() => setLogoutVisible(false)}
+                >
+                  <Text style={[styles.modalBtnText, styles.modalBtnGhostText]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnDanger]}
+                  activeOpacity={0.9}
+                  onPress={doLogout}
+                >
+                  <Text style={[styles.modalBtnText, styles.modalBtnDangerText]}>
+                    Logout
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </>
     );
   };
 
@@ -148,8 +245,134 @@ const DrawerNavigator = () => {
         name="MainTabs"
         component={TabNavigator}
         options={{ title: 'Home' }}
+        initialParams={{ userRole: role }}
+      />
+      <Drawer.Screen
+        name="Analytics"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Analytics' }}
+      />
+      <Drawer.Screen
+        name="Fees"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Fees' }}
+      />
+      <Drawer.Screen
+        name="Announcement"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Announcement' }}
+      />
+      <Drawer.Screen
+        name="Calendar"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Calendar' }}
+      />
+      <Drawer.Screen
+        name="Transport"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Transport' }}
+      />
+      <Drawer.Screen
+        name="Homework"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Homework' }}
+      />
+      <Drawer.Screen
+        name="Timetable"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Timetable' }}
+      />
+      <Drawer.Screen
+        name="MarkAttendance"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Mark Attendance' }}
+      />
+      <Drawer.Screen
+        name="Attendance"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Attendance' }}
+      />
+      <Drawer.Screen
+        name="Subjects"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Subjects' }}
+      />
+      <Drawer.Screen
+        name="Syllabus"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Syllabus' }}
+      />
+      <Drawer.Screen
+        name="Content"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Content' }}
+      />
+      <Drawer.Screen
+        name="Quiz"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Quiz' }}
+      />
+      <Drawer.Screen
+        name="Book"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Book' }}
+      />
+      <Drawer.Screen
+        name="Instructor"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Instructor' }}
+      />
+      <Drawer.Screen
+        name="IDCard"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'ID Card' }}
+      />
+      <Drawer.Screen
+        name="Chats"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Chats' }}
+      />
+      <Drawer.Screen
+        name="Exams"
+        component={MenuPlaceholderScreen}
+        initialParams={{
+          title: role === 'teacher' ? 'Exams (Upload Marks, Exam Copies)' : 'Exams',
+        }}
+      />
+      <Drawer.Screen
+        name="Performance"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Performance' }}
+      />
+      <Drawer.Screen
+        name="ContactSchool"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Contact School' }}
       />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
+      <Drawer.Screen
+        name="NotificationSettings"
+        component={SettingDetailScreen}
+        initialParams={{ title: 'Notification' }}
+      />
+      <Drawer.Screen
+        name="BiometricSettings"
+        component={SettingDetailScreen}
+        initialParams={{ title: 'Biometric' }}
+      />
+      <Drawer.Screen
+        name="ChangePasswordSettings"
+        component={SettingDetailScreen}
+        initialParams={{ title: 'Change Password' }}
+      />
+      <Drawer.Screen
+        name="More"
+        component={MenuPlaceholderScreen}
+        initialParams={{
+          title:
+            'More (About App, School Info, Rules & Regulations, Terms & Conditions, Privacy Policy, Terms of Use)',
+        }}
+      />
     </Drawer.Navigator>
   );
 };
@@ -158,20 +381,31 @@ export default DrawerNavigator;
 
 const styles = StyleSheet.create({
   header: {
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.primaryLight,
+    width: '100%',
+    paddingTop: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.lg,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   brandBadge: {
-    width: 64,
-    height: 64,
+    width: 80,
+    height: 80,
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.sm,
+  },
+  brandBadgeImage: {
+    width: 75,
+    height: 75,
+    resizeMode: 'cover',
+    borderRadius: 100,
+    backgroundColor: theme.colors.primaryLight,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryLight,
   },
   appName: {
     color: theme.colors.primary,
@@ -181,7 +415,8 @@ const styles = StyleSheet.create({
   userName: {
     color: theme.colors.textPrimary,
     fontSize: 14,
-    marginTop: 2,
+    fontWeight: '600',
+    marginTop: theme.spacing.sm,
   },
   menu: {
     flex: 1,
@@ -214,5 +449,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.danger,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  modalIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.full,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalDesc: {
+    marginTop: theme.spacing.sm,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  modalBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalBtnGhost: {
+    backgroundColor: '#F1F5F9',
+  },
+  modalBtnGhostText: {
+    color: theme.colors.textPrimary,
+  },
+  modalBtnDanger: {
+    backgroundColor: theme.colors.danger,
+  },
+  modalBtnDangerText: {
+    color: theme.colors.white,
   },
 });

@@ -74,7 +74,7 @@ const LoginTeacherScreen = () => {
           <TouchableOpacity
             style={styles.button}
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('DrawerRoot')}
+            onPress={() => navigation.navigate('DrawerRoot', { userRole: 'teacher' })}
           >
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>

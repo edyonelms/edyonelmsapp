@@ -11,7 +11,6 @@ import React, { useState } from 'react';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
-import { SafeAreaFrameContext } from 'react-native-safe-area-context';
 
 const LoginStudentScreen = () => {
   const navigation = useNavigation<any>();
@@ -72,7 +71,7 @@ const LoginStudentScreen = () => {
           <TouchableOpacity
             style={styles.button}
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('DrawerRoot')}
+            onPress={() => navigation.navigate('DrawerRoot', { userRole: 'student' })}
           >
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>

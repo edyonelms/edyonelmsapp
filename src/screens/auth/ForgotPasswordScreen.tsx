@@ -10,6 +10,7 @@ import {
 import React, { useState, useEffect } from 'react';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
+import Header from '../../components/Header';
 
 const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
@@ -21,6 +22,14 @@ const ForgotPasswordScreen = () => {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleBackPress = () => {
+    if (step === 1) {
+      navigation.goBack();
+    } else {
+      setStep(step - 1);
+    }
+  };
 
   // Timer for OTP
   useEffect(() => {
@@ -44,7 +53,8 @@ const ForgotPasswordScreen = () => {
           <>
             <Text style={styles.heading}>Reset Password</Text>
             <Text style={styles.desc}>
-              Enter your registered email address to reset your account password.
+              Enter your registered email address to reset your account
+              password.
             </Text>
 
             <Text style={styles.label}>Email Address</Text>
@@ -144,20 +154,16 @@ const ForgotPasswordScreen = () => {
 
   return (
     <View style={styles.safeArea}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={theme.colors.background}
+      <Header
+        title="Forgot Password"
+        showBack={true}
+        onBackPress={handleBackPress}
       />
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity
-          onPress={() => (step === 1 ? navigation.goBack() : setStep(step - 1))}
-        >
-          <Text style={styles.back}>Back</Text>
-        </TouchableOpacity>
         <View style={styles.card}>{renderStep()}</View>
       </ScrollView>
     </View>
@@ -176,7 +182,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
-    justifyContent: 'center',
   },
   card: {
     backgroundColor: theme.colors.card,
