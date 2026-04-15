@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import VectorIcon from '../components/VectorIcon';
 import { theme } from '../utils/theme';
 
@@ -13,12 +13,31 @@ const NoRippleButton = (props: any) => {
   return <TouchableOpacity {...props} activeOpacity={1} />;
 };
 
+const QuickLinkButton = ({ children, onPress }: any) => {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.9}
+      style={styles.quickLinkWrapper}
+    >
+      <View style={styles.quickLinkRing}>
+        <View style={styles.quickLinkInner}>
+          {children}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 type TabRole = 'student' | 'teacher';
 
 const TabNavigator = ({ route }: any) => {
-  const role: TabRole = route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
+  const role: TabRole =
+    route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
+
   const lastTabName = role === 'teacher' ? 'Attendance' : 'Fees';
-  const DashboardComponent = role === 'teacher' ? TeacherHomeScreen : StudentHomeScreen;
+  const DashboardComponent =
+    role === 'teacher' ? TeacherHomeScreen : StudentHomeScreen;
 
   return (
     <Tab.Navigator
@@ -28,14 +47,22 @@ const TabNavigator = ({ route }: any) => {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
-          height: 70,
+          height: 72,
           paddingTop: 6,
+        },
+
+        tabBarItemStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
         },
 
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
 
-        tabBarButton: props => <NoRippleButton {...props} />,
+        tabBarButton: props =>
+          route.name === 'QuickLinks'
+            ? <QuickLinkButton {...props} />
+            : <NoRippleButton {...props} />,
 
         tabBarIcon: ({ color, focused }) => {
           let iconName;
@@ -63,12 +90,18 @@ const TabNavigator = ({ route }: any) => {
               iconName = 'ellipse';
           }
 
+          const iconColor =
+            route.name === 'QuickLinks' ? theme.colors.surface : color;
+
+          const iconSize = route.name === 'QuickLinks' ? 26 : 22;
+
           return (
             <VectorIcon
               iconSet="Ionicons"
               iconName={iconName}
-              size={22}
-              color={color}
+              size={iconSize}
+              color={iconColor}
+              style={route.name === 'QuickLinks' ? { marginTop: 1 } : undefined}
             />
           );
         },
@@ -82,7 +115,15 @@ const TabNavigator = ({ route }: any) => {
     >
       <Tab.Screen name="Dashboard" component={DashboardComponent} />
       <Tab.Screen name="Subjects" component={StudentHomeScreen} />
-      <Tab.Screen name="QuickLinks" component={StudentHomeScreen} />
+
+      <Tab.Screen
+        name="QuickLinks"
+        component={StudentHomeScreen}
+        options={{
+          tabBarLabel: '',
+        }}
+      />
+
       <Tab.Screen name="Homework" component={StudentHomeScreen} />
       <Tab.Screen name={lastTabName} component={StudentHomeScreen} />
     </Tab.Navigator>
@@ -90,3 +131,31 @@ const TabNavigator = ({ route }: any) => {
 };
 
 export default TabNavigator;
+
+const styles = StyleSheet.create({
+  quickLinkWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  quickLinkRing: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ translateY: -18 }],
+  },
+
+  quickLinkInner: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    paddingVertical: 16,
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.surface,
+  },
+});
