@@ -8,13 +8,12 @@ import {
   ListRenderItem,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  SafeAreaView,
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
 import { theme } from '../../utils/theme';
-import VectorIcon from '../../components/VectorIcon';
 import { useNavigation } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -22,33 +21,33 @@ type Slide = {
   id: string;
   title: string;
   desc: string;
-  icon: string;
+  lottie: any;
 };
 
 const DATA: Slide[] = [
   {
     id: '1',
-    title: 'Welcome to Edyone LMS',
-    desc: 'Manage your learning journey with one simple and modern app.',
-    icon: 'school-outline',
+    title: 'Communication & Administration',
+    desc: 'Streamline communication and policies with announcements, queries, contact info, rules & regulations, about app, terms of use and privacy policy — keeping everyone informed and engaged.',
+    lottie: require('../../assets/lottiefiles/onboard1.json'),
   },
   {
     id: '2',
-    title: 'Track Progress',
-    desc: 'View attendance, scores and assignments in real-time.',
-    icon: 'stats-chart-outline',
+    title: 'Learning , Assessments & More...',
+    desc: 'Deliver and track academic success with homework, syllabus, quiz exam, admit card, seating plan, exam copy, report card and library — all in one app.',
+    lottie: require('../../assets/lottiefiles/onboard2.json'),
   },
   {
     id: '3',
-    title: 'Learn Anytime',
-    desc: 'Access classes, notes and resources whenever you need them.',
-    icon: 'time-outline',
+    title: 'Student & Teacher Management',
+    desc: 'Effortlessly manage students, teachers, attendance, fee, payroll and ID cards. Track performance, maintain records and ensure smooth day-to-day operations.',
+    lottie: require('../../assets/lottiefiles/onboard3.json'),
   },
   {
     id: '4',
-    title: 'Stay Connected',
-    desc: 'Communicate with teachers and parents with ease.',
-    icon: 'chatbubbles-outline',
+    title: 'All-in-One Dashboard for Students \n& Teachers',
+    desc: 'Access everything you need in one place — from home, quick links, analytics and account settings to announcements, calendar and contact; keeping students, teachers and administrators connected seamlessly.',
+    lottie: require('../../assets/lottiefiles/onboard4.json'),
   },
 ];
 
@@ -83,13 +82,8 @@ const OnboardingScreen: React.FC = () => {
 
   const renderItem: ListRenderItem<Slide> = ({ item }) => (
     <View style={styles.slide}>
-      <View style={styles.iconBadge}>
-        <VectorIcon
-          iconSet="Ionicons"
-          iconName={item.icon}
-          size={64}
-          color={theme.colors.primary}
-        />
+      <View style={styles.illustrationWrap}>
+        <LottieView source={item.lottie} autoPlay loop style={styles.illustration} />
       </View>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.desc}>{item.desc}</Text>
@@ -158,40 +152,43 @@ export default OnboardingScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.white,
   },
   slide: {
     width: width,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: theme.spacing.lg,
+    paddingTop: 70,
   },
-  iconBadge: {
-    width: 180,
-    height: 180,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.primaryLight,
+  illustrationWrap: {
+    width: width,
+    height: 280,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: 18,
+  },
+  illustration: {
+    width: width * 0.64,
+    height: 240,
   },
   title: {
-    fontSize: 28,
+    fontSize: 18,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
+    color: theme.colors.primary,
+    marginBottom: 10,
     textAlign: 'center',
   },
   desc: {
-    fontSize: 15,
+    fontSize: 14,
     color: theme.colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 320,
+    lineHeight: 20,
+    maxWidth: 300,
   },
   dotContainer: {
     position: 'absolute',
-    bottom: 120,
+    bottom: 200,
     flexDirection: 'row',
     alignSelf: 'center',
   },
