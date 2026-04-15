@@ -116,7 +116,6 @@ const DrawerNavigator = ({ route }: any) => {
                 <Image source={{ uri: 'logo' }} style={styles.brandBadgeImage} />
               </View>
               <Text style={styles.appName}>Edyone LMS</Text>
-              <Text style={styles.userName}>Current User Role : {role === 'teacher' ? 'Teacher' : 'Student'}</Text>
             </View>
 
             <View style={styles.menu}>
@@ -124,41 +123,45 @@ const DrawerNavigator = ({ route }: any) => {
                 const isActive = state.routeNames[state.index] === item.name;
 
                 return (
-                  <TouchableOpacity
-                    key={index}
-                    activeOpacity={0.7}
-                    onPress={() => navigation.navigate(item.name, item.params)}
-                    style={[
-                      styles.menuItem,
-                      {
-                        backgroundColor: isActive
-                          ? theme.colors.primaryLight
-                          : 'transparent',
-                      },
-                    ]}
-                  >
-                    <VectorIcon
-                      iconSet="Ionicons"
-                      iconName={item.icon}
-                      size={20}
-                      color={
-                        isActive ? theme.colors.primary : theme.colors.textPrimary
-                      }
-                    />
-                    <Text
+                  <View key={index}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => navigation.navigate(item.name, item.params)}
                       style={[
-                        styles.menuText,
+                        styles.menuItem,
                         {
-                          color: isActive
-                            ? theme.colors.primary
-                            : theme.colors.textPrimary,
-                          fontWeight: isActive ? '600' : '400',
+                          backgroundColor: isActive
+                            ? theme.colors.primaryLight
+                            : 'transparent',
                         },
                       ]}
                     >
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
+                      <VectorIcon
+                        iconSet="Ionicons"
+                        iconName={item.icon}
+                        size={20}
+                        color={
+                          isActive ? theme.colors.primary : theme.colors.textPrimary
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.menuText,
+                          {
+                            color: isActive
+                              ? theme.colors.primary
+                              : theme.colors.textPrimary,
+                            fontWeight: isActive ? '600' : '400',
+                          },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                    {index !== menuItems.length - 1 && (
+                      <View style={styles.divider} />
+                    )}
+                  </View>
                 );
               })}
             </View>
@@ -237,7 +240,7 @@ const DrawerNavigator = ({ route }: any) => {
         headerShown: false,
         drawerStyle: {
           backgroundColor: theme.colors.surface,
-          width: '70%',
+          width: '65%',
         },
       }}
     >
@@ -381,35 +384,27 @@ export default DrawerNavigator;
 
 const styles = StyleSheet.create({
   header: {
+    height:70,
     width: '100%',
-    paddingTop: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems:'center',
+    gap:10,
+    borderBottomWidth:1,
+    borderColor:'#ccc'
   },
   brandBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.sm,
+    width: 60,
+    height: 60,
+    backgroundColor: theme.colors.primary,
   },
   brandBadgeImage: {
-    width: 75,
-    height: 75,
+    width: '100%',
+    height: '100%',
     resizeMode: 'cover',
-    borderRadius: 100,
-    backgroundColor: theme.colors.primaryLight,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryLight,
   },
   appName: {
     color: theme.colors.primary,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
   },
   userName: {
@@ -516,5 +511,11 @@ const styles = StyleSheet.create({
   },
   modalBtnDangerText: {
     color: theme.colors.white,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginHorizontal: theme.spacing.md,
+    // opacity: 0.5,
   },
 });

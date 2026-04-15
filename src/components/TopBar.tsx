@@ -1,26 +1,27 @@
 import React from 'react';
 import {
   StyleSheet,
-  TextInput,
+  Text,
   TouchableOpacity,
   View,
+  TextInput,
 } from 'react-native';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { theme } from '../utils/theme';
 import VectorIcon from './VectorIcon';
 
 interface TopBarProps {
-  placeholder?: string;
-  value?: string;
-  onChangeText?: (text: string) => void;
+  userName?: string;
+  searchValue?: string;
+  onSearchChange?: (text: string) => void;
   onBellPress?: () => void;
   onAvatarPress?: () => void;
 }
 
 const TopBar = ({
-  placeholder = 'Search here...',
-  value,
-  onChangeText,
+  userName = 'Rahul Sharma',
+  searchValue,
+  onSearchChange,
   onBellPress,
   onAvatarPress,
 }: TopBarProps) => {
@@ -32,58 +33,49 @@ const TopBar = ({
   };
 
   return (
-    <View style={styles.wrap}>
-      <TouchableOpacity
-        onPress={openDrawer}
-        activeOpacity={0.7}
-        style={styles.menuBtn}
-      >
-        <VectorIcon iconSet="Ionicons" iconName="menu" size={26} color="#111" />
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.wrap}>
+        <TouchableOpacity
+          onPress={openDrawer}
+          activeOpacity={0.7}
+          style={styles.menuBtn}
+        >
+          <VectorIcon iconSet="Ionicons" iconName="menu" size={26} color="#111" />
+        </TouchableOpacity>
 
-      <View style={styles.search}>
-        <VectorIcon
-          iconSet="Ionicons"
-          iconName="search-outline"
-          size={18}
-          color={theme.colors.textMuted}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          placeholder={placeholder}
-          placeholderTextColor={theme.colors.textMuted}
-          value={value}
-          onChangeText={onChangeText}
-          style={styles.input}
-          returnKeyType="search"
-        />
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{userName} 👋</Text>
+        </View>
+
+        <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
+          <VectorIcon iconSet="Ionicons" iconName="swap-horizontal-outline" size={20} color="#111" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
+          <VectorIcon iconSet="Ionicons" iconName="notifications-outline" size={20} color="#111" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onAvatarPress} style={styles.iconBtn}>
+          <VectorIcon iconSet="Ionicons" iconName="person-circle-outline" size={22} color="#111" />
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        onPress={onBellPress}
-        activeOpacity={0.7}
-        style={styles.iconBtn}
-      >
+      <View style={styles.searchWrap}>
         <VectorIcon
-          iconSet="Ionicons"
-          iconName="notifications-outline"
-          size={20}
-          color="#111"
+          iconSet="Feather"
+          iconName="search"
+          size={18}
+          color={theme.colors.textMuted}
+          style={{ marginRight: 8 }}
         />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={onAvatarPress}
-        activeOpacity={0.7}
-        style={styles.iconBtn}
-      >
-        <VectorIcon
-          iconSet="Ionicons"
-          iconName="person-circle-outline"
-          size={22}
-          color="#111"
+        <TextInput
+          placeholder="Search here..."
+          placeholderTextColor={theme.colors.textMuted}
+          value={searchValue}
+          onChangeText={onSearchChange}
+          style={styles.input}
         />
-      </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -91,36 +83,44 @@ const TopBar = ({
 export default TopBar;
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: theme.colors.background,
+    paddingBottom: theme.spacing.sm,
+  },
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
-    backgroundColor: theme.colors.background,
   },
   menuBtn: {
     paddingVertical: 6,
     paddingRight: 2,
   },
-  search: {
+  userInfo: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  searchWrap: {
+    marginTop: 10,
+    marginHorizontal: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    height: 44,
     paddingHorizontal: 12,
-  },
-  searchIcon: {
-    marginRight: 8,
+    height: 44,
   },
   input: {
     flex: 1,
-    paddingVertical: 0,
     color: theme.colors.textPrimary,
     fontSize: 14,
   },
