@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  Image,
 } from 'react-native';
 import React, { useState } from 'react';
 import { theme } from '../../utils/theme';
@@ -23,22 +24,37 @@ const LoginStudentScreen = () => {
         barStyle="dark-content"
         backgroundColor={theme.colors.background}
       />
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => navigation.goBack()}
+        style={{
+          padding: theme.spacing.lg,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.xs,
+        }}
+      >
+        <VectorIcon
+          iconName="arrow-left"
+          iconSet="FontAwesome6"
+          size={20}
+          color={theme.colors.primary}
+        />
+        <Text style={{ color: theme.colors.primary, fontSize: 16 }}>Back</Text>
+      </TouchableOpacity>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.iconBadge}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="school-outline"
-            size={34}
-            color={theme.colors.primary}
-          />
+          <Image source={{ uri: 'logo' }} style={styles.logo} />
         </View>
 
         <Text style={styles.title}>Student Login</Text>
-        <Text style={styles.subtitle}>Sign in to view classes and assignments</Text>
+        <Text style={styles.subtitle}>
+          Sign in to view classes and assignments
+        </Text>
 
         <View style={styles.formCard}>
           <Text style={styles.label}>Admission Number</Text>
@@ -71,7 +87,9 @@ const LoginStudentScreen = () => {
           <TouchableOpacity
             style={styles.button}
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('DrawerRoot', { userRole: 'student' })}
+            onPress={() =>
+              navigation.navigate('DrawerRoot', { userRole: 'student' })
+            }
           >
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>
@@ -86,7 +104,7 @@ export default LoginStudentScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.white,
   },
   container: {
     flexGrow: 1,
@@ -98,11 +116,15 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
     marginBottom: theme.spacing.lg,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 26,
@@ -120,14 +142,7 @@ const styles = StyleSheet.create({
   formCard: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     padding: theme.spacing.lg,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
   },
   label: {
     color: theme.colors.textPrimary,
@@ -151,9 +166,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   button: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 15,
-    borderRadius: theme.radius.sm,
+    backgroundColor: '#000',
+    paddingVertical: 12,
+    borderRadius: 100,
     alignItems: 'center',
   },
   buttonText: {
