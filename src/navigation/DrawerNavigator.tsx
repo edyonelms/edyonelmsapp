@@ -405,7 +405,7 @@ const DrawerNavigator = ({ route }: any) => {
         initialParams={{ title: 'Change Password' }}
       />
       <Drawer.Screen name="More" component={MoreScreen} />
-      <Drawer.Screen
+      {/* <Drawer.Screen
         name="AboutAppMore"
         component={MoreDetailScreen}
         initialParams={{ title: 'AboutApp' }}
@@ -434,7 +434,7 @@ const DrawerNavigator = ({ route }: any) => {
         name="TermsOfUseMore"
         component={MoreDetailScreen}
         initialParams={{ title: 'TermsOfUse' }}
-      />
+      /> */}
     </Drawer.Navigator>
   );
 };

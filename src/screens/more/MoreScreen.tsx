@@ -54,10 +54,6 @@ const MoreScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
       >
-        <Text style={styles.subtitle}>
-          Explore app and school related information
-        </Text>
-
         <View style={styles.card}>
           {items.map((item, index) => (
             <TouchableOpacity
@@ -96,10 +92,10 @@ export default MoreScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.white,
   },
   container: {
-    padding: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xl,
   },
   subtitle: {
@@ -109,16 +105,11 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,

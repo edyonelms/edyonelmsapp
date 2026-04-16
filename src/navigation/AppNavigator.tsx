@@ -7,6 +7,12 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import SplashScreen from '../screens/splash/SplashScreen';
 import LoginTeacherScreen from '../screens/auth/teacher/LoginTeacherScreen';
 import LoginStudentScreen from '../screens/auth/student/LoginStudentScreen';
+import AboutAppScreen from '../screens/more/AboutAppScreen';
+import SchoolInfoScreen from '../screens/more/SchoolInfoScreen';
+import RulesRegulationsScreen from '../screens/more/RulesRegulationsScreen';
+import TermsConditionsScreen from '../screens/more/TermsConditionsScreen';
+import PrivacyPolicyScreen from '../screens/more/PrivacyPolicyScreen';
+import TermsOfUseScreen from '../screens/more/TermsOfUseScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,6 +31,20 @@ const AppNavigator = () => {
       <Stack.Screen name="TeacherLogin" component={LoginTeacherScreen} />
       <Stack.Screen name="StudentLogin" component={LoginStudentScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+
+      {/* More */}
+      <Stack.Screen name="AboutAppMore" component={AboutAppScreen} />
+      <Stack.Screen name="SchoolInfoMore" component={SchoolInfoScreen} />
+      <Stack.Screen
+        name="RulesRegulationsMore"
+        component={RulesRegulationsScreen}
+      />
+      <Stack.Screen
+        name="TermsConditionsMore"
+        component={TermsConditionsScreen}
+      />
+      <Stack.Screen name="PrivacyPolicyMore" component={PrivacyPolicyScreen} />
+      <Stack.Screen name="TermsOfUseMore" component={TermsOfUseScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />

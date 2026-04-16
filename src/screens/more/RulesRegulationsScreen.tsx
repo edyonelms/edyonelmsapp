@@ -3,23 +3,24 @@ import { StyleSheet, Text, View } from 'react-native';
 import Header from '../../components/Header';
 import { theme } from '../../utils/theme';
 
-const MoreDetailScreen = ({ route, navigation }: any) => {
-  const title = route?.params?.title || 'More';
-
+const RulesRegulationsScreen = ({ navigation }: any) => {
   return (
     <View style={styles.safeArea}>
-      <Header title={title} onBackPress={() => navigation.goBack()} />
+      <Header
+        title={'Rules Regulations'}
+        onBackPress={() => navigation.goBack()}
+      />
       <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{'Rules Regulations'}</Text>
         <Text style={styles.subtitle}>
-          Manage your {title.toLowerCase()} preferences here.
+          Manage your {'Rules Regulations'.toLowerCase()} preferences here.
         </Text>
       </View>
     </View>
   );
 };
 
-export default MoreDetailScreen;
+export default RulesRegulationsScreen;
 
 const styles = StyleSheet.create({
   safeArea: {
