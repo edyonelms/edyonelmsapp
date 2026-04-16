@@ -9,13 +9,13 @@ import {
   Image,
 } from 'react-native';
 import React, { useState } from 'react';
-import { theme } from '../../utils/theme';
+import { theme } from '../../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
-import VectorIcon from '../../components/VectorIcon';
+import VectorIcon from '../../../components/VectorIcon';
 
-const LoginTeacherScreen = () => {
+const LoginStudentScreen = () => {
   const navigation = useNavigation<any>();
-  const [email, setEmail] = useState('');
+  const [admissionNo, setAdmissionNo] = useState('');
   const [password, setPassword] = useState('');
 
   return (
@@ -51,21 +51,20 @@ const LoginTeacherScreen = () => {
           <Image source={{ uri: 'logo' }} style={styles.logo} />
         </View>
 
-        <Text style={styles.title}>Teacher Login</Text>
+        <Text style={styles.title}>Student Login</Text>
         <Text style={styles.subtitle}>
-          Sign in to manage classes and students
+          Sign in to view classes and assignments
         </Text>
 
         <View style={styles.formCard}>
-          <Text style={styles.label}>Email Address</Text>
+          <Text style={styles.label}>Admission Number</Text>
           <TextInput
-            placeholder="teacher@school.com"
+            placeholder="Enter admission number"
             placeholderTextColor={theme.colors.textMuted}
             style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+            value={admissionNo}
+            onChangeText={setAdmissionNo}
+            autoCapitalize="characters"
           />
 
           <Text style={styles.label}>Password</Text>
@@ -89,7 +88,7 @@ const LoginTeacherScreen = () => {
             style={styles.button}
             activeOpacity={0.9}
             onPress={() =>
-              navigation.navigate('DrawerRoot', { userRole: 'teacher' })
+              navigation.navigate('DrawerRoot', { userRole: 'student' })
             }
           >
             <Text style={styles.buttonText}>Continue</Text>
@@ -100,7 +99,7 @@ const LoginTeacherScreen = () => {
   );
 };
 
-export default LoginTeacherScreen;
+export default LoginStudentScreen;
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -1,5 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -11,6 +18,8 @@ import { theme } from '../utils/theme';
 import VectorIcon from '../components/VectorIcon';
 import MenuPlaceholderScreen from '../screens/home/MenuPlaceholderScreen';
 import SettingDetailScreen from '../screens/setting/SettingDetailScreen';
+import MoreScreen from '../screens/more/MoreScreen';
+import MoreDetailScreen from '../screens/more/MoreDetailScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -25,14 +34,19 @@ type MenuItem = {
 };
 
 const DrawerNavigator = ({ route }: any) => {
-  const role: DrawerRole = route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
+  const role: DrawerRole =
+    route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
 
   const menuItems: MenuItem[] = useMemo(() => {
     const studentMenuItems: MenuItem[] = [
       { name: 'MainTabs', label: 'Dashboard', icon: 'grid-outline' },
       { name: 'Analytics', label: 'Analytics', icon: 'bar-chart-outline' },
       { name: 'Fees', label: 'Fees', icon: 'card-outline' },
-      { name: 'Announcement', label: 'Announcement', icon: 'megaphone-outline' },
+      {
+        name: 'Announcement',
+        label: 'Announcement',
+        icon: 'megaphone-outline',
+      },
       { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
       { name: 'Transport', label: 'Transport', icon: 'bus-outline' },
       { name: 'Homework', label: 'Homework', icon: 'book-outline' },
@@ -47,7 +61,11 @@ const DrawerNavigator = ({ route }: any) => {
       { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
       { name: 'Exams', label: 'Exams', icon: 'create-outline' },
-      { name: 'Performance', label: 'Performance', icon: 'stats-chart-outline' },
+      {
+        name: 'Performance',
+        label: 'Performance',
+        icon: 'stats-chart-outline',
+      },
       { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
       { name: 'Settings', label: 'Settings', icon: 'settings-outline' },
       { name: 'More', label: 'More', icon: 'ellipsis-horizontal-outline' },
@@ -56,11 +74,19 @@ const DrawerNavigator = ({ route }: any) => {
     const teacherMenuItems: MenuItem[] = [
       { name: 'MainTabs', label: 'Dashboard', icon: 'grid-outline' },
       { name: 'Analytics', label: 'Analytics', icon: 'bar-chart-outline' },
-      { name: 'Announcement', label: 'Announcement', icon: 'megaphone-outline' },
+      {
+        name: 'Announcement',
+        label: 'Announcement',
+        icon: 'megaphone-outline',
+      },
       { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
       { name: 'Homework', label: 'Homework', icon: 'book-outline' },
       { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
-      { name: 'MarkAttendance', label: 'Mark Attendance', icon: 'checkbox-outline' },
+      {
+        name: 'MarkAttendance',
+        label: 'Mark Attendance',
+        icon: 'checkbox-outline',
+      },
       { name: 'Attendance', label: 'Attendance', icon: 'clipboard-outline' },
       { name: 'Subjects', label: 'Subjects', icon: 'library-outline' },
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
@@ -113,7 +139,10 @@ const DrawerNavigator = ({ route }: any) => {
           <View style={{ flex: 1 }}>
             <View style={styles.header}>
               <View style={styles.brandBadge}>
-                <Image source={{ uri: 'logo' }} style={styles.brandBadgeImage} />
+                <Image
+                  source={{ uri: 'logo' }}
+                  style={styles.brandBadgeImage}
+                />
               </View>
               <Text style={styles.appName}>Edyone LMS</Text>
             </View>
@@ -126,7 +155,9 @@ const DrawerNavigator = ({ route }: any) => {
                   <View key={index}>
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => navigation.navigate(item.name, item.params)}
+                      onPress={() =>
+                        navigation.navigate(item.name, item.params)
+                      }
                       style={[
                         styles.menuItem,
                         {
@@ -141,7 +172,9 @@ const DrawerNavigator = ({ route }: any) => {
                         iconName={item.icon}
                         size={20}
                         color={
-                          isActive ? theme.colors.primary : theme.colors.textPrimary
+                          isActive
+                            ? theme.colors.primary
+                            : theme.colors.textPrimary
                         }
                       />
                       <Text
@@ -221,7 +254,9 @@ const DrawerNavigator = ({ route }: any) => {
                   activeOpacity={0.9}
                   onPress={doLogout}
                 >
-                  <Text style={[styles.modalBtnText, styles.modalBtnDangerText]}>
+                  <Text
+                    style={[styles.modalBtnText, styles.modalBtnDangerText]}
+                  >
                     Logout
                   </Text>
                 </TouchableOpacity>
@@ -339,7 +374,8 @@ const DrawerNavigator = ({ route }: any) => {
         name="Exams"
         component={MenuPlaceholderScreen}
         initialParams={{
-          title: role === 'teacher' ? 'Exams (Upload Marks, Exam Copies)' : 'Exams',
+          title:
+            role === 'teacher' ? 'Exams (Upload Marks, Exam Copies)' : 'Exams',
         }}
       />
       <Drawer.Screen
@@ -368,13 +404,36 @@ const DrawerNavigator = ({ route }: any) => {
         component={SettingDetailScreen}
         initialParams={{ title: 'Change Password' }}
       />
+      <Drawer.Screen name="More" component={MoreScreen} />
       <Drawer.Screen
-        name="More"
-        component={MenuPlaceholderScreen}
-        initialParams={{
-          title:
-            'More (About App, School Info, Rules & Regulations, Terms & Conditions, Privacy Policy, Terms of Use)',
-        }}
+        name="AboutAppMore"
+        component={MoreDetailScreen}
+        initialParams={{ title: 'AboutApp' }}
+      />
+      <Drawer.Screen
+        name="SchoolInfoMore"
+        component={MoreDetailScreen}
+        initialParams={{ title: 'SchoolInfo' }}
+      />
+      <Drawer.Screen
+        name="RulesAndRegulationsMore"
+        component={MoreDetailScreen}
+        initialParams={{ title: 'RulesAndRegulations' }}
+      />
+      <Drawer.Screen
+        name="TermsAndConditionsMore"
+        component={MoreDetailScreen}
+        initialParams={{ title: 'TermsAndConditions' }}
+      />
+      <Drawer.Screen
+        name="PrivacyPolicyMore"
+        component={MoreDetailScreen}
+        initialParams={{ title: 'PrivacyPolicy' }}
+      />
+      <Drawer.Screen
+        name="TermsOfUseMore"
+        component={MoreDetailScreen}
+        initialParams={{ title: 'TermsOfUse' }}
       />
     </Drawer.Navigator>
   );
@@ -384,13 +443,13 @@ export default DrawerNavigator;
 
 const styles = StyleSheet.create({
   header: {
-    height:70,
+    height: 70,
     width: '100%',
     flexDirection: 'row',
-    alignItems:'center',
-    gap:10,
-    borderBottomWidth:1,
-    borderColor:'#ccc'
+    alignItems: 'center',
+    gap: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
   },
   brandBadge: {
     width: 60,

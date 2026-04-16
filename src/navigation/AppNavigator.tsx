@@ -3,10 +3,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './DrawerNavigator';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import SelectUserScreen from '../screens/auth/SelectUserScreen';
-import LoginTeacherScreen from '../screens/auth/LoginTeacherScreen';
-import LoginStudentScreen from '../screens/auth/LoginStudentScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import SplashScreen from '../screens/splash/SplashScreen';
+import LoginTeacherScreen from '../screens/auth/teacher/LoginTeacherScreen';
+import LoginStudentScreen from '../screens/auth/student/LoginStudentScreen';
 
 const Stack = createNativeStackNavigator();
 
