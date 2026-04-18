@@ -19,6 +19,7 @@ import VectorIcon from '../components/VectorIcon';
 import MenuPlaceholderScreen from '../screens/home/MenuPlaceholderScreen';
 import SettingDetailScreen from '../screens/setting/SettingDetailScreen';
 import MoreScreen from '../screens/more/MoreScreen';
+import CalendarScreen from '../screens/calendar/CalendarScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -301,7 +302,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Calendar"
-        component={MenuPlaceholderScreen}
+        component={CalendarScreen}
         initialParams={{ title: 'Calendar' }}
       />
       <Drawer.Screen
