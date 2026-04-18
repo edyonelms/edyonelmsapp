@@ -152,6 +152,7 @@ const EventTimeline = ({
                       </Text>
                     </View>
                   </View>
+                  <Text style={s.eventDescription}>{event.description}</Text>
                   {event.time && (
                     <View style={s.timeRow}>
                       <VectorIcon
@@ -297,6 +298,14 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: theme.colors.textPrimary,
+  },
+  eventDescription: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
+    paddingTop: 6,
+    paddingBottom: 12,
+    color: theme.colors.textMuted,
   },
   typeBadge: {
     borderRadius: theme.radius.full,

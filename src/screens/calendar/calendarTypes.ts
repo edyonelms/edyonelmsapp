@@ -6,6 +6,7 @@ export interface CalEvent {
   id: string;
   date: string;
   title: string;
+  description: string;
   type: Exclude<FilterType, 'All'>;
   time?: string;
 }
@@ -69,6 +70,7 @@ export const EVENTS: CalEvent[] = [
     id: '1',
     date: moment().format('YYYY-MM') + '-05',
     title: 'Easter Holiday',
+    description: 'A holiday to celebrate Easter. Time to relax and enjoy!',
     type: 'Holiday',
     time: 'All Day',
   },
@@ -76,6 +78,7 @@ export const EVENTS: CalEvent[] = [
     id: '2',
     date: moment().format('YYYY-MM') + '-12',
     title: 'Math Mid-Term Exam',
+    description: 'Prepare for the Math Mid-Term Exam. Don’t forget to study!',
     type: 'Exam',
     time: '09:00 AM',
   },
@@ -83,6 +86,7 @@ export const EVENTS: CalEvent[] = [
     id: '3',
     date: moment().format('YYYY-MM') + '-15',
     title: 'Science Assignment Due',
+    description: 'Submit your Science Assignment by the deadline: 11:59 PM.',
     type: 'Assignment',
     time: '11:59 PM',
   },
@@ -90,6 +94,8 @@ export const EVENTS: CalEvent[] = [
     id: '4',
     date: moment().format('YYYY-MM') + '-22',
     title: 'Annual Sports Day',
+    description:
+      'Join us for the Annual Sports Day! Fun events and activities all day.',
     type: 'Event',
     time: '08:00 AM',
   },
@@ -97,6 +103,8 @@ export const EVENTS: CalEvent[] = [
     id: '5',
     date: moment().format('YYYY-MM') + '-22',
     title: 'English Exam',
+    description:
+      'Prepare for your English Exam. Make sure to review your notes.',
     type: 'Exam',
     time: '10:00 AM',
   },
@@ -104,6 +112,7 @@ export const EVENTS: CalEvent[] = [
     id: '6',
     date: moment().format('YYYY-MM') + '-28',
     title: 'Parent-Teacher Meet',
+    description: 'Attend the Parent-Teacher Meet to discuss student progress.',
     type: 'Event',
     time: '03:00 PM',
   },

@@ -15,6 +15,7 @@ import PrivacyPolicyScreen from '../screens/more/PrivacyPolicyScreen';
 import TermsOfUseScreen from '../screens/more/TermsOfUseScreen';
 import StudentProfileScreen from '../screens/profile/StudentProfileScreen';
 import TeacherProfileScreen from '../screens/profile/TeacherProfileScreen';
+import ViewAnnouncementScreen from '../screens/announcement/ViewAnnouncementScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +52,9 @@ const AppNavigator = () => {
       />
       <Stack.Screen name="PrivacyPolicyMore" component={PrivacyPolicyScreen} />
       <Stack.Screen name="TermsOfUseMore" component={TermsOfUseScreen} />
+
+      {/* Announcement */}
+      <Stack.Screen name="ViewAnnouncement" component={ViewAnnouncementScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
