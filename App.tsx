@@ -11,17 +11,14 @@ import { theme } from './src/utils/theme';
 const App = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-          <StatusBar
-            barStyle="dark-content"
-            backgroundColor="#fff"
-          />
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-        </SafeAreaView>
-      </SafeAreaProvider>
+      {/* <SafeAreaProvider> */}
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </SafeAreaView>
+      {/* </SafeAreaProvider> */}
     </GestureHandlerRootView>
   );
 };
@@ -34,6 +31,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff', 
+    backgroundColor: '#fff',
   },
 });

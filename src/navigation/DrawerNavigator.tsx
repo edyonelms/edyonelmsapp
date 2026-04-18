@@ -19,7 +19,6 @@ import VectorIcon from '../components/VectorIcon';
 import MenuPlaceholderScreen from '../screens/home/MenuPlaceholderScreen';
 import SettingDetailScreen from '../screens/setting/SettingDetailScreen';
 import MoreScreen from '../screens/more/MoreScreen';
-import MoreDetailScreen from '../screens/more/MoreDetailScreen';
 
 const Drawer = createDrawerNavigator();
 

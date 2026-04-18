@@ -40,23 +40,45 @@ const TopBar = ({
           activeOpacity={0.7}
           style={styles.menuBtn}
         >
-          <VectorIcon iconSet="Ionicons" iconName="menu" size={26} color="#111" />
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="menu"
+            size={26}
+            color="#111"
+          />
         </TouchableOpacity>
 
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{userName} 👋</Text>
+          <Text style={styles.userName} numberOfLines={1}>
+            {userName}👋
+          </Text>
         </View>
 
         <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
-          <VectorIcon iconSet="Ionicons" iconName="swap-horizontal-outline" size={20} color="#111" />
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="swap-horizontal-outline"
+            size={20}
+            color="#111"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
-          <VectorIcon iconSet="Ionicons" iconName="notifications-outline" size={20} color="#111" />
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="notifications-outline"
+            size={20}
+            color="#111"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onAvatarPress} style={styles.iconBtn}>
-          <VectorIcon iconSet="Ionicons" iconName="person-circle-outline" size={22} color="#111" />
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="person-circle-outline"
+            size={22}
+            color="#111"
+          />
         </TouchableOpacity>
       </View>
 
@@ -90,7 +112,7 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
   },

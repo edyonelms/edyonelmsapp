@@ -21,9 +21,7 @@ const QuickLinkButton = ({ children, onPress }: any) => {
       style={styles.quickLinkWrapper}
     >
       <View style={styles.quickLinkRing}>
-        <View style={styles.quickLinkInner}>
-          {children}
-        </View>
+        <View style={styles.quickLinkInner}>{children}</View>
       </View>
     </TouchableOpacity>
   );
@@ -47,7 +45,7 @@ const TabNavigator = ({ route }: any) => {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
-          height: 72,
+          height: 70,
           paddingTop: 6,
         },
 
@@ -60,9 +58,11 @@ const TabNavigator = ({ route }: any) => {
         tabBarInactiveTintColor: theme.colors.textSecondary,
 
         tabBarButton: props =>
-          route.name === 'QuickLinks'
-            ? <QuickLinkButton {...props} />
-            : <NoRippleButton {...props} />,
+          route.name === 'QuickLinks' ? (
+            <QuickLinkButton {...props} />
+          ) : (
+            <NoRippleButton {...props} />
+          ),
 
         tabBarIcon: ({ color, focused }) => {
           let iconName;
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateY: -18 }],
+    bottom: 26,
   },
 
   quickLinkInner: {
