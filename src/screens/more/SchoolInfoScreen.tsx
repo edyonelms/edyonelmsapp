@@ -148,17 +148,47 @@ const SchoolInfoScreen = ({ navigation }: any) => {
             </Text>
           </View>
 
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={{
+              borderWidth: 1.5,
+              borderColor: '#4F46E5',
+              borderRadius: 30,
+              backgroundColor: theme.colors.primary,
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              alignSelf: 'center',
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <VectorIcon
+                iconName="globe-outline"
+                iconSet="Ionicons"
+                size={18}
+                color="#fff"
+              />
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: '600',
+                  marginLeft: 8,
+                }}
+              >
+                Visit Website
+              </Text>
+            </View>
+          </TouchableOpacity>
+
           {/* School Management Section */}
           <View style={styles.sectionHeaderRow}>
             <View style={styles.verticalBar} />
-            <View style={styles.sectionIconBox}>
-              <VectorIcon
-                iconSet="MaterialIcons"
-                iconName="groups"
-                size={18}
-                color="#7C3AED"
-              />
-            </View>
             <Text style={styles.sectionTitle}>School Management</Text>
           </View>
 
@@ -183,14 +213,6 @@ const SchoolInfoScreen = ({ navigation }: any) => {
           {/* School Documents Section */}
           <View style={styles.sectionHeaderRow}>
             <View style={styles.verticalBar} />
-            <View style={styles.sectionIconBox}>
-              <VectorIcon
-                iconSet="Feather"
-                iconName="folder"
-                size={16}
-                color="#7C3AED"
-              />
-            </View>
             <Text style={styles.sectionTitle}>School Documents</Text>
           </View>
 
@@ -265,14 +287,6 @@ const SchoolInfoScreen = ({ navigation }: any) => {
           {/* Contact Information Section */}
           <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
             <View style={styles.verticalBar} />
-            <View style={styles.sectionIconBox}>
-              <VectorIcon
-                iconSet="MaterialCommunityIcons"
-                iconName="card-account-details-outline"
-                size={16}
-                color="#7C3AED"
-              />
-            </View>
             <Text style={styles.sectionTitle}>Contact Information</Text>
           </View>
 
