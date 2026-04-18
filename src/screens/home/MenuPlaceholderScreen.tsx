@@ -11,7 +11,9 @@ const MenuPlaceholderScreen = ({ route, navigation }: any) => {
       <Header title={title} onBackPress={() => navigation.goBack()} />
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>This screen is ready. Add UI/content here.</Text>
+        <Text style={styles.subtitle}>
+          This screen is ready. Add UI/content here.
+        </Text>
       </View>
     </View>
   );

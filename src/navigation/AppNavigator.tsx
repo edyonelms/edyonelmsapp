@@ -13,6 +13,8 @@ import RulesRegulationsScreen from '../screens/more/RulesRegulationsScreen';
 import TermsConditionsScreen from '../screens/more/TermsConditionsScreen';
 import PrivacyPolicyScreen from '../screens/more/PrivacyPolicyScreen';
 import TermsOfUseScreen from '../screens/more/TermsOfUseScreen';
+import StudentProfileScreen from '../screens/profile/StudentProfileScreen';
+import TeacherProfileScreen from '../screens/profile/TeacherProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +33,10 @@ const AppNavigator = () => {
       <Stack.Screen name="TeacherLogin" component={LoginTeacherScreen} />
       <Stack.Screen name="StudentLogin" component={LoginStudentScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+
+      {/* Profile */}
+      <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
+      <Stack.Screen name="TeacherProfile" component={TeacherProfileScreen} />
 
       {/* More */}
       <Stack.Screen name="AboutAppMore" component={AboutAppScreen} />

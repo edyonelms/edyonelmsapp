@@ -2,11 +2,13 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import TopBar from '../../../components/TopBar';
 import { theme } from '../../../utils/theme';
+import { useNavigation } from '@react-navigation/native';
 
 const StudentHomeScreen = () => {
+  const navigation = useNavigation<any>();
   return (
     <View style={styles.safeArea}>
-      <TopBar />
+      <TopBar onAvatarPress={() => navigation.navigate('StudentProfile')} />
     </View>
   );
 };
@@ -19,4 +21,3 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 });
-
