@@ -25,8 +25,10 @@ const ContactSchoolScreen = ({ navigation }: any) => {
 
   const requestAndroidPermission = async (): Promise<boolean> => {
     // Android 13+ (API 33+): image picker uses system photo picker — no permission needed
+    // @ts-ignore
     if (Platform.Version >= 33) return true;
     // Android 10–12: no storage permission needed for media picker
+    // @ts-ignore
     if (Platform.Version >= 29) return true;
     // Android 9 and below: needs READ_EXTERNAL_STORAGE
     const result = await PermissionsAndroid.request(
