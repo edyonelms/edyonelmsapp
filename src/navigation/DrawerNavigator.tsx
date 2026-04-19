@@ -23,6 +23,7 @@ import CalendarScreen from '../screens/calendar/CalendarScreen';
 import AnnouncementScreen from '../screens/announcement/AnnouncementScreen';
 import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
 import PastQueriesScreen from '../screens/contactSchool/PastQueriesScreen';
+import BooksScreen from '../screens/books/BooksScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -355,7 +356,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Book"
-        component={MenuPlaceholderScreen}
+        component={BooksScreen}
         initialParams={{ title: 'Book' }}
       />
       <Drawer.Screen
