@@ -24,7 +24,7 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="Splash"
+      initialRouteName="SelectUser"
     >
       <Stack.Screen name="Splash" component={SplashScreen} />
       {/* Onboarding */}

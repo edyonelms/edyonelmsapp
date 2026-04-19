@@ -2,21 +2,23 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Header from '../../components/Header';
 import { theme } from '../../utils/theme';
+import TermsConditionsScreen from './TermsConditionsScreen';
 
 const PrivacyPolicyScreen = ({ navigation }: any) => {
   return (
-    <View style={styles.safeArea}>
-      <Header
-        title={'Privacy Policy'}
-        onBackPress={() => navigation.goBack()}
-      />
-      <View style={styles.content}>
-        <Text style={styles.title}>{'Privacy Policy'}</Text>
-        <Text style={styles.subtitle}>
-          Manage your {'Privacy Policy'.toLowerCase()} preferences here.
-        </Text>
-      </View>
-    </View>
+    <TermsConditionsScreen/>
+    // <View style={styles.safeArea}>
+    //   <Header
+    //     title={'Privacy Policy'}
+    //     onBackPress={() => navigation.goBack()}
+    //   />
+    //   <View style={styles.content}>
+    //     <Text style={styles.title}>{'Privacy Policy'}</Text>
+    //     <Text style={styles.subtitle}>
+    //       Manage your {'Privacy Policy'.toLowerCase()} preferences here.
+    //     </Text>
+    //   </View>
+    // </View>
   );
 };
 

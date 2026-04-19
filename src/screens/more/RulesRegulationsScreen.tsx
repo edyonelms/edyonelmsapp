@@ -2,21 +2,23 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Header from '../../components/Header';
 import { theme } from '../../utils/theme';
+import TermsConditionsScreen from './TermsConditionsScreen';
 
 const RulesRegulationsScreen = ({ navigation }: any) => {
   return (
-    <View style={styles.safeArea}>
-      <Header
-        title={'Rules Regulations'}
-        onBackPress={() => navigation.goBack()}
-      />
-      <View style={styles.content}>
-        <Text style={styles.title}>{'Rules Regulations'}</Text>
-        <Text style={styles.subtitle}>
-          Manage your {'Rules Regulations'.toLowerCase()} preferences here.
-        </Text>
-      </View>
-    </View>
+    <TermsConditionsScreen />
+    // <View style={styles.safeArea}>
+    //   <Header
+    //     title={'Rules Regulations'}
+    //     onBackPress={() => navigation.goBack()}
+    //   />
+    //   <View style={styles.content}>
+    //     <Text style={styles.title}>{'Rules Regulations'}</Text>
+    //     <Text style={styles.subtitle}>
+    //       Manage your {'Rules Regulations'.toLowerCase()} preferences here.
+    //     </Text>
+    //   </View>
+    // </View>
   );
 };
 

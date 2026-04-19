@@ -2,18 +2,20 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Header from '../../components/Header';
 import { theme } from '../../utils/theme';
+import TermsConditionsScreen from './TermsConditionsScreen';
 
 const TermsOfUseScreen = ({ navigation }: any) => {
   return (
-    <View style={styles.safeArea}>
-      <Header title={'Terms of Use'} onBackPress={() => navigation.goBack()} />
-      <View style={styles.content}>
-        <Text style={styles.title}>{'Terms of Use'}</Text>
-        <Text style={styles.subtitle}>
-          Manage your {'Terms of Use'.toLowerCase()} preferences here.
-        </Text>
-      </View>
-    </View>
+    <TermsConditionsScreen/>
+    // <View style={styles.safeArea}>
+    //   <Header title={'Terms of Use'} onBackPress={() => navigation.goBack()} />
+    //   <View style={styles.content}>
+    //     <Text style={styles.title}>{'Terms of Use'}</Text>
+    //     <Text style={styles.subtitle}>
+    //       Manage your {'Terms of Use'.toLowerCase()} preferences here.
+    //     </Text>
+    //   </View>
+    // </View>
   );
 };
 
