@@ -16,6 +16,7 @@ import TermsOfUseScreen from '../screens/more/TermsOfUseScreen';
 import StudentProfileScreen from '../screens/profile/StudentProfileScreen';
 import TeacherProfileScreen from '../screens/profile/TeacherProfileScreen';
 import ViewAnnouncementScreen from '../screens/announcement/ViewAnnouncementScreen';
+import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +56,9 @@ const AppNavigator = () => {
 
       {/* Announcement */}
       <Stack.Screen name="ViewAnnouncement" component={ViewAnnouncementScreen} />
+
+      {/* Contact School */}
+      <Stack.Screen name="NewQuery" component={ContactSchoolScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />

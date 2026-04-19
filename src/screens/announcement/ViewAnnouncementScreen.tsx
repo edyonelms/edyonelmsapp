@@ -114,14 +114,24 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
                 >
                   <View style={s.attachLeft}>
                     <View style={s.attachIconBox}>
-                      <VectorIcon iconSet="Feather" iconName="image" size={20} color="#fff" />
+                      <VectorIcon
+                        iconSet="Feather"
+                        iconName="image"
+                        size={20}
+                        color="#fff"
+                      />
                     </View>
                     <View>
                       <Text style={s.attachTitle}>View Image</Text>
                       <Text style={s.attachSub}>Tap to view full image</Text>
                     </View>
                   </View>
-                  <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={18} color="#fff" />
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="chevron-forward"
+                    size={18}
+                    color="#fff"
+                  />
                 </TouchableOpacity>
               )}
 
@@ -133,14 +143,24 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
                 >
                   <View style={s.attachLeft}>
                     <View style={s.attachIconBox}>
-                      <VectorIcon iconSet="Feather" iconName="file-text" size={20} color="#fff" />
+                      <VectorIcon
+                        iconSet="Feather"
+                        iconName="file-text"
+                        size={20}
+                        color="#fff"
+                      />
                     </View>
                     <View>
                       <Text style={s.attachTitle}>View PDF</Text>
                       <Text style={s.attachSub}>Tap to read PDF document</Text>
                     </View>
                   </View>
-                  <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={18} color="#fff" />
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="chevron-forward"
+                    size={18}
+                    color="#fff"
+                  />
                 </TouchableOpacity>
               )}
             </View>

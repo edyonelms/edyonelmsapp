@@ -21,6 +21,8 @@ import SettingDetailScreen from '../screens/setting/SettingDetailScreen';
 import MoreScreen from '../screens/more/MoreScreen';
 import CalendarScreen from '../screens/calendar/CalendarScreen';
 import AnnouncementScreen from '../screens/announcement/AnnouncementScreen';
+import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
+import PastQueriesScreen from '../screens/contactSchool/PastQueriesScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -386,8 +388,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="ContactSchool"
-        component={MenuPlaceholderScreen}
-        initialParams={{ title: 'Contact School' }}
+        component={PastQueriesScreen}
       />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
       <Drawer.Screen
