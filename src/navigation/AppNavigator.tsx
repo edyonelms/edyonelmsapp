@@ -17,14 +17,17 @@ import StudentProfileScreen from '../screens/profile/StudentProfileScreen';
 import TeacherProfileScreen from '../screens/profile/TeacherProfileScreen';
 import ViewAnnouncementScreen from '../screens/announcement/ViewAnnouncementScreen';
 import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
+import ChatsScreen from '../screens/chats/ChatsScreen';
+import ChatsListScreen from '../screens/chats/ChatsListScreen';
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
+
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="SelectUser"
+      initialRouteName="Splash"
     >
       <Stack.Screen name="Splash" component={SplashScreen} />
       {/* Onboarding */}
@@ -59,6 +62,10 @@ const AppNavigator = () => {
 
       {/* Contact School */}
       <Stack.Screen name="NewQuery" component={ContactSchoolScreen} />
+
+      {/* Chats */}
+      <Stack.Screen name="ChatsList" component={ChatsListScreen} />
+      <Stack.Screen name="UserChats" component={ChatsScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />

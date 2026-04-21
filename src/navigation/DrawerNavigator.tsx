@@ -25,6 +25,9 @@ import PastQueriesScreen from '../screens/contactSchool/PastQueriesScreen';
 import BooksScreen from '../screens/books/BooksScreen';
 import InstructorScreen from '../screens/instructor/InstructorScreen';
 import AttendanceScreen from '../screens/attendance/AttendanceScreen';
+import FeesScreen from '../screens/fees/FeesScreen';
+import ChatsListScreen from '../screens/chats/ChatsListScreen';
+import TransportScreen from '../screens/transport/TransportScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -297,7 +300,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Fees"
-        component={MenuPlaceholderScreen}
+        component={FeesScreen}
         initialParams={{ title: 'Fees' }}
       />
       <Drawer.Screen
@@ -312,7 +315,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Transport"
-        component={MenuPlaceholderScreen}
+        component={TransportScreen}
         initialParams={{ title: 'Transport' }}
       />
       <Drawer.Screen
@@ -372,8 +375,8 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Chats"
-        component={MenuPlaceholderScreen}
-        initialParams={{ title: 'Chats' }}
+        component={ChatsListScreen}
+        initialParams={{ userRole: role }}
       />
       <Drawer.Screen
         name="Exams"
