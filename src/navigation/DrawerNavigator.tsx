@@ -28,6 +28,8 @@ import AttendanceScreen from '../screens/attendance/AttendanceScreen';
 import FeesScreen from '../screens/fees/FeesScreen';
 import ChatsListScreen from '../screens/chats/ChatsListScreen';
 import TransportScreen from '../screens/transport/TransportScreen';
+import TeacherSyllabusScreen from '../screens/syllabus/TeacherSyllabusScreen';
+import StudentSyllabusScreen from '../screens/syllabus/StudentSyllabusScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -345,7 +347,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Syllabus"
-        component={MenuPlaceholderScreen}
+        component={role === 'teacher' ? TeacherSyllabusScreen : StudentSyllabusScreen}
         initialParams={{ title: 'Syllabus' }}
       />
       <Drawer.Screen
