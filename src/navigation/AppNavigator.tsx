@@ -19,6 +19,7 @@ import ViewAnnouncementScreen from '../screens/announcement/ViewAnnouncementScre
 import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
 import ChatsScreen from '../screens/chats/ChatsScreen';
 import ChatsListScreen from '../screens/chats/ChatsListScreen';
+import SubjectDetailsScreen from '../screens/subjects/SubjectDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -66,6 +67,9 @@ const AppNavigator = () => {
       {/* Chats */}
       <Stack.Screen name="ChatsList" component={ChatsListScreen} />
       <Stack.Screen name="UserChats" component={ChatsScreen} />
+      
+      {/* Subjects */}
+      <Stack.Screen name="SubjectDetails" component={SubjectDetailsScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />

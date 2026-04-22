@@ -30,6 +30,10 @@ import ChatsListScreen from '../screens/chats/ChatsListScreen';
 import TransportScreen from '../screens/transport/TransportScreen';
 import TeacherSyllabusScreen from '../screens/syllabus/TeacherSyllabusScreen';
 import StudentSyllabusScreen from '../screens/syllabus/StudentSyllabusScreen';
+import SubjectsScreen from '../screens/subjects/SubjectsScreen';
+import StudentTimetableScreen from '../screens/timetable/StudentTimetableScreen';
+import TeacherTImetableScreen from '../screens/timetable/TeacherTImetableScreen';
+import ExamMainScreen from '../screens/exam/ExamMainScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -327,7 +331,9 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Timetable"
-        component={MenuPlaceholderScreen}
+        component={
+          role === 'teacher' ? TeacherTImetableScreen : StudentTimetableScreen
+        }
         initialParams={{ title: 'Timetable' }}
       />
       <Drawer.Screen
@@ -342,12 +348,14 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Subjects"
-        component={MenuPlaceholderScreen}
+        component={SubjectsScreen}
         initialParams={{ title: 'Subjects' }}
       />
       <Drawer.Screen
         name="Syllabus"
-        component={role === 'teacher' ? TeacherSyllabusScreen : StudentSyllabusScreen}
+        component={
+          role === 'teacher' ? TeacherSyllabusScreen : StudentSyllabusScreen
+        }
         initialParams={{ title: 'Syllabus' }}
       />
       <Drawer.Screen
@@ -382,21 +390,15 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Exams"
-        component={MenuPlaceholderScreen}
-        initialParams={{
-          title:
-            role === 'teacher' ? 'Exams (Upload Marks, Exam Copies)' : 'Exams',
-        }}
+        component={ExamMainScreen}
+        initialParams={{ title: 'Exams' }}
       />
       <Drawer.Screen
         name="Performance"
         component={MenuPlaceholderScreen}
         initialParams={{ title: 'Performance' }}
       />
-      <Drawer.Screen
-        name="ContactSchool"
-        component={PastQueriesScreen}
-      />
+      <Drawer.Screen name="ContactSchool" component={PastQueriesScreen} />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
       <Drawer.Screen
         name="NotificationSettings"
@@ -414,36 +416,6 @@ const DrawerNavigator = ({ route }: any) => {
         initialParams={{ title: 'Change Password' }}
       />
       <Drawer.Screen name="More" component={MoreScreen} />
-      {/* <Drawer.Screen
-        name="AboutAppMore"
-        component={MoreDetailScreen}
-        initialParams={{ title: 'AboutApp' }}
-      />
-      <Drawer.Screen
-        name="SchoolInfoMore"
-        component={MoreDetailScreen}
-        initialParams={{ title: 'SchoolInfo' }}
-      />
-      <Drawer.Screen
-        name="RulesAndRegulationsMore"
-        component={MoreDetailScreen}
-        initialParams={{ title: 'RulesAndRegulations' }}
-      />
-      <Drawer.Screen
-        name="TermsAndConditionsMore"
-        component={MoreDetailScreen}
-        initialParams={{ title: 'TermsAndConditions' }}
-      />
-      <Drawer.Screen
-        name="PrivacyPolicyMore"
-        component={MoreDetailScreen}
-        initialParams={{ title: 'PrivacyPolicy' }}
-      />
-      <Drawer.Screen
-        name="TermsOfUseMore"
-        component={MoreDetailScreen}
-        initialParams={{ title: 'TermsOfUse' }}
-      /> */}
     </Drawer.Navigator>
   );
 };
