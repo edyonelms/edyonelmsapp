@@ -34,6 +34,8 @@ import SubjectsScreen from '../screens/subjects/SubjectsScreen';
 import StudentTimetableScreen from '../screens/timetable/StudentTimetableScreen';
 import TeacherTImetableScreen from '../screens/timetable/TeacherTImetableScreen';
 import ExamMainScreen from '../screens/exam/ExamMainScreen';
+import TeacherQuizScreen from '../screens/quiz/TeacherQuizScreen';
+import StudentQuizScreen from '../screens/quiz/StudentQuizScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -365,7 +367,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Quiz"
-        component={MenuPlaceholderScreen}
+        component={role === 'teacher' ? TeacherQuizScreen : StudentQuizScreen}
         initialParams={{ title: 'Quiz' }}
       />
       <Drawer.Screen
