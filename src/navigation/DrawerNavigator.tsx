@@ -39,6 +39,7 @@ import StudentHomeworkScreen from '../screens/homework/StudentHomeworkScreen';
 import TeacherHomeworkScreen from '../screens/homework/TeacherHomeworkScreen';
 import TeacherContentScreen from '../screens/content/TeacherContentScreen';
 import StudentContentScreen from '../screens/content/StudentContentScreen';
+import markAttendanceScreen from '../screens/markAttendance/markAttendanceScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -345,7 +346,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="MarkAttendance"
-        component={MenuPlaceholderScreen}
+        component={markAttendanceScreen}
         initialParams={{ title: 'Mark Attendance' }}
       />
       <Drawer.Screen
