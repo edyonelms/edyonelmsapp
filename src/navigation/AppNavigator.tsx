@@ -20,11 +20,11 @@ import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
 import ChatsScreen from '../screens/chats/ChatsScreen';
 import ChatsListScreen from '../screens/chats/ChatsListScreen';
 import SubjectDetailsScreen from '../screens/subjects/SubjectDetailsScreen';
+import ChangePasswordScreen from '../screens/setting/ChangePasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
-
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
@@ -59,7 +59,10 @@ const AppNavigator = () => {
       <Stack.Screen name="TermsOfUseMore" component={TermsOfUseScreen} />
 
       {/* Announcement */}
-      <Stack.Screen name="ViewAnnouncement" component={ViewAnnouncementScreen} />
+      <Stack.Screen
+        name="ViewAnnouncement"
+        component={ViewAnnouncementScreen}
+      />
 
       {/* Contact School */}
       <Stack.Screen name="NewQuery" component={ContactSchoolScreen} />
@@ -67,10 +70,12 @@ const AppNavigator = () => {
       {/* Chats */}
       <Stack.Screen name="ChatsList" component={ChatsListScreen} />
       <Stack.Screen name="UserChats" component={ChatsScreen} />
-      
+
       {/* Subjects */}
       <Stack.Screen name="SubjectDetails" component={SubjectDetailsScreen} />
 
+      {/* ChangePasswordScreen */}
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
     </Stack.Navigator>

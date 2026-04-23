@@ -20,20 +20,22 @@ const SettingsScreen = () => {
       icon: 'notifications-outline',
       route: 'NotificationSettings',
     },
-    { title: 'Biometric', icon: 'finger-print-outline', route: 'BiometricSettings' },
+    {
+      title: 'Biometric',
+      icon: 'finger-print-outline',
+      route: 'BiometricSettings',
+    },
     {
       title: 'Change Password',
       icon: 'lock-closed-outline',
-      route: 'ChangePasswordSettings',
+      route: 'ChangePassword',
     },
   ];
 
   return (
     <View style={styles.safeArea}>
       <Header title="Settings" onBackPress={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.subtitle}>Manage your account preferences</Text>
-
+      <ScrollView>
         <View style={styles.card}>
           {items.map(item => (
             <TouchableOpacity
@@ -72,10 +74,7 @@ export default SettingsScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  container: {
-    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.white,
   },
   subtitle: {
     fontSize: 14,
@@ -84,17 +83,13 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
+    marginHorizontal:20,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },

@@ -17,7 +17,6 @@ import SettingsScreen from '../screens/setting/SettingsScreen';
 import { theme } from '../utils/theme';
 import VectorIcon from '../components/VectorIcon';
 import MenuPlaceholderScreen from '../screens/home/MenuPlaceholderScreen';
-import SettingDetailScreen from '../screens/setting/SettingDetailScreen';
 import MoreScreen from '../screens/more/MoreScreen';
 import CalendarScreen from '../screens/calendar/CalendarScreen';
 import AnnouncementScreen from '../screens/announcement/AnnouncementScreen';
@@ -408,21 +407,6 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen name="ContactSchool" component={PastQueriesScreen} />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
-      <Drawer.Screen
-        name="NotificationSettings"
-        component={SettingDetailScreen}
-        initialParams={{ title: 'Notification' }}
-      />
-      <Drawer.Screen
-        name="BiometricSettings"
-        component={SettingDetailScreen}
-        initialParams={{ title: 'Biometric' }}
-      />
-      <Drawer.Screen
-        name="ChangePasswordSettings"
-        component={SettingDetailScreen}
-        initialParams={{ title: 'Change Password' }}
-      />
       <Drawer.Screen name="More" component={MoreScreen} />
     </Drawer.Navigator>
   );
