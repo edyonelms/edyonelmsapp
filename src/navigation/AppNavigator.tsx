@@ -21,6 +21,12 @@ import ChatsScreen from '../screens/chats/ChatsScreen';
 import ChatsListScreen from '../screens/chats/ChatsListScreen';
 import SubjectDetailsScreen from '../screens/subjects/SubjectDetailsScreen';
 import ChangePasswordScreen from '../screens/setting/ChangePasswordScreen';
+import ExamsScreen from '../screens/exam/ExamsScreen';
+import TeacherExamsScreen from '../screens/exam/TeacherExamsScreen';
+import AdmitCardScreen from '../screens/exam/AdmitCardScreen';
+import SeatingPlanScreen from '../screens/exam/SeatingPlanScreen';
+import ExamCopyScreen from '../screens/exam/ExamCopyScreen';
+import ReportCardScreen from '../screens/exam/ReportCardScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -76,6 +82,15 @@ const AppNavigator = () => {
 
       {/* ChangePasswordScreen */}
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+
+      {/* Exam */}
+      <Stack.Screen name="ExamsScreen" component={ExamsScreen} />
+      <Stack.Screen name="TeacherExamsScreen" component={TeacherExamsScreen} />
+      <Stack.Screen name="AdmitCardScreen" component={AdmitCardScreen} />
+      <Stack.Screen name="SeatingPlanScreen" component={SeatingPlanScreen} />
+      <Stack.Screen name="ExamCopyScreen" component={ExamCopyScreen} />
+      <Stack.Screen name="ReportCardScreen" component={ReportCardScreen} />
+
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
     </Stack.Navigator>

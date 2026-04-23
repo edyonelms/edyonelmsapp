@@ -16,35 +16,30 @@ const ExamMainScreen = () => {
 
   const items = [
     {
-      title: 'About App',
-      icon: 'information-circle-outline',
-      route: 'AboutAppMore',
-    },
-    {
-      title: 'School Info',
-      icon: 'school-outline',
-      route: 'SchoolInfoMore',
-    },
-    {
-      title: 'Rules & Regulations',
-      icon: 'document-text-outline',
-      route: 'RulesRegulationsMore',
-    },
-    {
-      title: 'Terms & Conditions',
-      icon: 'reader-outline',
-      route: 'TermsConditionsMore',
-    },
-    {
-      title: 'Privacy Policy',
-      icon: 'shield-checkmark-outline',
-      route: 'PrivacyPolicyMore',
-    },
-    {
-      title: 'Terms of Use',
-      icon: 'clipboard-outline',
-      route: 'TermsOfUseMore',
-    },
+    title: 'Exams',
+    icon: 'calendar-outline',
+    route: 'ExamsScreen',
+  },
+  {
+    title: 'Admit Card',
+    icon: 'card-outline',
+    route: 'AdmitCardScreen',
+  },
+  {
+    title: 'Seating Plan',
+    icon: 'grid-outline',
+    route: 'SeatingPlanScreen',
+  },
+  {
+    title: 'Exam Copy',
+    icon: 'document-outline',
+    route: 'ExamCopyScreen',
+  },
+  {
+    title: 'Report Card',
+    icon: 'stats-chart-outline',
+    route: 'ReportCardScreen',
+  },
   ];
 
   return (
