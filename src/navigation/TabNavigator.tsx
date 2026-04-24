@@ -6,6 +6,12 @@ import { theme } from '../utils/theme';
 
 import StudentHomeScreen from '../screens/home/student/StudentHomeScreen';
 import TeacherHomeScreen from '../screens/home/teacher/TeacherHomeScreen';
+import TeacherHomeworkScreen from '../screens/homework/TeacherHomeworkScreen';
+import StudentHomeworkScreen from '../screens/homework/StudentHomeworkScreen';
+import AttendanceScreen from '../screens/attendance/AttendanceScreen';
+import FeesScreen from '../screens/fees/FeesScreen';
+import { SUBJECTS } from '../screens/subjects/subjectsData';
+import SubjectsScreen from '../screens/subjects/SubjectsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -114,7 +120,7 @@ const TabNavigator = ({ route }: any) => {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardComponent} />
-      <Tab.Screen name="Subjects" component={StudentHomeScreen} />
+      <Tab.Screen name="Subjects" component={SubjectsScreen} />
 
       <Tab.Screen
         name="QuickLinks"
@@ -124,8 +130,16 @@ const TabNavigator = ({ route }: any) => {
         }}
       />
 
-      <Tab.Screen name="Homework" component={StudentHomeScreen} />
-      <Tab.Screen name={lastTabName} component={StudentHomeScreen} />
+      <Tab.Screen
+        name="Homework"
+        component={
+          role === 'teacher' ? TeacherHomeworkScreen : StudentHomeworkScreen
+        }
+      />
+      <Tab.Screen
+        name={lastTabName}
+        component={role === 'teacher' ? AttendanceScreen : FeesScreen}
+      />
     </Tab.Navigator>
   );
 };
