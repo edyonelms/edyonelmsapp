@@ -8,7 +8,12 @@ const TeacherHomeScreen = () => {
   const navigation = useNavigation<any>();
   return (
     <View style={styles.safeArea}>
-      <TopBar onAvatarPress={() => navigation.navigate('TeacherProfile')} />
+      <TopBar
+        onAvatarPress={() => navigation.navigate('TeacherProfile')}
+        onBellPress={() =>
+          navigation.navigate('Notifications', { role: 'teacher' })
+        }
+      />
     </View>
   );
 };

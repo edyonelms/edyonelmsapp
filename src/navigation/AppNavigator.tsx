@@ -28,6 +28,7 @@ import AdmitCardScreen from '../screens/exam/AdmitCardScreen';
 import SeatingPlanScreen from '../screens/exam/SeatingPlanScreen';
 import ExamCopyScreen from '../screens/exam/ExamCopyScreen';
 import ReportCardScreen from '../screens/exam/ReportCardScreen';
+import NotificationScreen from '../screens/notification/NotificationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -92,6 +93,9 @@ const AppNavigator = () => {
       <Stack.Screen name="SeatingPlanScreen" component={SeatingPlanScreen} />
       <Stack.Screen name="ExamCopyScreen" component={ExamCopyScreen} />
       <Stack.Screen name="ReportCardScreen" component={ReportCardScreen} />
+
+      {/* Notifications */}
+      <Stack.Screen name="Notifications" component={NotificationScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />

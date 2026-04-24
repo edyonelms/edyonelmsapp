@@ -8,7 +8,12 @@ const StudentHomeScreen = () => {
   const navigation = useNavigation<any>();
   return (
     <View style={styles.safeArea}>
-      <TopBar onAvatarPress={() => navigation.navigate('StudentProfile')} />
+      <TopBar
+        onAvatarPress={() => navigation.navigate('StudentProfile')}
+        onBellPress={() =>
+          navigation.navigate('Notifications', { role: 'student' })
+        }
+      />
     </View>
   );
 };

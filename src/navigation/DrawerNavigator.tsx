@@ -41,6 +41,7 @@ import TeacherContentScreen from '../screens/content/TeacherContentScreen';
 import StudentContentScreen from '../screens/content/StudentContentScreen';
 import markAttendanceScreen from '../screens/markAttendance/markAttendanceScreen';
 import TeacherExamsScreen from '../screens/exam/TeacherExamsScreen';
+import PerformanceScreen from '../screens/performance/PerformanceScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -404,7 +405,7 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Performance"
-        component={MenuPlaceholderScreen}
+        component={PerformanceScreen}
         initialParams={{ title: 'Performance' }}
       />
       <Drawer.Screen name="ContactSchool" component={PastQueriesScreen} />
