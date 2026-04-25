@@ -12,6 +12,7 @@ import AttendanceScreen from '../screens/attendance/AttendanceScreen';
 import FeesScreen from '../screens/fees/FeesScreen';
 import { SUBJECTS } from '../screens/subjects/subjectsData';
 import SubjectsScreen from '../screens/subjects/SubjectsScreen';
+import QuickLinksScreen from '../screens/home/QuickLinksScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -124,10 +125,9 @@ const TabNavigator = ({ route }: any) => {
 
       <Tab.Screen
         name="QuickLinks"
-        component={StudentHomeScreen}
-        options={{
-          tabBarLabel: '',
-        }}
+        component={QuickLinksScreen}
+        initialParams={{ userRole: role }}
+        options={{ tabBarLabel: '' }}
       />
 
       <Tab.Screen

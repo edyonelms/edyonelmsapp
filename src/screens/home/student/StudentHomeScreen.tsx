@@ -1,6 +1,8 @@
 import React from 'react';
 import {
+  Dimensions,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,358 +17,186 @@ import { EXAMS } from '../../exam/examData';
 import { HOMEWORK_STORE } from '../../homework/homeworkData';
 import moment from 'moment';
 
-// ─── Quick Actions ────────────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  {
-    label: 'Attendance',
-    icon: 'calendar-outline',
-    color: '#16A34A',
-    bg: '#DCFCE7',
-    route: 'Attendance',
-  },
-  {
-    label: 'Exams',
-    icon: 'document-text-outline',
-    color: '#4F46E5',
-    bg: '#E0E7FF',
-    route: 'Exams',
-  },
-  {
-    label: 'Fees',
-    icon: 'card-outline',
-    color: '#D97706',
-    bg: '#FEF3C7',
-    route: 'Fees',
-  },
-  {
-    label: 'Homework',
-    icon: 'book-outline',
-    color: '#7C3AED',
-    bg: '#EDE9FE',
-    route: 'Homework',
-  },
-  {
-    label: 'Timetable',
-    icon: 'time-outline',
-    color: '#0EA5E9',
-    bg: '#E0F2FE',
-    route: 'Timetable',
-  },
-  {
-    label: 'Syllabus',
-    icon: 'layers-outline',
-    color: '#DC2626',
-    bg: '#FEE2E2',
-    route: 'Syllabus',
-  },
-  {
-    label: 'Results',
-    icon: 'stats-chart-outline',
-    color: '#16A34A',
-    bg: '#DCFCE7',
-    route: 'Performance',
-  },
-  {
-    label: 'More',
-    icon: 'grid-outline',
-    color: '#64748B',
-    bg: '#F1F5F9',
-    route: 'More',
-  },
-];
+const { width } = Dimensions.get('window');
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const getGreeting = () => {
   const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (h < 12) return { text: 'Good Morning', emoji: '☀️' };
+  if (h < 17) return { text: 'Good Afternoon', emoji: '🌤️' };
+  return { text: 'Good Evening', emoji: '🌙' };
 };
+
+const NOTICES = [
+  { title: 'School Closed on 26 Apr', time: '2 hrs ago',  icon: 'megaphone-outline', color: '#0EA5E9', bg: '#E0F2FE' },
+  { title: 'Annual Sports Day — 5 May', time: '2 days ago', icon: 'trophy-outline',  color: '#D97706', bg: '#FEF3C7' },
+  { title: 'Fee Due: 30 Apr 2026',    time: '3 days ago', icon: 'card-outline',      color: '#DC2626', bg: '#FEE2E2' },
+];
 
 const StudentHomeScreen = () => {
   const navigation = useNavigation<any>();
   const stats = computeStats(moment().format('YYYY-MM'));
-
-  const upcomingExams = EXAMS.filter(
-    e => e.status === 'Published' || e.status === 'Upcoming',
-  ).slice(0, 3);
-  const recentHW = HOMEWORK_STORE.slice(0, 3);
+  const greeting = getGreeting();
   const attendancePct = parseFloat(stats.presentPct);
+  const upcomingExams = EXAMS.filter(e => e.status === 'Published' || e.status === 'Upcoming').slice(0, 3);
+  const recentHW = HOMEWORK_STORE.slice(0, 3);
 
   return (
     <View style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       <TopBar
         onAvatarPress={() => navigation.navigate('StudentProfile')}
-        onBellPress={() =>
-          navigation.navigate('Notifications', { role: 'student' })
-        }
+        onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
       />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-      >
-        {/* ── Greeting Banner ── */}
-        <View style={s.banner}>
-          <View style={s.bannerContent}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.greeting}>{getGreeting()} 👋</Text>
-              <Text style={s.studentName}>Rahul Sharma</Text>
-              <Text style={s.bannerSub}>Class 9A · Roll No. 24</Text>
-            </View>
-            <View style={s.avatarCircle}>
-              <Text style={s.avatarText}>RS</Text>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+
+        {/* ── Hero Card ── */}
+        <View style={s.hero}>
+          <View style={s.heroLeft}>
+            <Text style={s.heroGreeting}>{greeting.emoji} {greeting.text}</Text>
+            <Text style={s.heroName}>Rahul Sharma</Text>
+            <View style={s.heroBadge}>
+              <VectorIcon iconSet="Ionicons" iconName="school-outline" size={11} color={theme.colors.primary} />
+              <Text style={s.heroBadgeText}>Class 9A · Roll No. 24</Text>
             </View>
           </View>
-
-          {/* Attendance pill inside banner */}
-          <View style={s.attendancePill}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="checkmark-circle"
-              size={14}
-              color="#fff"
-            />
-            <Text style={s.attendancePillText}>
-              Attendance: {stats.presentPct}%
-            </Text>
-            <View style={s.attendanceBar}>
-              <View
-                style={[
-                  s.attendanceBarFill,
-                  { width: `${Math.min(attendancePct, 100)}%` as any },
-                ]}
-              />
-            </View>
+          <View style={s.heroAvatar}>
+            <Text style={s.heroAvatarText}>RS</Text>
+            <View style={s.heroAvatarRing} />
           </View>
         </View>
 
-        {/* ── Stats Row ── */}
-        <View style={s.statsRow}>
+        {/* ── Stats Scroll ── */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
           {[
-            {
-              label: 'Present',
-              value: String(stats.presentDays),
-              color: theme.colors.success,
-              bg: '#DCFCE7',
-              icon: 'checkmark-circle-outline',
-            },
-            {
-              label: 'Absent',
-              value: String(stats.absentDays),
-              color: theme.colors.danger,
-              bg: '#FEE2E2',
-              icon: 'close-circle-outline',
-            },
-            {
-              label: 'Leave',
-              value: String(stats.leaveDays),
-              color: '#D97706',
-              bg: '#FEF3C7',
-              icon: 'time-outline',
-            },
-            {
-              label: 'Homework',
-              value: String(HOMEWORK_STORE.length),
-              color: '#7C3AED',
-              bg: '#EDE9FE',
-              icon: 'book-outline',
-            },
-          ].map(item => (
-            <View
-              key={item.label}
-              style={[s.statCard, { backgroundColor: item.bg }]}
-            >
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName={item.icon}
-                size={18}
-                color={item.color}
-              />
-              <Text style={[s.statValue, { color: item.color }]}>
-                {item.value}
-              </Text>
-              <Text style={s.statLabel}>{item.label}</Text>
-            </View>
+            { label: 'Present',    value: stats.presentDays,  color: '#16A34A', bg: '#DCFCE7', icon: 'checkmark-circle', sub: `${stats.presentPct}%` },
+            { label: 'Absent',     value: stats.absentDays,   color: '#DC2626', bg: '#FEE2E2', icon: 'close-circle',     sub: `${stats.absentPct}%` },
+            { label: 'Leave',      value: stats.leaveDays,    color: '#D97706', bg: '#FEF3C7', icon: 'time',             sub: 'days' },
+            { label: 'Homework',   value: HOMEWORK_STORE.length, color: '#7C3AED', bg: '#EDE9FE', icon: 'book',          sub: 'tasks' },
+            { label: 'Exams',      value: upcomingExams.length,  color: '#4F46E5', bg: '#E0E7FF', icon: 'document-text', sub: 'upcoming' },
+          ].map(st => (
+            <TouchableOpacity key={st.label} style={[s.statCard, { backgroundColor: st.bg }]} activeOpacity={0.8}>
+              <View style={[s.statIconWrap, { backgroundColor: st.color + '22' }]}>
+                <VectorIcon iconSet="Ionicons" iconName={st.icon} size={20} color={st.color} />
+              </View>
+              <Text style={[s.statValue, { color: st.color }]}>{st.value}</Text>
+              <Text style={s.statLabel}>{st.label}</Text>
+              <Text style={[s.statSub, { color: st.color + 'AA' }]}>{st.sub}</Text>
+            </TouchableOpacity>
           ))}
+        </ScrollView>
+
+        {/* ── Attendance Progress ── */}
+        <View style={s.attCard}>
+          <View style={s.attTop}>
+            <View>
+              <Text style={s.attTitle}>Monthly Attendance</Text>
+              <Text style={s.attSub}>{moment().format('MMMM YYYY')}</Text>
+            </View>
+            <View style={[s.attPctBadge, { backgroundColor: attendancePct >= 75 ? '#DCFCE7' : '#FEE2E2' }]}>
+              <Text style={[s.attPct, { color: attendancePct >= 75 ? '#16A34A' : '#DC2626' }]}>{stats.presentPct}%</Text>
+            </View>
+          </View>
+          <View style={s.attBarBg}>
+            <View style={[s.attBarFill, {
+              width: `${Math.min(attendancePct, 100)}%` as any,
+              backgroundColor: attendancePct >= 75 ? '#16A34A' : '#DC2626',
+            }]} />
+          </View>
+          <View style={s.attLegend}>
+            {[
+              { label: 'Present', val: stats.presentDays, color: '#16A34A' },
+              { label: 'Absent',  val: stats.absentDays,  color: '#DC2626' },
+              { label: 'Leave',   val: stats.leaveDays,   color: '#D97706' },
+            ].map(l => (
+              <View key={l.label} style={s.attLegendItem}>
+                <View style={[s.attDot, { backgroundColor: l.color }]} />
+                <Text style={s.attLegendText}>{l.label}: <Text style={{ color: l.color, fontWeight: '700' }}>{l.val}</Text></Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* ── Upcoming Exams ── */}
-        <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>Upcoming Exams</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Exams')}
-              activeOpacity={0.7}
-            >
-              <Text style={s.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          {upcomingExams.length === 0 ? (
-            <View style={s.emptyCard}>
-              <Text style={s.emptyText}>No upcoming exams</Text>
+        {upcomingExams.length > 0 && (
+          <View style={s.section}>
+            <View style={s.sectionRow}>
+              <Text style={s.sectionTitle}>Upcoming Exams</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Exams')} activeOpacity={0.7}>
+                <Text style={s.seeAll}>See All →</Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            upcomingExams.map(exam => {
-              const sc =
-                exam.status === 'Published'
-                  ? { color: '#16A34A', bg: '#DCFCE7' }
-                  : { color: '#D97706', bg: '#FEF3C7' };
-              return (
-                <TouchableOpacity
-                  key={exam.id}
-                  style={s.examCard}
-                  onPress={() => navigation.navigate('ExamDetail', { exam })}
-                  activeOpacity={0.85}
-                >
-                  <View style={[s.examAccent, { backgroundColor: sc.color }]} />
-                  <View style={s.examBody}>
-                    <View style={s.examTop}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.examName}>{exam.name}</Text>
-                        <Text style={s.examType}>
-                          {exam.type} · {exam.academicYear}
-                        </Text>
-                      </View>
-                      <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
-                        <View
-                          style={[s.statusDot, { backgroundColor: sc.color }]}
-                        />
-                        <Text style={[s.statusText, { color: sc.color }]}>
-                          {exam.status}
-                        </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+              {upcomingExams.map(exam => {
+                const sc = exam.status === 'Published' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
+                return (
+                  <TouchableOpacity key={exam.id} style={s.examCard} onPress={() => navigation.navigate('ExamDetail', { exam })} activeOpacity={0.85}>
+                    <View style={[s.examTop, { backgroundColor: sc.bg }]}>
+                      <VectorIcon iconSet="Ionicons" iconName="document-text-outline" size={22} color={sc.color} />
+                      <View style={[s.examStatusDot, { backgroundColor: sc.color }]} />
+                    </View>
+                    <View style={s.examBody}>
+                      <Text style={s.examName}>{exam.name}</Text>
+                      <Text style={s.examType}>{exam.type}</Text>
+                      <View style={s.examDateRow}>
+                        <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={11} color={theme.colors.textMuted} />
+                        <Text style={s.examDate}>{exam.dateRange}</Text>
                       </View>
                     </View>
-                    <View style={s.examDateRow}>
-                      <VectorIcon
-                        iconSet="Ionicons"
-                        iconName="time-outline"
-                        size={13}
-                        color={theme.colors.textMuted}
-                      />
-                      <Text style={s.examDate}>{exam.dateRange}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
 
         {/* ── Recent Homework ── */}
-        <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>Recent Homework</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Homework')}
-              activeOpacity={0.7}
-            >
-              <Text style={s.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          {recentHW.length === 0 ? (
-            <View style={s.emptyCard}>
-              <Text style={s.emptyText}>No homework assigned</Text>
+        {recentHW.length > 0 && (
+          <View style={s.section}>
+            <View style={s.sectionRow}>
+              <Text style={s.sectionTitle}>Recent Homework</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Homework')} activeOpacity={0.7}>
+                <Text style={s.seeAll}>See All →</Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            recentHW.map(hw => (
+            {recentHW.map(hw => (
               <View key={hw.id} style={s.hwCard}>
-                <View
-                  style={[s.hwAccent, { backgroundColor: hw.subjectColor }]}
-                />
-                <View style={s.hwBody}>
-                  <View style={s.hwTop}>
-                    <View
-                      style={[
-                        s.hwSubjectBadge,
-                        { backgroundColor: hw.subjectColor + '20' },
-                      ]}
-                    >
-                      <Text style={s.hwSubjectIcon}>{hw.subjectIcon}</Text>
-                      <Text
-                        style={[s.hwSubjectName, { color: hw.subjectColor }]}
-                      >
-                        {hw.subjectName}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        s.dueBadge,
-                        { backgroundColor: hw.subjectColor + '20' },
-                      ]}
-                    >
-                      <VectorIcon
-                        iconSet="Ionicons"
-                        iconName="calendar-outline"
-                        size={11}
-                        color={hw.subjectColor}
-                      />
-                      <Text style={[s.dueText, { color: hw.subjectColor }]}>
-                        {hw.dueDate}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={s.hwTitle} numberOfLines={1}>
-                    {hw.title}
-                  </Text>
-                  <Text style={s.hwDesc} numberOfLines={2}>
-                    {hw.description}
-                  </Text>
+                <View style={[s.hwStripe, { backgroundColor: hw.subjectColor }]} />
+                <View style={[s.hwIconWrap, { backgroundColor: hw.subjectColor + '18' }]}>
+                  <Text style={s.hwEmoji}>{hw.subjectIcon}</Text>
+                </View>
+                <View style={s.hwContent}>
+                  <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
+                  <Text style={s.hwSubject} numberOfLines={1}>{hw.subjectName}</Text>
+                </View>
+                <View style={[s.hwDueBadge, { backgroundColor: hw.subjectColor + '18' }]}>
+                  <Text style={[s.hwDueText, { color: hw.subjectColor }]}>{hw.dueDate}</Text>
                 </View>
               </View>
-            ))
-          )}
-        </View>
+            ))}
+          </View>
+        )}
 
         {/* ── Notice Board ── */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Notice Board</Text>
-          {[
-            {
-              title: 'School Closed on 26 Apr',
-              time: '2 hrs ago',
-              icon: 'megaphone-outline',
-              color: '#0EA5E9',
-              bg: '#E0F2FE',
-            },
-            {
-              title: 'Annual Sports Day — 5 May 2026',
-              time: '2 days ago',
-              icon: 'trophy-outline',
-              color: '#D97706',
-              bg: '#FEF3C7',
-            },
-            {
-              title: 'Fee Payment Due: 30 Apr 2026',
-              time: '3 days ago',
-              icon: 'card-outline',
-              color: '#DC2626',
-              bg: '#FEE2E2',
-            },
-          ].map((n, i) => (
-            <View key={i} style={s.noticeCard}>
-              <View style={[s.noticeIcon, { backgroundColor: n.bg }]}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName={n.icon}
-                  size={18}
-                  color={n.color}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.noticeTitle}>{n.title}</Text>
-                <Text style={s.noticeTime}>{n.time}</Text>
-              </View>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="chevron-forward"
-                size={16}
-                color={theme.colors.textMuted}
-              />
-            </View>
-          ))}
+          <View style={s.noticeList}>
+            {NOTICES.map((n, i) => (
+              <TouchableOpacity key={i} style={s.noticeCard} activeOpacity={0.8}>
+                <View style={[s.noticeIconWrap, { backgroundColor: n.bg }]}>
+                  <VectorIcon iconSet="Ionicons" iconName={n.icon} size={18} color={n.color} />
+                </View>
+                <View style={s.noticeContent}>
+                  <Text style={s.noticeTitle}>{n.title}</Text>
+                  <Text style={s.noticeTime}>{n.time}</Text>
+                </View>
+                <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </View>
   );
@@ -374,241 +204,127 @@ const StudentHomeScreen = () => {
 
 export default StudentHomeScreen;
 
+const CARD_W = width * 0.38;
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 20 },
 
-  // Banner
-  banner: {
+  // Hero
+  hero: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.md,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg, padding: theme.spacing.lg,
+    borderWidth: 1, borderColor: theme.colors.border,
+    elevation: 2,
+  },
+  heroLeft: { flex: 1, gap: 4 },
+  heroGreeting: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: '500' },
+  heroName: { fontSize: 22, fontWeight: '800', color: theme.colors.textPrimary },
+  heroBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start',
+    backgroundColor: theme.colors.primaryLight,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: theme.radius.full,
+  },
+  heroBadgeText: { fontSize: 11, fontWeight: '600', color: theme.colors.primary },
+  heroAvatar: { alignItems: 'center', justifyContent: 'center' },
+  heroAvatarText: {
+    width: 54, height: 54, borderRadius: 27,
     backgroundColor: theme.colors.primary,
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.md,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
-    overflow: 'hidden',
-    elevation: 4,
+    textAlign: 'center', textAlignVertical: 'center',
+    fontSize: 18, fontWeight: '800', color: '#fff',
+    lineHeight: 54,
   },
-  bannerBlob1: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    top: -50,
-    right: -30,
-  },
-  bannerBlob2: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    bottom: -30,
-    left: 20,
-  },
-  bannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  greeting: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-  studentName: { fontSize: 22, fontWeight: '800', color: '#fff', marginTop: 2 },
-  bannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 3 },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-  avatarText: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  attendancePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  attendancePillText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  attendanceBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  attendanceBarFill: {
-    height: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 2,
+  heroAvatarRing: {
+    position: 'absolute', width: 62, height: 62, borderRadius: 31,
+    borderWidth: 2, borderColor: theme.colors.primaryLight,
   },
 
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.md,
-    gap: 8,
-  },
+  // Stats scroll
+  statsScroll: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, gap: 10 },
   statCard: {
-    flex: 1,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 4,
+    width: 90, borderRadius: theme.radius.md,
+    padding: 12, alignItems: 'center', gap: 4,
+    elevation: 1,
   },
-  statValue: { fontSize: 18, fontWeight: '800' },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
+  statIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: 20, fontWeight: '900' },
+  statLabel: { fontSize: 10, fontWeight: '700', color: theme.colors.textSecondary },
+  statSub: { fontSize: 9, fontWeight: '600' },
+
+  // Attendance card
+  attCard: {
+    marginHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg, padding: theme.spacing.md,
+    borderWidth: 1, borderColor: theme.colors.border,
+    gap: 10, elevation: 1,
   },
+  attTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  attTitle: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  attSub: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
+  attPctBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radius.full },
+  attPct: { fontSize: 14, fontWeight: '800' },
+  attBarBg: { height: 8, backgroundColor: theme.colors.border, borderRadius: 4, overflow: 'hidden' },
+  attBarFill: { height: '100%', borderRadius: 4 },
+  attLegend: { flexDirection: 'row', gap: 14 },
+  attLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  attDot: { width: 7, height: 7, borderRadius: 4 },
+  attLegendText: { fontSize: 11, color: theme.colors.textSecondary },
 
   // Section
   section: { marginTop: theme.spacing.lg, paddingHorizontal: theme.spacing.lg },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginBottom: 10,
-  },
-  seeAll: { fontSize: 13, fontWeight: '600', color: theme.colors.primary },
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 10 },
+  seeAll: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
 
   // Quick actions
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  quickItem: { width: '22%', alignItems: 'center', gap: 6 },
-  quickIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: theme.radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
+  qaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  qaItem: { width: '22%', alignItems: 'center', gap: 6 },
+  qaIcon: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', elevation: 1 },
+  qaLabel: { fontSize: 10.5, fontWeight: '700', color: theme.colors.textSecondary, textAlign: 'center' },
 
-  // Exam card
+  // Exam cards (horizontal)
   examCard: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-    marginBottom: 10,
-    elevation: 1,
+    width: CARD_W, backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md, overflow: 'hidden',
+    borderWidth: 1, borderColor: theme.colors.border, elevation: 2,
   },
-  examAccent: { width: 4 },
-  examBody: { flex: 1, padding: 12, gap: 6 },
-  examTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  examName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
-  examType: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: theme.radius.full,
-  },
-  statusDot: { width: 5, height: 5, borderRadius: 3 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  examDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  examDate: { fontSize: 12, color: theme.colors.textSecondary },
+  examTop: { padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  examStatusDot: { width: 8, height: 8, borderRadius: 4 },
+  examBody: { padding: 12, paddingTop: 0, gap: 3 },
+  examName: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
+  examType: { fontSize: 11, color: theme.colors.textSecondary },
+  examDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  examDate: { fontSize: 11, color: theme.colors.textMuted },
 
-  // HW card
+  // HW cards
   hwCard: {
-    flexDirection: 'row',
+    flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    overflow: 'hidden',
-    marginBottom: 10,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border,
+    overflow: 'hidden', marginBottom: 8, padding: 10, elevation: 1,
   },
-  hwAccent: { width: 4 },
-  hwBody: { flex: 1, padding: 12, gap: 6 },
-  hwTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  hwSubjectBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: theme.radius.full,
-  },
-  hwSubjectIcon: { fontSize: 12 },
-  hwSubjectName: { fontSize: 11, fontWeight: '700' },
-  dueBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: theme.radius.full,
-  },
-  dueText: { fontSize: 11, fontWeight: '700' },
+  hwStripe: { width: 3, height: '100%', position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 2 },
+  hwIconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+  hwEmoji: { fontSize: 18 },
+  hwContent: { flex: 1 },
   hwTitle: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
-  hwDesc: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 17 },
+  hwSubject: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
+  hwDueBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.radius.full },
+  hwDueText: { fontSize: 10, fontWeight: '700' },
 
   // Notice
+  noticeList: { gap: 8 },
   noticeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border,
+    padding: 12, elevation: 1,
   },
-  noticeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noticeTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-  },
+  noticeIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  noticeContent: { flex: 1 },
+  noticeTitle: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
   noticeTime: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
-
-  // Empty
-  emptyCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: { fontSize: 13, color: theme.colors.textMuted },
 });

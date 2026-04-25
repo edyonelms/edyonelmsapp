@@ -42,6 +42,7 @@ import StudentContentScreen from '../screens/content/StudentContentScreen';
 import markAttendanceScreen from '../screens/markAttendance/markAttendanceScreen';
 import TeacherExamsScreen from '../screens/exam/TeacherExamsScreen';
 import PerformanceScreen from '../screens/performance/PerformanceScreen';
+import AnalyticsScreen from '../screens/analytics/AnalyticsScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -118,6 +119,12 @@ const DrawerNavigator = ({ route }: any) => {
       { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
       { name: 'Exams', label: 'Exams', icon: 'create-outline' },
+      {
+        name: 'Upload marks',
+        label: 'Upload marks',
+        icon: 'cloud-upload-outline',
+      },
+      { name: 'Upload copy', label: 'Upload copy', icon: 'copy-outline' },
       { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
       { name: 'Settings', label: 'Settings', icon: 'settings-outline' },
       { name: 'More', label: 'More', icon: 'ellipsis-horizontal-outline' },
@@ -309,8 +316,8 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Analytics"
-        component={MenuPlaceholderScreen}
-        initialParams={{ title: 'Analytics' }}
+        component={AnalyticsScreen}
+        initialParams={{ userRole: role }}
       />
       <Drawer.Screen
         name="Fees"
@@ -370,7 +377,9 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Content"
-        component={role === 'teacher' ? TeacherContentScreen : StudentContentScreen}
+        component={
+          role === 'teacher' ? TeacherContentScreen : StudentContentScreen
+        }
         initialParams={{ title: 'Content' }}
       />
       <Drawer.Screen
@@ -400,8 +409,18 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="Exams"
-        component={ role === 'teacher' ? TeacherExamsScreen : ExamMainScreen}
+        component={role === 'teacher' ? TeacherExamsScreen : ExamMainScreen}
         initialParams={{ title: 'Exams' }}
+      />
+      <Drawer.Screen
+        name="UploadMarks"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Upload Marks' }}
+      />
+      <Drawer.Screen
+        name="UploadCopy"
+        component={MenuPlaceholderScreen}
+        initialParams={{ title: 'Upload Copy' }}
       />
       <Drawer.Screen
         name="Performance"

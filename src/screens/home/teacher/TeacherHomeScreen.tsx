@@ -1,6 +1,8 @@
 import React from 'react';
 import {
+  Dimensions,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,373 +15,205 @@ import { theme } from '../../../utils/theme';
 import { HOMEWORK_STORE } from '../../homework/homeworkData';
 import { EXAMS } from '../../exam/examData';
 
-// ─── Today's Classes ──────────────────────────────────────────────────────────
-const TODAY_CLASSES = [
-  {
-    subject: 'Mathematics',
-    class: 'Class 9A',
-    time: '08:00 - 08:45',
-    room: 'R-101',
-    icon: '📐',
-    color: '#0EA5E9',
-    bg: '#E0F2FE',
-  },
-  {
-    subject: 'Mathematics',
-    class: 'Class 8B',
-    time: '09:00 - 09:45',
-    room: 'R-203',
-    icon: '📐',
-    color: '#0EA5E9',
-    bg: '#E0F2FE',
-  },
-  {
-    subject: 'Mathematics',
-    class: 'Class 10A',
-    time: '11:00 - 11:45',
-    room: 'R-105',
-    icon: '📐',
-    color: '#0EA5E9',
-    bg: '#E0F2FE',
-  },
-  {
-    subject: 'Mathematics',
-    class: 'Class 7C',
-    time: '02:00 - 02:45',
-    room: 'R-302',
-    icon: '📐',
-    color: '#0EA5E9',
-    bg: '#E0F2FE',
-  },
-];
+const { width } = Dimensions.get('window');
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const getGreeting = () => {
   const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (h < 12) return { text: 'Good Morning', emoji: '☀️' };
+  if (h < 17) return { text: 'Good Afternoon', emoji: '🌤️' };
+  return { text: 'Good Evening', emoji: '🌙' };
 };
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+const TODAY_CLASSES = [
+  { subject: 'Mathematics', class: 'Class 9A',  time: '08:00', room: 'R-101', done: true  },
+  { subject: 'Mathematics', class: 'Class 8B',  time: '09:00', room: 'R-203', done: true  },
+  { subject: 'Mathematics', class: 'Class 10A', time: '11:00', room: 'R-105', done: false },
+  { subject: 'Mathematics', class: 'Class 7C',  time: '14:00', room: 'R-302', done: false },
+];
+
+
+const NOTICES = [
+  { title: 'Staff Meeting — 25 Apr 2026',  time: '1 hr ago',  icon: 'people-outline',   color: '#4F46E5', bg: '#E0E7FF' },
+  { title: 'IA 1 Paper Submission Due',    time: '2 hrs ago', icon: 'document-outline', color: '#DC2626', bg: '#FEE2E2' },
+  { title: 'School Closed on 26 Apr',      time: '3 hrs ago', icon: 'megaphone-outline', color: '#0EA5E9', bg: '#E0F2FE' },
+];
+
 const TeacherHomeScreen = () => {
   const navigation = useNavigation<any>();
-
-  const upcomingExams = EXAMS.filter(
-    e => e.status === 'Published' || e.status === 'Upcoming',
-  ).slice(0, 2);
-
+  const greeting = getGreeting();
+  const upcomingExams = EXAMS.filter(e => e.status === 'Published' || e.status === 'Upcoming').slice(0, 2);
   const pendingHW = HOMEWORK_STORE.slice(0, 3);
+  const doneClasses = TODAY_CLASSES.filter(c => c.done).length;
 
   return (
     <View style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       <TopBar
         userName="Mr. Arjun Verma"
         onAvatarPress={() => navigation.navigate('TeacherProfile')}
-        onBellPress={() =>
-          navigation.navigate('Notifications', { role: 'teacher' })
-        }
+        onBellPress={() => navigation.navigate('Notifications', { role: 'teacher' })}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-      >
-        {/* ── Greeting Banner ── */}
-        <View style={s.banner}>
-          <View style={s.bannerRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.greeting}>{getGreeting()} 👋</Text>
-              <Text style={s.teacherName}>Mr. Arjun Verma</Text>
-              <Text style={s.bannerSub}>Mathematics · Senior Teacher</Text>
-            </View>
-            <View style={s.avatarCircle}>
-              <Text style={s.avatarText}>AV</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+
+        {/* ── Hero ── */}
+        <View style={s.hero}>
+          <View style={s.heroLeft}>
+            <Text style={s.heroGreeting}>{greeting.emoji} {greeting.text}</Text>
+            <Text style={s.heroName}>Mr. Arjun Verma</Text>
+            <View style={s.heroBadge}>
+              <VectorIcon iconSet="Ionicons" iconName="ribbon-outline" size={11} color="#fff" />
+              <Text style={s.heroBadgeText}>Mathematics · Senior Teacher</Text>
             </View>
           </View>
-
-          {/* Today summary pills */}
-          <View style={s.pillsRow}>
-            <View style={s.pill}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="calendar-outline"
-                size={13}
-                color="#fff"
-              />
-              <Text style={s.pillText}>
-                {TODAY_CLASSES.length} Classes Today
-              </Text>
+          <View style={s.heroRight}>
+            <View style={s.heroAvatar}>
+              <Text style={s.heroAvatarText}>AV</Text>
             </View>
-            <View style={s.pill}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="people-outline"
-                size={13}
-                color="#fff"
-              />
-              <Text style={s.pillText}>4 Classes</Text>
-            </View>
+            <View style={s.heroAvatarRing} />
           </View>
         </View>
 
-        {/* ── Stats Row ── */}
-        <View style={s.statsRow}>
+        {/* ── Stats Scroll ── */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
           {[
-            {
-              label: 'Classes',
-              value: String(TODAY_CLASSES.length),
-              color: '#4F46E5',
-              bg: '#E0E7FF',
-              icon: 'school-outline',
-            },
-            {
-              label: 'Students',
-              value: '148',
-              color: '#16A34A',
-              bg: '#DCFCE7',
-              icon: 'people-outline',
-            },
-            {
-              label: 'Homework',
-              value: String(HOMEWORK_STORE.length),
-              color: '#7C3AED',
-              bg: '#EDE9FE',
-              icon: 'book-outline',
-            },
-            {
-              label: 'Exams',
-              value: String(upcomingExams.length),
-              color: '#D97706',
-              bg: '#FEF3C7',
-              icon: 'document-text-outline',
-            },
-          ].map(item => (
-            <View
-              key={item.label}
-              style={[s.statCard, { backgroundColor: item.bg }]}
-            >
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName={item.icon}
-                size={18}
-                color={item.color}
-              />
-              <Text style={[s.statValue, { color: item.color }]}>
-                {item.value}
-              </Text>
-              <Text style={s.statLabel}>{item.label}</Text>
+            { label: 'Classes',  value: TODAY_CLASSES.length, color: '#4F46E5', bg: '#E0E7FF', icon: 'school',          sub: 'today' },
+            { label: 'Done',     value: doneClasses,          color: '#16A34A', bg: '#DCFCE7', icon: 'checkmark-circle', sub: 'classes' },
+            { label: 'Students', value: 148,                  color: '#0EA5E9', bg: '#E0F2FE', icon: 'people',           sub: 'total' },
+            { label: 'Homework', value: HOMEWORK_STORE.length, color: '#7C3AED', bg: '#EDE9FE', icon: 'book',            sub: 'assigned' },
+            { label: 'Exams',    value: upcomingExams.length, color: '#D97706', bg: '#FEF3C7', icon: 'document-text',    sub: 'upcoming' },
+          ].map(st => (
+            <View key={st.label} style={[s.statCard, { backgroundColor: st.bg }]}>
+              <View style={[s.statIconWrap, { backgroundColor: st.color + '22' }]}>
+                <VectorIcon iconSet="Ionicons" iconName={st.icon} size={20} color={st.color} />
+              </View>
+              <Text style={[s.statValue, { color: st.color }]}>{st.value}</Text>
+              <Text style={s.statLabel}>{st.label}</Text>
+              <Text style={[s.statSub, { color: st.color + 'AA' }]}>{st.sub}</Text>
             </View>
           ))}
-        </View>
+        </ScrollView>
 
-        {/* ── Today's Classes ── */}
+        {/* ── Today's Classes Timeline ── */}
         <View style={s.section}>
-          <View style={s.sectionHeader}>
+          <View style={s.sectionRow}>
             <Text style={s.sectionTitle}>Today's Classes</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Timetable')}
-              activeOpacity={0.7}
-            >
-              <Text style={s.seeAll}>See All</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Timetable')} activeOpacity={0.7}>
+              <Text style={s.seeAll}>See All →</Text>
             </TouchableOpacity>
           </View>
-          {TODAY_CLASSES.map((cls, i) => (
-            <View key={i} style={s.classCard}>
-              <View style={[s.classIconWrap, { backgroundColor: cls.bg }]}>
-                <Text style={s.classEmoji}>{cls.icon}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.classSubject}>{cls.subject}</Text>
-                <Text style={s.classMeta}>
-                  {cls.class} · Room {cls.room}
-                </Text>
-              </View>
-              <View style={[s.timeBadge, { backgroundColor: cls.bg }]}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="time-outline"
-                  size={11}
-                  color={cls.color}
-                />
-                <Text style={[s.timeText, { color: cls.color }]}>
-                  {cls.time}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* ── Pending Homework ── */}
-        <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>Assigned Homework</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Homework')}
-              activeOpacity={0.7}
-            >
-              <Text style={s.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          {pendingHW.length === 0 ? (
-            <View style={s.emptyCard}>
-              <Text style={s.emptyText}>No homework assigned</Text>
-            </View>
-          ) : (
-            pendingHW.map(hw => (
-              <View key={hw.id} style={s.hwCard}>
-                <View
-                  style={[s.hwAccent, { backgroundColor: hw.subjectColor }]}
-                />
-                <View style={s.hwBody}>
-                  <View style={s.hwTop}>
-                    <View
-                      style={[
-                        s.hwBadge,
-                        { backgroundColor: hw.subjectColor + '20' },
-                      ]}
-                    >
-                      <Text style={s.hwIcon}>{hw.subjectIcon}</Text>
-                      <Text style={[s.hwSubject, { color: hw.subjectColor }]}>
-                        {hw.subjectName}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        s.dueBadge,
-                        { backgroundColor: hw.subjectColor + '20' },
-                      ]}
-                    >
-                      <VectorIcon
-                        iconSet="Ionicons"
-                        iconName="calendar-outline"
-                        size={11}
-                        color={hw.subjectColor}
-                      />
-                      <Text style={[s.dueText, { color: hw.subjectColor }]}>
-                        {hw.dueDate}
-                      </Text>
-                    </View>
+          <View style={s.timeline}>
+            {TODAY_CLASSES.map((cls, i) => (
+              <View key={i} style={s.timelineRow}>
+                {/* Time column */}
+                <View style={s.timelineLeft}>
+                  <Text style={[s.timelineTime, cls.done && s.timelineDone]}>{cls.time}</Text>
+                  {i < TODAY_CLASSES.length - 1 && <View style={[s.timelineLine, cls.done && s.timelineLineDone]} />}
+                </View>
+                {/* Dot */}
+                <View style={[s.timelineDot, cls.done ? s.timelineDotDone : s.timelineDotPending]}>
+                  {cls.done && <VectorIcon iconSet="Ionicons" iconName="checkmark" size={10} color="#fff" />}
+                </View>
+                {/* Card */}
+                <View style={[s.timelineCard, cls.done && s.timelineCardDone]}>
+                  <View style={s.timelineCardLeft}>
+                    <Text style={[s.timelineSubject, cls.done && { color: theme.colors.textMuted }]}>{cls.subject}</Text>
+                    <Text style={s.timelineMeta}>{cls.class} · Room {cls.room}</Text>
                   </View>
-                  <Text style={s.hwTitle} numberOfLines={1}>
-                    {hw.title}
-                  </Text>
-                  <Text style={s.hwDesc} numberOfLines={2}>
-                    {hw.description}
-                  </Text>
+                  {!cls.done && (
+                    <View style={s.upcomingBadge}>
+                      <Text style={s.upcomingBadgeText}>Upcoming</Text>
+                    </View>
+                  )}
                 </View>
               </View>
-            ))
-          )}
+            ))}
+          </View>
         </View>
 
-        {/* ── Upcoming Exams ── */}
-        <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>Upcoming Exams</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Exams')}
-              activeOpacity={0.7}
-            >
-              <Text style={s.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          {upcomingExams.length === 0 ? (
-            <View style={s.emptyCard}>
-              <Text style={s.emptyText}>No upcoming exams</Text>
+        {/* ── Assigned Homework ── */}
+        {pendingHW.length > 0 && (
+          <View style={s.section}>
+            <View style={s.sectionRow}>
+              <Text style={s.sectionTitle}>Assigned Homework</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Homework')} activeOpacity={0.7}>
+                <Text style={s.seeAll}>See All →</Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            upcomingExams.map(exam => {
-              const sc =
-                exam.status === 'Published'
-                  ? { color: '#16A34A', bg: '#DCFCE7' }
-                  : { color: '#D97706', bg: '#FEF3C7' };
+            {pendingHW.map(hw => (
+              <View key={hw.id} style={s.hwCard}>
+                <View style={[s.hwStripe, { backgroundColor: hw.subjectColor }]} />
+                <View style={[s.hwIconWrap, { backgroundColor: hw.subjectColor + '18' }]}>
+                  <Text style={s.hwEmoji}>{hw.subjectIcon}</Text>
+                </View>
+                <View style={s.hwContent}>
+                  <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
+                  <Text style={s.hwSubject}>{hw.subjectName}</Text>
+                </View>
+                <View style={[s.hwDueBadge, { backgroundColor: hw.subjectColor + '18' }]}>
+                  <Text style={[s.hwDueText, { color: hw.subjectColor }]}>{hw.dueDate}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ── Upcoming Exams ── */}
+        {upcomingExams.length > 0 && (
+          <View style={s.section}>
+            <View style={s.sectionRow}>
+              <Text style={s.sectionTitle}>Upcoming Exams</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Exams')} activeOpacity={0.7}>
+                <Text style={s.seeAll}>See All →</Text>
+              </TouchableOpacity>
+            </View>
+            {upcomingExams.map(exam => {
+              const sc = exam.status === 'Published' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
               return (
                 <View key={exam.id} style={s.examCard}>
                   <View style={[s.examAccent, { backgroundColor: sc.color }]} />
                   <View style={s.examBody}>
-                    <View style={s.examTop}>
+                    <View style={s.examRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={s.examName}>{exam.name}</Text>
-                        <Text style={s.examType}>
-                          {exam.type} · {exam.academicYear}
-                        </Text>
+                        <Text style={s.examType}>{exam.type} · {exam.academicYear}</Text>
                       </View>
                       <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
-                        <View
-                          style={[s.statusDot, { backgroundColor: sc.color }]}
-                        />
-                        <Text style={[s.statusText, { color: sc.color }]}>
-                          {exam.status}
-                        </Text>
+                        <View style={[s.statusDot, { backgroundColor: sc.color }]} />
+                        <Text style={[s.statusText, { color: sc.color }]}>{exam.status}</Text>
                       </View>
                     </View>
                     <View style={s.examDateRow}>
-                      <VectorIcon
-                        iconSet="Ionicons"
-                        iconName="time-outline"
-                        size={13}
-                        color={theme.colors.textMuted}
-                      />
+                      <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={12} color={theme.colors.textMuted} />
                       <Text style={s.examDate}>{exam.dateRange}</Text>
                     </View>
                   </View>
                 </View>
               );
-            })
-          )}
-        </View>
+            })}
+          </View>
+        )}
 
         {/* ── Notice Board ── */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Notice Board</Text>
-          {[
-            {
-              title: 'Staff Meeting — 25 Apr 2026',
-              time: '1 hr ago',
-              icon: 'people-outline',
-              color: '#4F46E5',
-              bg: '#E0E7FF',
-            },
-            {
-              title: 'IA 1 Paper Submission Due',
-              time: '2 hrs ago',
-              icon: 'document-outline',
-              color: '#DC2626',
-              bg: '#FEE2E2',
-            },
-            {
-              title: 'School Closed on 26 Apr',
-              time: '3 hrs ago',
-              icon: 'megaphone-outline',
-              color: '#0EA5E9',
-              bg: '#E0F2FE',
-            },
-          ].map((n, i) => (
-            <View key={i} style={s.noticeCard}>
-              <View style={[s.noticeIcon, { backgroundColor: n.bg }]}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName={n.icon}
-                  size={18}
-                  color={n.color}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.noticeTitle}>{n.title}</Text>
-                <Text style={s.noticeTime}>{n.time}</Text>
-              </View>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="chevron-forward"
-                size={16}
-                color={theme.colors.textMuted}
-              />
-            </View>
-          ))}
+          <View style={s.noticeList}>
+            {NOTICES.map((n, i) => (
+              <TouchableOpacity key={i} style={s.noticeCard} activeOpacity={0.8}>
+                <View style={[s.noticeIconWrap, { backgroundColor: n.bg }]}>
+                  <VectorIcon iconSet="Ionicons" iconName={n.icon} size={18} color={n.color} />
+                </View>
+                <View style={s.noticeContent}>
+                  <Text style={s.noticeTitle}>{n.title}</Text>
+                  <Text style={s.noticeTime}>{n.time}</Text>
+                </View>
+                <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </View>
   );
@@ -391,258 +225,125 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 20 },
 
-  // Banner
-  banner: {
+  // Hero
+  hero: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.md,
     backgroundColor: '#1E293B',
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.md,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
-    overflow: 'hidden',
+    borderRadius: theme.radius.lg, padding: theme.spacing.lg,
     elevation: 4,
   },
-  bannerBlob1: {
-    position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(79,70,229,0.15)',
-    top: -60,
-    right: -40,
-  },
-  bannerBlob2: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(79,70,229,0.1)',
-    bottom: -40,
-    left: 10,
-  },
-  bannerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  greeting: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
-  teacherName: { fontSize: 22, fontWeight: '800', color: '#fff', marginTop: 2 },
-  bannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3 },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  heroLeft: { flex: 1, gap: 6 },
+  heroGreeting: { fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
+  heroName: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  heroBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
     backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radius.full,
   },
-  avatarText: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  pillsRow: { flexDirection: 'row', gap: 8 },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+  heroBadgeText: { fontSize: 11, fontWeight: '600', color: '#fff' },
+  heroRight: { alignItems: 'center', justifyContent: 'center' },
+  heroAvatar: {
+    width: 54, height: 54, borderRadius: 27,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center', justifyContent: 'center',
   },
-  pillText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  heroAvatarText: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  heroAvatarRing: {
+    position: 'absolute', width: 64, height: 64, borderRadius: 32,
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
+  },
 
   // Stats
-  statsRow: {
-    flexDirection: 'row',
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.md,
-    gap: 8,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 4,
-  },
-  statValue: { fontSize: 18, fontWeight: '800' },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
-  },
+  statsScroll: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, gap: 10 },
+  statCard: { width: 90, borderRadius: theme.radius.md, padding: 12, alignItems: 'center', gap: 4, elevation: 1 },
+  statIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: 20, fontWeight: '900' },
+  statLabel: { fontSize: 10, fontWeight: '700', color: theme.colors.textSecondary },
+  statSub: { fontSize: 9, fontWeight: '600' },
 
   // Section
   section: { marginTop: theme.spacing.lg, paddingHorizontal: theme.spacing.lg },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 10 },
+  seeAll: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
+
+  // Timeline
+  timeline: { gap: 0 },
+  timelineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  timelineLeft: { width: 44, alignItems: 'center', paddingTop: 12 },
+  timelineTime: { fontSize: 11, fontWeight: '700', color: theme.colors.textPrimary },
+  timelineDone: { color: theme.colors.textMuted },
+  timelineLine: { width: 2, flex: 1, backgroundColor: theme.colors.primary, marginTop: 4, minHeight: 24, opacity: 0.3 },
+  timelineLineDone: { backgroundColor: theme.colors.success, opacity: 0.4 },
+  timelineDot: { width: 20, height: 20, borderRadius: 10, marginTop: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  timelineDotDone: { backgroundColor: theme.colors.success },
+  timelineDotPending: { backgroundColor: theme.colors.primary },
+  timelineCard: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.colors.border,
+    padding: 10, marginBottom: 8,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginBottom: 10,
+  timelineCardDone: { backgroundColor: theme.colors.background, borderColor: theme.colors.border },
+  timelineCardLeft: { flex: 1 },
+  timelineSubject: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+  timelineMeta: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
+  upcomingBadge: {
+    backgroundColor: theme.colors.primaryLight,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: theme.radius.full,
   },
-  seeAll: { fontSize: 13, fontWeight: '600', color: theme.colors.primary },
+  upcomingBadgeText: { fontSize: 10, fontWeight: '700', color: theme.colors.primary },
 
   // Quick actions
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  quickItem: { width: '22%', alignItems: 'center', gap: 6 },
-  quickIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: theme.radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
+  qaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  qaItem: { width: '22%', alignItems: 'center', gap: 6 },
+  qaIcon: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', elevation: 1 },
+  qaLabel: { fontSize: 10.5, fontWeight: '700', color: theme.colors.textSecondary, textAlign: 'center' },
 
-  // Class card
-  classCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 12,
-    marginBottom: 8,
-  },
-  classIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  classEmoji: { fontSize: 20 },
-  classSubject: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
-  classMeta: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
-  timeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: theme.radius.full,
-  },
-  timeText: { fontSize: 11, fontWeight: '700' },
-
-  // HW card
+  // HW
   hwCard: {
-    flexDirection: 'row',
+    flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    overflow: 'hidden',
-    marginBottom: 10,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border,
+    overflow: 'hidden', marginBottom: 8, padding: 10, elevation: 1,
   },
-  hwAccent: { width: 4 },
-  hwBody: { flex: 1, padding: 12, gap: 6 },
-  hwTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  hwBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: theme.radius.full,
-  },
-  hwIcon: { fontSize: 12 },
-  hwSubject: { fontSize: 11, fontWeight: '700' },
-  dueBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: theme.radius.full,
-  },
-  dueText: { fontSize: 11, fontWeight: '700' },
+  hwStripe: { width: 3, height: '100%', position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 2 },
+  hwIconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+  hwEmoji: { fontSize: 18 },
+  hwContent: { flex: 1 },
   hwTitle: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
-  hwDesc: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 17 },
+  hwSubject: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
+  hwDueBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.radius.full },
+  hwDueText: { fontSize: 10, fontWeight: '700' },
 
-  // Exam card
+  // Exam
   examCard: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-    marginBottom: 10,
-    elevation: 1,
+    flexDirection: 'row', backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border,
+    overflow: 'hidden', marginBottom: 8, elevation: 1,
   },
   examAccent: { width: 4 },
   examBody: { flex: 1, padding: 12, gap: 6 },
-  examTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  examName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
+  examRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  examName: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
   examType: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: theme.radius.full,
-  },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: theme.radius.full },
   statusDot: { width: 5, height: 5, borderRadius: 3 },
   statusText: { fontSize: 11, fontWeight: '700' },
   examDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   examDate: { fontSize: 12, color: theme.colors.textSecondary },
 
   // Notice
+  noticeList: { gap: 8 },
   noticeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border,
+    padding: 12, elevation: 1,
   },
-  noticeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noticeTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-  },
+  noticeIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  noticeContent: { flex: 1 },
+  noticeTitle: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
   noticeTime: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
-
-  // Empty
-  emptyCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: { fontSize: 13, color: theme.colors.textMuted },
 });
