@@ -52,6 +52,7 @@ type MenuItem = {
   name: string;
   label: string;
   icon: string;
+  iconSet?: string;
   params?: Record<string, string>;
   nestedRoute?: string;
 };
@@ -75,11 +76,15 @@ const DrawerNavigator = ({ route }: any) => {
       { name: 'Homework', label: 'Homework', icon: 'book-outline' },
       { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
       { name: 'Attendance', label: 'Attendance', icon: 'clipboard-outline' },
-      { name: 'Subjects', label: 'Subjects', icon: 'library-outline' },
+      {
+        name: 'Subjects',
+        label: 'Subjects',
+        icon: 'book-outline',
+      },
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
       { name: 'Content', label: 'Content', icon: 'folder-outline' },
       { name: 'Quiz', label: 'Quiz', icon: 'help-circle-outline' },
-      { name: 'Book', label: 'Book', icon: 'bookmarks-outline' },
+      { name: 'Book', label: 'Book', icon: 'notebook', iconSet: 'SimpleLineIcons'},
       { name: 'Instructor', label: 'Instructor', icon: 'person-outline' },
       { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
@@ -87,7 +92,8 @@ const DrawerNavigator = ({ route }: any) => {
       {
         name: 'Performance',
         label: 'Performance',
-        icon: 'stats-chart-outline',
+        iconSet: 'Feather',
+        icon: 'bar-chart',
       },
       { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
       { name: 'Settings', label: 'Settings', icon: 'settings-outline' },
@@ -111,11 +117,15 @@ const DrawerNavigator = ({ route }: any) => {
         icon: 'checkbox-outline',
       },
       { name: 'Attendance', label: 'Attendance', icon: 'clipboard-outline' },
-      { name: 'Subjects', label: 'Subjects', icon: 'library-outline' },
+      {
+        name: 'Subjects',
+        label: 'Subjects',
+        icon: 'book-outline',
+      },
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
       { name: 'Content', label: 'Content', icon: 'folder-outline' },
       { name: 'Quiz', label: 'Quiz', icon: 'help-circle-outline' },
-      { name: 'Book', label: 'Book', icon: 'bookmarks-outline' },
+      { name: 'Book', label: 'Book', icon: 'notebook', iconSet: 'SimpleLineIcons' },
       { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
       { name: 'Exams', label: 'Exams', icon: 'create-outline' },
@@ -197,7 +207,7 @@ const DrawerNavigator = ({ route }: any) => {
                       ]}
                     >
                       <VectorIcon
-                        iconSet="Ionicons"
+                        iconSet={item.iconSet || 'Ionicons'}
                         iconName={item.icon}
                         size={20}
                         color={
@@ -304,8 +314,9 @@ const DrawerNavigator = ({ route }: any) => {
         headerShown: false,
         drawerStyle: {
           backgroundColor: theme.colors.surface,
-          width: '65%',
+          width: '70%',
         },
+        drawerType: 'front',
       }}
     >
       <Drawer.Screen
@@ -481,7 +492,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
   },
   menuText: {
-    marginLeft: 12,
+    marginLeft: 20,
     fontSize: 15,
   },
   logoutContainer: {

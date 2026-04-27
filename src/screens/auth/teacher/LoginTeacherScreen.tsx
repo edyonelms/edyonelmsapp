@@ -7,6 +7,8 @@ import {
   StatusBar,
   ScrollView,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import React, { useState } from 'react';
 import { theme } from '../../../utils/theme';
@@ -19,84 +21,93 @@ const LoginTeacherScreen = () => {
   const [password, setPassword] = useState('');
 
   return (
-    <View style={styles.safeArea}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={theme.colors.background}
-      />
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => navigation.goBack()}
-        style={{
-          padding: theme.spacing.lg,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: theme.spacing.xs,
-        }}
-      >
-        <VectorIcon
-          iconName="arrow-left"
-          iconSet="FontAwesome6"
-          size={20}
-          color={theme.colors.primary}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.safeArea}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={theme.colors.background}
         />
-        <Text style={{ color: theme.colors.primary, fontSize: 16 }}>Back</Text>
-      </TouchableOpacity>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.iconBadge}>
-          <Image source={{ uri: 'logo' }} style={styles.logo} />
-        </View>
-
-        <Text style={styles.title}>Teacher Login</Text>
-        <Text style={styles.subtitle}>
-          Sign in to manage classes and students
-        </Text>
-
-        <View style={styles.formCard}>
-          <Text style={styles.label}>Email Address</Text>
-          <TextInput
-            placeholder="teacher@school.com"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation.goBack()}
+          style={{
+            padding: theme.spacing.lg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+          }}
+        >
+          <VectorIcon
+            iconName="arrow-left"
+            iconSet="FontAwesome6"
+            size={20}
+            color={theme.colors.primary}
           />
+          <Text style={{ color: theme.colors.primary, fontSize: 16 }}>
+            Back
+          </Text>
+        </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.iconBadge}>
+            <Image source={{ uri: 'logo' }} style={styles.logo} />
+          </View>
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            placeholder="Enter password"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.input}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          <Text style={styles.title}>Teacher Login</Text>
+          <Text style={styles.subtitle}>
+            Please enter your email address and password to continue to your
+            dashboard
+          </Text>
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ForgotPassword')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.forgot}>Forgot Password?</Text>
-          </TouchableOpacity>
+          <View style={styles.formCard}>
+            <Text style={styles.label}>Email Address</Text>
+            <TextInput
+              placeholder="teacher@school.com"
+              placeholderTextColor={theme.colors.textMuted}
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
 
-          <TouchableOpacity
-            style={styles.button}
-            activeOpacity={0.9}
-            onPress={() =>
-              navigation.navigate('DrawerRoot', { userRole: 'teacher' })
-            }
-          >
-            <Text style={styles.buttonText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              placeholder="Enter password"
+              placeholderTextColor={theme.colors.textMuted}
+              style={styles.input}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ForgotPassword')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.forgot}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.button}
+              activeOpacity={0.9}
+              onPress={() =>
+                navigation.navigate('DrawerRoot', { userRole: 'teacher' })
+              }
+            >
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -111,7 +122,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
-    justifyContent: 'center',
   },
   iconBadge: {
     width: 76,
@@ -123,8 +133,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 140,
+    height: 140,
     resizeMode: 'contain',
   },
   title: {
@@ -132,6 +142,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
     textAlign: 'center',
+    paddingTop: 26,
   },
   subtitle: {
     fontSize: 15,
@@ -139,6 +150,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
     marginBottom: theme.spacing.lg,
+    paddingHorizontal: 32,
   },
   formCard: {
     backgroundColor: theme.colors.card,

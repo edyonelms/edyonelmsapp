@@ -37,13 +37,27 @@ const SelectUserScreen = () => {
         <View style={styles.logoBadge}>
           <Image
             source={{ uri: 'logo' }}
-            style={{ height: 130, aspectRatio: 1, resizeMode: 'contain' }}
+            style={{ height: 150, aspectRatio: 1, resizeMode: 'contain' }}
           />
         </View>
 
-        <Text style={styles.title}>Welcome to Edyone LMS</Text>
+        <Text
+          style={{
+            fontSize: 26,
+            // fontWeight: '700',
+            color: theme.colors.textPrimary,
+            textAlign: 'center',
+            top: -20,
+            marginBottom: theme.spacing.xs,
+            lineHeight: 44,
+          }}
+        >
+          Welcome!
+        </Text>
+        <Text style={styles.title}>Edyone LMS</Text>
         <Text style={styles.subtitle}>
-          Choose how you want to continue into your account
+          Continue as Student or Teacher to access your tools, dashboards, and
+          resources.
         </Text>
 
         <View style={styles.gridContainer}>
@@ -96,7 +110,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
+    // justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
   },
@@ -104,17 +118,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.lg,
+    // top: -100,
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
+    // fontWeight: '700',
     color: theme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: theme.spacing.xs,
+    lineHeight: 44,
+    top: -26,
   },
   subtitle: {
     fontSize: 15,
     color: theme.colors.textSecondary,
+    paddingHorizontal: 40,
+    // paddingTop: 30,
     textAlign: 'center',
     marginBottom: theme.spacing.xl,
   },

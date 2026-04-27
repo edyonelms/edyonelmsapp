@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -28,25 +28,25 @@ const DATA: Slide[] = [
   {
     id: '1',
     title: 'Communication & Administration',
-    desc: 'Streamline communication and policies with announcements, queries, contact info, rules & regulations, about app, terms of use and privacy policy — keeping everyone informed and engaged.',
+    desc: 'Manage announcements, policies, and communications from one platform, ensuring clear information flow, easy access to essential details, and improved engagement among students, teachers, and administrators across your institution.',
     lottie: require('../../assets/lottiefiles/onboard1.json'),
   },
   {
     id: '2',
-    title: 'Learning , Assessments & More...',
-    desc: 'Deliver and track academic success with homework, syllabus, quiz exam, admit card, seating plan, exam copy, report card and library — all in one app.',
+    title: 'All-in-One Academic Hub',
+    desc: 'Streamline learning and assessments with smart tools for homework, exams, results, attendance, and more—bringing everything together in one intuitive platform designed for efficiency, clarity, and better academic outcomes',
     lottie: require('../../assets/lottiefiles/onboard2.json'),
   },
   {
     id: '3',
     title: 'Student & Teacher Management',
-    desc: 'Effortlessly manage students, teachers, attendance, fee, payroll and ID cards. Track performance, maintain records and ensure smooth day-to-day operations.',
+    desc: 'Efficiently manage students and teachers with tools for attendance, fees, homework, and records etc, while tracking performance and simplifying daily administrative tasks for smoother academic operations',
     lottie: require('../../assets/lottiefiles/onboard3.json'),
   },
   {
     id: '4',
-    title: 'All-in-One Dashboard for Students \n& Teachers',
-    desc: 'Access everything you need in one place — from home, quick links, analytics and account settings to announcements, calendar and contact; keeping students, teachers and administrators connected seamlessly.',
+    title: 'Unified Dashboard',
+    desc: 'Access all essential tools, updates, analytics, and settings in one centralized dashboard, enabling students, teachers, and administrators to stay connected, organized, and productive throughout their daily activities.',
     lottie: require('../../assets/lottiefiles/onboard4.json'),
   },
 ];
@@ -58,11 +58,9 @@ const OnboardingScreen: React.FC = () => {
 
   // Sync index on manual swipe
   const onMomentumScrollEnd = (
-    event: NativeSyntheticEvent<NativeScrollEvent>
+    event: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
-    const newIndex = Math.round(
-      event.nativeEvent.contentOffset.x / width
-    );
+    const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
     setIndex(newIndex);
   };
 
@@ -80,10 +78,28 @@ const OnboardingScreen: React.FC = () => {
     goToSlide(index + 1);
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (index < DATA.length - 1) {
+        goToSlide(index + 1);
+      } else {
+        goToSlide(0);
+        // clearInterval(interval);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [index]);
+
   const renderItem: ListRenderItem<Slide> = ({ item }) => (
     <View style={styles.slide}>
       <View style={styles.illustrationWrap}>
-        <LottieView source={item.lottie} autoPlay loop style={styles.illustration} />
+        <LottieView
+          source={item.lottie}
+          autoPlay
+          loop
+          style={styles.illustration}
+        />
       </View>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.desc}>{item.desc}</Text>
@@ -102,7 +118,7 @@ const OnboardingScreen: React.FC = () => {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         renderItem={renderItem}
         onMomentumScrollEnd={onMomentumScrollEnd}
       />
@@ -115,9 +131,7 @@ const OnboardingScreen: React.FC = () => {
               styles.dot,
               {
                 backgroundColor:
-                  i === index
-                    ? theme.colors.primary
-                    : theme.colors.border,
+                  i === index ? theme.colors.primary : theme.colors.border,
                 width: i === index ? 20 : 8,
               },
             ]}
@@ -126,21 +140,19 @@ const OnboardingScreen: React.FC = () => {
       </View>
 
       <View style={styles.bottomActions}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={() => navigation.replace('SelectUser')}
           activeOpacity={0.85}
         >
           <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           style={styles.nextButton}
           activeOpacity={0.9}
-          onPress={onNext}
+          onPress={() => navigation.replace('SelectUser')}
         >
-          <Text style={styles.nextText}>
-            Continue
-          </Text>
+          <Text style={styles.nextText}>Continue</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -188,7 +200,7 @@ const styles = StyleSheet.create({
   },
   dotContainer: {
     position: 'absolute',
-    bottom: 200,
+    bottom: 260,
     flexDirection: 'row',
     alignSelf: 'center',
   },
@@ -201,10 +213,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: theme.spacing.lg,
     right: theme.spacing.lg,
-    bottom: theme.spacing.xl,
+    bottom: 30,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   skipText: {
     color: theme.colors.textSecondary,
@@ -213,7 +225,8 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     backgroundColor: theme.colors.primary,
-    paddingHorizontal: 22,
+    width: '90%',
+    alignItems: 'center',
     paddingVertical: 12,
     borderRadius: theme.radius.full,
   },

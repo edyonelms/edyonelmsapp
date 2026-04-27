@@ -41,27 +41,35 @@ const TopBar = ({
           style={styles.menuBtn}
         >
           <VectorIcon
-            iconSet="Ionicons"
-            iconName="menu"
-            size={26}
+            iconSet="FontAwesome6"
+            iconName="bars-staggered"
+            size={28}
             color="#111"
           />
         </TouchableOpacity>
 
-        <View style={styles.userInfo}>
-          <Text style={styles.userName} numberOfLines={1}>
-            {userName}👋
-          </Text>
-        </View>
+        <TouchableOpacity style={styles.userInfo} >
+          {/* <View style={styles.userInfo}> */}
+            <Text style={styles.userName} numberOfLines={1}>
+              {userName}
+            </Text>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="caret-down"
+              size={20}
+              color="#111"
+            />
+          {/* </View> */}
+        </TouchableOpacity>
 
-        <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
+        {/* <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
           <VectorIcon
             iconSet="Ionicons"
             iconName="swap-horizontal-outline"
             size={20}
             color="#111"
           />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
           <VectorIcon
@@ -106,8 +114,10 @@ export default TopBar;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#ade8f4',
     paddingBottom: theme.spacing.sm,
+    borderBottomRightRadius: theme.radius.lg,
+    borderBottomLeftRadius: theme.radius.lg,
   },
   wrap: {
     flexDirection: 'row',
@@ -118,14 +128,17 @@ const styles = StyleSheet.create({
   },
   menuBtn: {
     paddingVertical: 6,
-    paddingRight: 2,
+    paddingRight: 10,
   },
   userInfo: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: theme.colors.textPrimary,
   },

@@ -337,7 +337,7 @@ const NotificationScreen = () => {
       </View>
 
       {/* Filter chips */}
-      <View style={styles.filterWrapper}>
+      {/* <View style={styles.filterWrapper}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -376,7 +376,7 @@ const NotificationScreen = () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>
+      </View> */}
 
       {/* List */}
       <FlatList
@@ -409,7 +409,7 @@ const NotificationScreen = () => {
 export default NotificationScreen;
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: theme.colors.background },
+  safeArea: { flex: 1, backgroundColor: theme.colors.white },
 
   topBar: {
     flexDirection: 'row',

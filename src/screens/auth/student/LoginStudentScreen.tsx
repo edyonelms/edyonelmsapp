@@ -7,6 +7,8 @@ import {
   StatusBar,
   ScrollView,
   Image,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import React, { useState } from 'react';
 import { theme } from '../../../utils/theme';
@@ -19,83 +21,92 @@ const LoginStudentScreen = () => {
   const [password, setPassword] = useState('');
 
   return (
-    <View style={styles.safeArea}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={theme.colors.background}
-      />
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => navigation.goBack()}
-        style={{
-          padding: theme.spacing.lg,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: theme.spacing.xs,
-        }}
-      >
-        <VectorIcon
-          iconName="arrow-left"
-          iconSet="FontAwesome6"
-          size={20}
-          color={theme.colors.primary}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.safeArea}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={theme.colors.background}
         />
-        <Text style={{ color: theme.colors.primary, fontSize: 16 }}>Back</Text>
-      </TouchableOpacity>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.iconBadge}>
-          <Image source={{ uri: 'logo' }} style={styles.logo} />
-        </View>
-
-        <Text style={styles.title}>Student Login</Text>
-        <Text style={styles.subtitle}>
-          Sign in to view classes and assignments
-        </Text>
-
-        <View style={styles.formCard}>
-          <Text style={styles.label}>Admission Number</Text>
-          <TextInput
-            placeholder="Enter admission number"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.input}
-            value={admissionNo}
-            onChangeText={setAdmissionNo}
-            autoCapitalize="characters"
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation.goBack()}
+          style={{
+            padding: theme.spacing.lg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+          }}
+        >
+          <VectorIcon
+            iconName="arrow-left"
+            iconSet="FontAwesome6"
+            size={20}
+            color={theme.colors.primary}
           />
+          <Text style={{ color: theme.colors.primary, fontSize: 16 }}>
+            Back
+          </Text>
+        </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.iconBadge}>
+            <Image source={{ uri: 'logo' }} style={styles.logo} />
+          </View>
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            placeholder="Enter password"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.input}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          <Text style={styles.title}>Student Login</Text>
+          <Text style={styles.subtitle}>
+            Please enter your admission number and password to continue to your
+            dashboard
+          </Text>
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ForgotPassword')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.forgot}>Forgot Password?</Text>
-          </TouchableOpacity>
+          <View style={styles.formCard}>
+            <Text style={styles.label}>Admission Number</Text>
+            <TextInput
+              placeholder="Enter admission number"
+              placeholderTextColor={theme.colors.textMuted}
+              style={styles.input}
+              value={admissionNo}
+              onChangeText={setAdmissionNo}
+              autoCapitalize="characters"
+            />
 
-          <TouchableOpacity
-            style={styles.button}
-            activeOpacity={0.9}
-            onPress={() =>
-              navigation.navigate('DrawerRoot', { userRole: 'student' })
-            }
-          >
-            <Text style={styles.buttonText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              placeholder="Enter password"
+              placeholderTextColor={theme.colors.textMuted}
+              style={styles.input}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ForgotPassword')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.forgot}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.button}
+              activeOpacity={0.9}
+              onPress={() =>
+                navigation.navigate('DrawerRoot', { userRole: 'student' })
+              }
+            >
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -110,7 +121,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
-    justifyContent: 'center',
+    // justifyContent: 'center',
   },
   iconBadge: {
     width: 76,
@@ -119,11 +130,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: 50,
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 150,
     resizeMode: 'contain',
   },
   title: {
@@ -137,6 +148,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
+    paddingHorizontal:20,
     marginBottom: theme.spacing.lg,
   },
   formCard: {

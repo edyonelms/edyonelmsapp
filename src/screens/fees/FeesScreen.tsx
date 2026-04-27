@@ -46,13 +46,69 @@ const Row = ({
 
 // ─── Overall Tab ──────────────────────────────────────────────────────────────
 const OverallTab = () => {
-  const entries = Object.entries(FEE_DATA) as [
-    Exclude<Category, 'Overall'>,
-    (typeof FEE_DATA)[keyof typeof FEE_DATA],
-  ][];
+  const entries = (
+    Object.entries(FEE_DATA) as [
+      Exclude<Category, 'Overall'>,
+      (typeof FEE_DATA)[keyof typeof FEE_DATA],
+    ][]
+  ).filter(([key]) => key !== 'Penalty');
   const totalPaid = entries.reduce((sum, [, d]) => sum + d.paid, 0);
   const totalTotal = entries.reduce((sum, [, d]) => sum + d.total, 0);
   const totalPct = Math.round((totalPaid / totalTotal) * 100);
+
+  const data = {
+    paid: 41000,
+    total: 50000,
+    color: '#6366F1',
+    icon: 'school-outline',
+    breakup: [
+      {
+        label: 'Tuition Fee',
+        value: '₹ 2,000',
+      },
+      {
+        label: 'Discount Applied',
+        value: '- ₹ 200',
+        color: '#10B981',
+      },
+      {
+        label: 'Promo Code',
+        value: 'EXTRA10',
+        color: '#10B981',
+      },
+      {
+        label: 'Subtotal',
+        value: '₹ 1,800',
+      },
+      {
+        label: 'GST 18%',
+        value: '₹ 324.00',
+      },
+    ],
+    upcoming: [
+      {
+        installment: '1st Installment',
+        dueDate: '31/03/2025',
+        penalty: 500,
+        subtotal: 15500,
+      },
+      {
+        installment: '2nd Installment',
+        dueDate: '30/06/2025',
+        penalty: 0,
+        subtotal: 9000,
+      },
+    ],
+    paidFees: [
+      {
+        installment: '1st Installment',
+        dueDate: '31/05/2025',
+        penalty: 500,
+        paidOn: '28/05/2025',
+        subtotal: 789.45,
+      },
+    ],
+  };
 
   return (
     <>
@@ -89,85 +145,175 @@ const OverallTab = () => {
 
       {/* ── Category cards ── */}
       <Text style={s.sectionTitle}>Category Breakdown</Text>
-      {entries.map(([name, data]) => {
-        const pct = Math.round((data.paid / data.total) * 100);
-        return (
-          <View key={name} style={s.catCard}>
-            <View
-              style={[s.catIconBox, { backgroundColor: data.color + '18' }]}
+      <View
+        style={{
+          paddingTop: 6,
+          marginHorizontal: 16,
+          marginBottom: 10,
+          backgroundColor: '#fff',
+          borderRadius: 18,
+          alignItems: 'center',
+          gap: 12,
+          shadowColor: '#000',
+          shadowOpacity: 0.04,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 2,
+        }}
+      >
+        {entries.map(([name, data]) => {
+          const pct = Math.round((data.paid / data.total) * 100);
+          return (
+            <View key={name} style={s.catCard}>
+              {/* <View
+                style={[s.catIconBox, { backgroundColor: data.color + '18' }]}
+              >
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName={data.icon}
+                  size={22}
+                  color={data.color}
+                />
+              </View> */}
+              <View style={s.catBody}>
+                <View style={s.catTopRow}>
+                  <Text style={s.catName}>{name}</Text>
+                  <Text style={[s.catPct, { color: data.color }]}>{pct}%</Text>
+                </View>
+                <View style={s.catTrack}>
+                  <View
+                    style={[
+                      s.catFill,
+                      { width: `${pct}%`, backgroundColor: data.color },
+                    ]}
+                  />
+                </View>
+                <View style={s.catBottomRow}>
+                  <Text style={[s.catPaid, { color: data.color }]}>
+                    {fmt(data.paid)} paid
+                  </Text>
+                  <Text style={s.catTotal}>{fmt(data.total)} total</Text>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* ── Upcoming ── */}
+      <Text style={s.sectionTitle}>Upcoming Dues</Text>
+      <FlatList
+        data={data.upcoming}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(_, i) => String(i)}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              s.upcomingCard,
+              { width: CARD_W, borderTopColor: '#F59E0B' },
+            ]}
+          >
+            <View style={s.upcomingHeader}>
+              <View style={s.upcomingBadge}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="time-outline"
+                  size={12}
+                  color="#F59E0B"
+                />
+                <Text style={s.upcomingBadgeText}>Upcoming</Text>
+              </View>
+              <View style={s.dueDateChip}>
+                <Text style={s.dueDateText}>Due {item.dueDate}</Text>
+              </View>
+            </View>
+            <Text style={s.upcomingTitle}>{item.installment}</Text>
+            <View style={[s.amountBox, { backgroundColor: data.color + '12' }]}>
+              <Text style={s.amountBoxLabel}>Amount</Text>
+              <Text style={[s.amountBoxValue, { color: data.color }]}>
+                {fmt(item.subtotal - item.penalty)}
+              </Text>
+            </View>
+            <View style={s.upcomingDetails}>
+              <Row label="Penalties" value={fmt(item.penalty)} />
+              <Row label="Subtotal" value={fmt(item.subtotal)} />
+            </View>
+            <View style={s.penaltyNote}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="alert-circle-outline"
+                size={12}
+                color="#EF4444"
+              />
+              <Text style={s.penaltyNoteText}>
+                *₹100/day penalty for late payments
+              </Text>
+            </View>
+            <View style={s.divider} />
+            <Row label="Total Amount" value={fmt(item.subtotal)} bold />
+            <TouchableOpacity
+              style={[s.payBtn, { backgroundColor: data.color }]}
+              activeOpacity={0.85}
             >
               <VectorIcon
                 iconSet="Ionicons"
-                iconName={data.icon}
-                size={22}
-                color={data.color}
+                iconName="flash"
+                size={16}
+                color="#fff"
               />
-            </View>
-            <View style={s.catBody}>
-              <View style={s.catTopRow}>
-                <Text style={s.catName}>{name}</Text>
-                <Text style={[s.catPct, { color: data.color }]}>{pct}%</Text>
-              </View>
-              <View style={s.catTrack}>
-                <View
-                  style={[
-                    s.catFill,
-                    { width: `${pct}%`, backgroundColor: data.color },
-                  ]}
-                />
-              </View>
-              <View style={s.catBottomRow}>
-                <Text style={[s.catPaid, { color: data.color }]}>
-                  {fmt(data.paid)} paid
-                </Text>
-                <Text style={s.catTotal}>{fmt(data.total)} total</Text>
-              </View>
-            </View>
+              <Text style={s.payBtnText}>Pay Now</Text>
+            </TouchableOpacity>
           </View>
-        );
-      })}
+        )}
+      />
 
-      {/* ── Quick stats ── */}
-      <Text style={s.sectionTitle}>Quick Stats</Text>
-      <View style={s.quickRow}>
-        {[
-          {
-            label: 'Categories',
-            val: String(entries.length),
-            icon: 'layers-outline',
-            color: PURPLE,
-            bg: '#F5F3FF',
-          },
-          {
-            label: 'Upcoming',
-            val: String(entries.reduce((s, [, d]) => s + d.upcoming.length, 0)),
-            icon: 'time-outline',
-            color: '#F59E0B',
-            bg: '#FFFBEB',
-          },
-          {
-            label: 'Receipts',
-            val: String(entries.reduce((s, [, d]) => s + d.paidFees.length, 0)),
-            icon: 'receipt-outline',
-            color: '#10B981',
-            bg: '#F0FDF4',
-          },
-        ].map(item => (
-          <View
-            key={item.label}
-            style={[s.quickCard, { backgroundColor: item.bg }]}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={item.icon}
-              size={22}
-              color={item.color}
-            />
-            <Text style={[s.quickVal, { color: item.color }]}>{item.val}</Text>
-            <Text style={s.quickLbl}>{item.label}</Text>
+      {/* ── Paid Fees ── */}
+      <Text style={s.sectionTitle}>Paid fees</Text>
+      {data.paidFees.map((item, i) => (
+        <View key={i} style={[s.paidCard, { borderTopColor: '#10B981' }]}>
+          <View style={s.paidHeader}>
+            <View style={s.paidBadge}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="checkmark-circle"
+                size={13}
+                color="#10B981"
+              />
+              <Text style={s.paidBadgeText}>Paid</Text>
+            </View>
+            <View style={s.paidOnChip}>
+              <Text style={s.paidOnText}>Paid on {item.paidOn}</Text>
+            </View>
           </View>
-        ))}
-      </View>
+          <Text style={s.paidTitle}>{item.installment}</Text>
+          <View style={s.paidAmountBox}>
+            <Text style={s.paidAmountLabel}>Amount Paid</Text>
+            <Text style={s.paidAmountValue}>{`₹ ${item.subtotal.toFixed(
+              2,
+            )}`}</Text>
+          </View>
+          <View style={s.paidDetails}>
+            <Row label="Due Date" value={item.dueDate} color="#10B981" />
+            <Row
+              label="Penalties"
+              value={String(item.penalty)}
+              color="#10B981"
+            />
+            <Row label="Subtotal" value={`₹ ${item.subtotal.toFixed(2)}`} />
+          </View>
+          <TouchableOpacity style={s.receiptBtn} activeOpacity={0.8}>
+            <VectorIcon
+              iconSet="Feather"
+              iconName="download"
+              size={15}
+              color="#10B981"
+            />
+            <Text style={s.receiptBtnText}>Download Receipt</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
     </>
   );
 };
@@ -563,15 +709,11 @@ const s = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: '#fff',
     borderRadius: 18,
-    padding: 14,
+    paddingVertical: 6,
+    // padding: 14,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    // alignItems: 'center',
+    // gap: 12,
   },
   catIconBox: {
     width: 48,

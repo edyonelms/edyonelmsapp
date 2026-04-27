@@ -6,8 +6,8 @@ export const CATEGORIES = [
   'Academic',
   'Transport',
   'Penalty',
-  'Activity',
-  'Additionally',
+  // 'Activity',
+  // 'Additionally',
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
@@ -134,64 +134,7 @@ export const FEE_DATA: Record<Exclude<Category, 'Overall'>, FeeCategory> = {
       },
     ],
   },
-  Activity: {
-    paid: 2000,
-    total: 3500,
-    color: '#10B981',
-    icon: 'football-outline',
-    breakup: [
-      { label: 'Sports Fee', value: '₹ 1,000' },
-      { label: 'Arts & Craft', value: '₹ 500' },
-      { label: 'Subtotal', value: '₹ 1,500' },
-      { label: 'GST 12%', value: '₹ 180.00' },
-    ],
-    upcoming: [
-      {
-        installment: '2nd Installment',
-        dueDate: '20/08/2025',
-        penalty: 0,
-        subtotal: 1680,
-      },
-    ],
-    paidFees: [
-      {
-        installment: '1st Installment',
-        dueDate: '20/02/2025',
-        penalty: 0,
-        paidOn: '18/02/2025',
-        subtotal: 2000,
-      },
-    ],
-  },
-  Additionally: {
-    paid: 1200,
-    total: 2500,
-    color: '#F59E0B',
-    icon: 'add-circle-outline',
-    breakup: [
-      { label: 'Lab Fee', value: '₹ 800' },
-      { label: 'Stationery', value: '₹ 400' },
-      { label: 'Subtotal', value: '₹ 1,200' },
-      { label: 'GST 12%', value: '₹ 144.00' },
-    ],
-    upcoming: [
-      {
-        installment: 'Term 2 Fee',
-        dueDate: '10/09/2025',
-        penalty: 0,
-        subtotal: 1344,
-      },
-    ],
-    paidFees: [
-      {
-        installment: 'Term 1 Fee',
-        dueDate: '10/01/2025',
-        penalty: 0,
-        paidOn: '08/01/2025',
-        subtotal: 1200,
-      },
-    ],
-  },
+
 };
 
 export const fmt = (n: number) => `₹ ${n.toLocaleString('en-IN')}`;

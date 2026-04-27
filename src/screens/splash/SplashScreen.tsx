@@ -64,8 +64,7 @@ const SplashScreen = ({ navigation }: any) => {
               },
             ]}
           />
-
-          <Text style={styles.brand}>Edyone LMS</Text>
+          {/* <Text style={styles.brand}>Edyone LMS</Text> */}
         </Animated.View>
       </View>
 

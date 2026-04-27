@@ -42,7 +42,6 @@ const StudentHomeScreen = () => {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       <TopBar
         onAvatarPress={() => navigation.navigate('StudentProfile')}
         onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
