@@ -8,6 +8,7 @@ import {
   Easing,
 } from 'react-native';
 import { theme } from '../../utils/theme';
+import { Storage } from '../../utils/storage';
 
 const SplashScreen = ({ navigation }: any) => {
   const scale = useRef(new Animated.Value(3)).current;
@@ -37,8 +38,20 @@ const SplashScreen = ({ navigation }: any) => {
         useNativeDriver: true,
       }),
       Animated.delay(500),
-    ]).start(() => {
-      navigation.replace('Onboarding');
+    ]).start(async () => {
+      const [onboardingSeen, token, role] = await Promise.all([
+        Storage.isOnboardingSeen(),
+        Storage.getToken(),
+        Storage.getRole(),
+      ]);
+
+      if (!onboardingSeen) {
+        navigation.replace('Onboarding');
+      } else if (token && role) {
+        navigation.replace('DrawerRoot', { userRole: role });
+      } else {
+        navigation.replace('SelectUser');
+      }
     });
   }, []);
 

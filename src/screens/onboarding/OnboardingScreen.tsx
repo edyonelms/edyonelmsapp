@@ -14,6 +14,7 @@ import {
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
+import { Storage } from '../../utils/storage';
 
 const { width } = Dimensions.get('window');
 
@@ -71,10 +72,10 @@ const OnboardingScreen: React.FC = () => {
 
   const onNext = () => {
     if (index === DATA.length - 1) {
+      Storage.setOnboardingSeen();
       navigation.replace('SelectUser');
       return;
     }
-
     goToSlide(index + 1);
   };
 
@@ -108,20 +109,18 @@ const OnboardingScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={theme.colors.background}
-      />
-      <FlatList
-        ref={flatListRef}
-        data={DATA}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        onMomentumScrollEnd={onMomentumScrollEnd}
-      />
+      <View>
+        <FlatList
+          ref={flatListRef}
+          data={DATA}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+        />
+      </View>
 
       <View style={styles.dotContainer}>
         {DATA.map((_, i) => (
@@ -140,17 +139,13 @@ const OnboardingScreen: React.FC = () => {
       </View>
 
       <View style={styles.bottomActions}>
-        {/* <TouchableOpacity
-          onPress={() => navigation.replace('SelectUser')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity> */}
-
         <TouchableOpacity
           style={styles.nextButton}
           activeOpacity={0.9}
-          onPress={() => navigation.replace('SelectUser')}
+          onPress={async () => {
+            await Storage.setOnboardingSeen();
+            navigation.replace('SelectUser');
+          }}
         >
           <Text style={styles.nextText}>Continue</Text>
         </TouchableOpacity>
@@ -171,6 +166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingHorizontal: theme.spacing.lg,
+    height: '50%',
     paddingTop: 70,
   },
   illustrationWrap: {
@@ -199,8 +195,7 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   dotContainer: {
-    position: 'absolute',
-    bottom: 260,
+    paddingTop: 50,
     flexDirection: 'row',
     alignSelf: 'center',
   },

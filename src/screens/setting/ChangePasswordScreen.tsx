@@ -9,17 +9,19 @@ import {
   Platform,
   Alert,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import React, { useState } from 'react';
 import Header from '../../components/Header';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
+import { updatePassword } from '../../api/authApi';
 
 const showToast = (msg: string) => {
   if (Platform.OS === 'android') {
     ToastAndroid.show(msg, ToastAndroid.SHORT);
   } else {
-    Alert.alert('', msg);
+    Alert.alert('Success', msg);
   }
 };
 
@@ -53,11 +55,12 @@ const ChangePasswordScreen = () => {
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const c = checks(newPass);
   const passwordsMatch = confirm.length > 0 && newPass === confirm;
 
-  const handleChange = () => {
+  const handleChange = async () => {
     if (!current) {
       setError('Enter your current password.');
       return;
@@ -70,9 +73,31 @@ const ChangePasswordScreen = () => {
       setError('Passwords do not match.');
       return;
     }
+
     setError('');
-    showToast('Password changed successfully!');
-    navigation.goBack();
+    setLoading(true);
+    try {
+      console.log('[ChangePassword] ➡️ Request: POST /update-password');
+      const res = await updatePassword(current, newPass, confirm);
+      console.log(
+        '[ChangePassword] ✅ Response:',
+        JSON.stringify(res, null, 2),
+      );
+      showToast(res.message || 'Password changed successfully!');
+      navigation.goBack();
+    } catch (err: any) {
+      console.log(
+        '[ChangePassword] ❌ Error:',
+        JSON.stringify(err?.response?.data, null, 2),
+      );
+      setError(
+        err?.response?.data?.message ??
+          err?.message ??
+          'Failed to change password. Please try again.',
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -152,11 +177,16 @@ const ChangePasswordScreen = () => {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, loading && { opacity: 0.6 }]}
             onPress={handleChange}
             activeOpacity={0.7}
+            disabled={loading}
           >
-            <Text style={styles.buttonText}>Change Password</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>Change Password</Text>
+            )}
           </TouchableOpacity>
         </View>
         <View style={{ height: 80 }} />

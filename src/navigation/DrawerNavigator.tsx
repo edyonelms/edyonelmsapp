@@ -12,6 +12,7 @@ import {
   DrawerContentScrollView,
 } from '@react-navigation/drawer';
 import { CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import TabNavigator from './TabNavigator';
 import SettingsScreen from '../screens/setting/SettingsScreen';
 import { theme } from '../utils/theme';
@@ -84,7 +85,12 @@ const DrawerNavigator = ({ route }: any) => {
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
       { name: 'Content', label: 'Content', icon: 'folder-outline' },
       { name: 'Quiz', label: 'Quiz', icon: 'help-circle-outline' },
-      { name: 'Book', label: 'Book', icon: 'notebook', iconSet: 'SimpleLineIcons'},
+      {
+        name: 'Book',
+        label: 'Book',
+        icon: 'notebook',
+        iconSet: 'SimpleLineIcons',
+      },
       { name: 'Instructor', label: 'Instructor', icon: 'person-outline' },
       { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
@@ -125,7 +131,12 @@ const DrawerNavigator = ({ route }: any) => {
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
       { name: 'Content', label: 'Content', icon: 'folder-outline' },
       { name: 'Quiz', label: 'Quiz', icon: 'help-circle-outline' },
-      { name: 'Book', label: 'Book', icon: 'notebook', iconSet: 'SimpleLineIcons' },
+      {
+        name: 'Book',
+        label: 'Book',
+        icon: 'notebook',
+        iconSet: 'SimpleLineIcons',
+      },
       { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
       { name: 'Exams', label: 'Exams', icon: 'create-outline' },
@@ -147,21 +158,21 @@ const DrawerNavigator = ({ route }: any) => {
     const { navigation, state } = props;
     const [logoutVisible, setLogoutVisible] = useState(false);
 
-    const doLogout = () => {
+    const doLogout = async () => {
       setLogoutVisible(false);
-
-      const parentNav = navigation.getParent?.();
-      if (parentNav) {
-        parentNav.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'SelectUser' }],
-          }),
-        );
-        return;
+      try {
+        await AsyncStorage.multiRemove([
+          'auth_token',
+          'user_data',
+          'user_role',
+        ]);
+        console.log('[Logout] Storage cleared');
+      } catch (e) {
+        console.log('[Logout] Storage clear error:', e);
       }
 
-      navigation.dispatch(
+      const parentNav = navigation.getParent?.();
+      (parentNav ?? navigation).dispatch(
         CommonActions.reset({
           index: 0,
           routes: [{ name: 'SelectUser' }],

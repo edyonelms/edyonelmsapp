@@ -9,16 +9,62 @@ import {
   Image,
   Platform,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import React, { useState } from 'react';
 import { theme } from '../../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import VectorIcon from '../../../components/VectorIcon';
+import { studentLogin } from '../../../api/authApi';
 
 const LoginStudentScreen = () => {
   const navigation = useNavigation<any>();
   const [admissionNo, setAdmissionNo] = useState('');
   const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogin = async () => {
+    if (!admissionNo.trim()) {
+      setError('Please enter your admission number.');
+      return;
+    }
+    if (!password.trim()) {
+      setError('Please enter your password.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+    try {
+      console.log('[StudentLogin] ➡️ Request:', {
+        url: 'POST /user/login',
+        admission_number: admissionNo.trim(),
+        password,
+      });
+
+      const res = await studentLogin(admissionNo.trim(), password);
+
+      console.log('[StudentLogin] Success:', JSON.stringify(res, null, 2));
+      navigation.replace('DrawerRoot', { userRole: 'student' });
+    } catch (err: any) {
+      console.log('[StudentLogin] Error status:', err?.response?.status);
+      console.log(
+        '[StudentLogin] Error data:',
+        JSON.stringify(err?.response?.data, null, 2),
+      );
+      console.log('[StudentLogin] Error message:', err?.message);
+
+      const msg =
+        err?.response?.data?.message ??
+        err?.response?.data?.error ??
+        'Login failed. Please check your credentials.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -30,15 +76,11 @@ const LoginStudentScreen = () => {
           barStyle="dark-content"
           backgroundColor={theme.colors.background}
         />
+
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => navigation.goBack()}
-          style={{
-            padding: theme.spacing.lg,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.xs,
-          }}
+          style={styles.backBtn}
         >
           <VectorIcon
             iconName="arrow-left"
@@ -46,10 +88,9 @@ const LoginStudentScreen = () => {
             size={20}
             color={theme.colors.primary}
           />
-          <Text style={{ color: theme.colors.primary, fontSize: 16 }}>
-            Back
-          </Text>
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
+
         <ScrollView
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
@@ -61,30 +102,50 @@ const LoginStudentScreen = () => {
 
           <Text style={styles.title}>Student Login</Text>
           <Text style={styles.subtitle}>
-            Please enter your admission number and password to continue to your
-            dashboard
+            Enter your admission number and password to access your dashboard
           </Text>
 
           <View style={styles.formCard}>
+            {/* Admission Number */}
             <Text style={styles.label}>Admission Number</Text>
             <TextInput
-              placeholder="Enter admission number"
+              placeholder="e.g. 2026DMO650015"
               placeholderTextColor={theme.colors.textMuted}
               style={styles.input}
               value={admissionNo}
-              onChangeText={setAdmissionNo}
-              autoCapitalize="characters"
+              onChangeText={t => {
+                setAdmissionNo(t);
+                setError('');
+              }}
+              autoCapitalize="none"
             />
 
+            {/* Password */}
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              placeholder="Enter password"
-              placeholderTextColor={theme.colors.textMuted}
-              style={styles.input}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+            <View style={styles.passWrap}>
+              <TextInput
+                placeholder="Enter password"
+                placeholderTextColor={theme.colors.textMuted}
+                style={styles.passInput}
+                secureTextEntry={!showPass}
+                value={password}
+                onChangeText={t => {
+                  setPassword(t);
+                  setError('');
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPass(v => !v)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName={showPass ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={theme.colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               onPress={() => navigation.navigate('ForgotPassword')}
@@ -93,14 +154,30 @@ const LoginStudentScreen = () => {
               <Text style={styles.forgot}>Forgot Password?</Text>
             </TouchableOpacity>
 
+            {/* Error */}
+            {!!error && (
+              <View style={styles.errorBox}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="alert-circle-outline"
+                  size={14}
+                  color={theme.colors.danger}
+                />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
             <TouchableOpacity
-              style={styles.button}
+              style={[styles.button, loading && styles.buttonDisabled]}
               activeOpacity={0.9}
-              onPress={() =>
-                navigation.navigate('DrawerRoot', { userRole: 'student' })
-              }
+              onPress={handleLogin}
+              disabled={loading}
             >
-              <Text style={styles.buttonText}>Continue</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.buttonText}>Continue</Text>
+              )}
             </TouchableOpacity>
           </View>
           <View style={{ height: 100 }} />
@@ -113,30 +190,26 @@ const LoginStudentScreen = () => {
 export default LoginStudentScreen;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.white,
+  safeArea: { flex: 1, backgroundColor: theme.colors.white },
+  backBtn: {
+    padding: theme.spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
   },
+  backText: { color: theme.colors.primary, fontSize: 16 },
   container: {
     flexGrow: 1,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
-    // justifyContent: 'center',
   },
   iconBadge: {
-    width: 76,
-    height: 76,
-    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
     marginBottom: 50,
   },
-  logo: {
-    width: 150,
-    height: 150,
-    resizeMode: 'contain',
-  },
+  logo: { width: 150, height: 150, resizeMode: 'contain' },
   title: {
     fontSize: 26,
     fontWeight: '700',
@@ -148,7 +221,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
-    paddingHorizontal:20,
+    paddingHorizontal: 20,
     marginBottom: theme.spacing.lg,
   },
   formCard: {
@@ -171,21 +244,50 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     color: theme.colors.textPrimary,
   },
+  passWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  passInput: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    color: theme.colors.textPrimary,
+  },
   forgot: {
     color: theme.colors.primary,
     textAlign: 'right',
     marginBottom: theme.spacing.lg,
     fontWeight: '500',
   },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFF3F3',
+    borderWidth: 1,
+    borderColor: '#F6C7C7',
+    borderRadius: theme.radius.sm,
+    padding: 10,
+    marginBottom: theme.spacing.sm,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: theme.colors.danger,
+    fontWeight: '500',
+  },
   button: {
     backgroundColor: '#000',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 100,
     alignItems: 'center',
   },
-  buttonText: {
-    color: theme.colors.white,
-    fontWeight: '600',
-    fontSize: 16,
-  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: theme.colors.white, fontWeight: '600', fontSize: 16 },
 });

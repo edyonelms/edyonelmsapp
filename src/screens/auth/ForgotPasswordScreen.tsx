@@ -8,20 +8,32 @@ import {
   StatusBar,
   Image,
   Alert,
+  ActivityIndicator,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
 import { OtpInput } from 'react-native-otp-entry';
+import {
+  forgotPassword,
+  verifyOtp,
+  resendOtp,
+  changePassword,
+} from '../../api/authApi';
 
 const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
   const [step, setStep] = useState(1);
 
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState<any[]>(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState('');
+  const [userId, setUserId] = useState<string | number>('');
   const [timer, setTimer] = useState(120);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,26 +69,67 @@ const ForgotPasswordScreen = () => {
             <View style={styles.iconBadge}>
               <Image source={{ uri: 'logo' }} style={styles.logo} />
             </View>
-
             <Text style={styles.heading}>Reset Password</Text>
             <Text style={styles.desc}>
               Enter your registered email address to reset your account
               password.
             </Text>
-
             <Text style={styles.label}>Email Address</Text>
             <TextInput
               placeholder="name@school.com"
               placeholderTextColor={theme.colors.textMuted}
               style={styles.input}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={t => {
+                setEmail(t);
+                setError('');
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-
-            <TouchableOpacity style={styles.button} onPress={() => setStep(2)}>
-              <Text style={styles.buttonText}>Get OTP</Text>
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
+            <TouchableOpacity
+              style={[styles.button, loading && { opacity: 0.6 }]}
+              disabled={loading}
+              onPress={async () => {
+                if (!email.trim()) {
+                  setError('Please enter your email.');
+                  return;
+                }
+                setLoading(true);
+                setError('');
+                try {
+                  console.log('[ForgotPassword] ➡️ Request:', {
+                    email: email.trim(),
+                  });
+                  const res = await forgotPassword(email.trim());
+                  console.log(
+                    '[ForgotPassword] ✅ Response:',
+                    JSON.stringify(res, null, 2),
+                  );
+                  setUserId(res.user_id);
+                  setTimer(120);
+                  setStep(2);
+                } catch (e: any) {
+                  console.log(
+                    '[ForgotPassword] ❌ Error:',
+                    JSON.stringify(e?.response?.data, null, 2),
+                  );
+                  setError(
+                    e?.response?.data?.message ??
+                      e?.message ??
+                      'Failed to send OTP. Please try again.',
+                  );
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Get OTP</Text>
+              )}
             </TouchableOpacity>
           </>
         );
@@ -86,16 +139,16 @@ const ForgotPasswordScreen = () => {
             <View style={styles.iconBadge}>
               <Image source={{ uri: 'logo' }} style={styles.logo} />
             </View>
-
             <Text style={styles.heading}>Enter OTP</Text>
             <Text style={styles.desc}>
               Enter the 6-digit code sent to {email || 'your registered email'}.
             </Text>
-
             <OtpInput
               numberOfDigits={6}
-              //ts-ingnore
-              onTextChange={text => setOtp(text)}
+              onTextChange={text => {
+                setOtp(text);
+                setError('');
+              }}
               focusColor={theme.colors.primary}
               theme={{
                 pinCodeContainerStyle: {
@@ -112,21 +165,73 @@ const ForgotPasswordScreen = () => {
                 },
               }}
             />
-
             <Text style={styles.infoText}>OTP sent to your email address</Text>
-            <Text style={styles.timer}>Resend OTP in {formatTime()}</Text>
-
+            {timer > 0 ? (
+              <Text style={styles.timer}>Resend OTP in {formatTime()}</Text>
+            ) : (
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    console.log('[ResendOTP] ➡️ Request:', {
+                      email,
+                      user_id: userId,
+                    });
+                    const res = await resendOtp(email, userId);
+                    console.log(
+                      '[ResendOTP] ✅ Response:',
+                      JSON.stringify(res, null, 2),
+                    );
+                    setTimer(120);
+                    setError('');
+                  } catch (e: any) {
+                    console.log(
+                      '[ResendOTP] ❌ Error:',
+                      JSON.stringify(e?.response?.data, null, 2),
+                    );
+                    setError(
+                      e?.response?.data?.message ??
+                        e?.message ??
+                        'Failed to resend OTP.',
+                    );
+                  }
+                }}
+              >
+                <Text
+                  style={[styles.timer, { textDecorationLine: 'underline' }]}
+                >
+                  Resend OTP
+                </Text>
+              </TouchableOpacity>
+            )}
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
             <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
+              style={[styles.button, loading && { opacity: 0.6 }]}
+              disabled={loading}
+              onPress={async () => {
                 if (otp.length !== 6) {
-                  Alert.alert('Please enter valid OTP');
+                  setError('Please enter the 6-digit OTP.');
                   return;
                 }
-                setStep(3);
+                setLoading(true);
+                setError('');
+                try {
+                  await verifyOtp(otp, userId);
+                  setStep(3);
+                } catch (e: any) {
+                  setError(
+                    e?.response?.data?.message ??
+                      'Invalid OTP. Please try again.',
+                  );
+                } finally {
+                  setLoading(false);
+                }
               }}
             >
-              <Text style={styles.buttonText}>Verify OTP</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Verify OTP</Text>
+              )}
             </TouchableOpacity>
           </>
         );
@@ -148,7 +253,10 @@ const ForgotPasswordScreen = () => {
               style={styles.input}
               secureTextEntry
               value={password}
-              onChangeText={setPassword}
+              onChangeText={t => {
+                setPassword(t);
+                setError('');
+              }}
             />
 
             <Text style={styles.label}>Confirm Password</Text>
@@ -158,7 +266,10 @@ const ForgotPasswordScreen = () => {
               style={styles.input}
               secureTextEntry
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={t => {
+                setConfirmPassword(t);
+                setError('');
+              }}
             />
 
             <Text style={styles.passwordHint}>
@@ -166,11 +277,61 @@ const ForgotPasswordScreen = () => {
               number or symbol.
             </Text>
 
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
+
             <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate('StudentLogin')}
+              style={[styles.button, loading && { opacity: 0.6 }]}
+              disabled={loading}
+              onPress={async () => {
+                if (!password.trim()) {
+                  setError('Please enter a new password.');
+                  return;
+                }
+                if (password.length < 8) {
+                  setError('Password must be at least 8 characters.');
+                  return;
+                }
+                if (password !== confirmPassword) {
+                  setError('Passwords do not match.');
+                  return;
+                }
+
+                setLoading(true);
+                setError('');
+                try {
+                  console.log('[ChangePassword] ➡️ Request:', {
+                    user_id: userId,
+                  });
+                  const res = await changePassword(
+                    password,
+                    confirmPassword,
+                    userId,
+                  );
+                  console.log(
+                    '[ChangePassword] ✅ Response:',
+                    JSON.stringify(res, null, 2),
+                  );
+                  navigation.replace('SelectUser');
+                } catch (e: any) {
+                  console.log(
+                    '[ChangePassword] ❌ Error:',
+                    JSON.stringify(e?.response?.data, null, 2),
+                  );
+                  setError(
+                    e?.response?.data?.message ??
+                      e?.message ??
+                      'Failed to change password. Please try again.',
+                  );
+                } finally {
+                  setLoading(false);
+                }
+              }}
             >
-              <Text style={styles.buttonText}>Submit</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Submit</Text>
+              )}
             </TouchableOpacity>
           </>
         );
@@ -180,20 +341,25 @@ const ForgotPasswordScreen = () => {
   };
 
   return (
-    <View style={styles.safeArea}>
-      <Header
-        title="Forgot Password"
-        showBack={true}
-        onBackPress={handleBackPress}
-      />
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.card}>{renderStep()}</View>
-      </ScrollView>
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.safeArea}>
+        <Header
+          title="Forgot Password"
+          showBack={true}
+          onBackPress={handleBackPress}
+        />
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.card}>{renderStep()}</View>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -265,6 +431,13 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     color: theme.colors.textPrimary,
   },
+  passwordHint: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.md,
+    lineHeight: 18,
+  },
   button: {
     backgroundColor: theme.colors.primary,
     paddingVertical: 15,
@@ -303,9 +476,10 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.md,
     color: theme.colors.primary,
   },
-  passwordHint: {
+  errorText: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: 10,
+    color: theme.colors.danger,
+    marginBottom: theme.spacing.sm,
+    fontWeight: '500',
   },
 });
