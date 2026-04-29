@@ -175,6 +175,13 @@ export const changePassword = async (
   };
 };
 
+// ─── School Info ─────────────────────────────────────────────────────────────
+export const getSchoolInfo = async () => {
+  const { data } = await apiClient.get('/school-info');
+  console.log('[getSchoolInfo] Raw response:', JSON.stringify(data, null, 2));
+  return data?.data ?? data;
+};
+
 // ─── Update Password (authenticated user) ───────────────────────────
 export const updatePassword = async (
   current_password: string,
@@ -216,9 +223,14 @@ export const logout = async (): Promise<void> => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const _persistAuth = async (data: AuthResponse, role: UserRole) => {
-  await AsyncStorage.setItem('auth_token', data.token);
+  const token = data.token;
+  console.log('[_persistAuth] Saving token:', token ? `${token.slice(0, 20)}...` : 'NULL');
+  await AsyncStorage.setItem('auth_token', token);
   await AsyncStorage.setItem('user_data', JSON.stringify({ ...data.user, role }));
   await AsyncStorage.setItem('user_role', role);
+  // Verify it was saved
+  const saved = await AsyncStorage.getItem('auth_token');
+  console.log('[_persistAuth] Verified saved token:', saved ? `${saved.slice(0, 20)}...` : 'NULL');
 };
 
 export const getStoredUser = async (): Promise<AuthUser | null> => {
