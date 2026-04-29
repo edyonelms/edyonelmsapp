@@ -414,7 +414,7 @@ const s = StyleSheet.create({
   websiteBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 
   // Management
-  mgmtSection: { marginTop: 8, paddingHorizontal: 20},
+  mgmtSection: { marginTop: 8, paddingHorizontal: 20 },
   mgmtScroll: { paddingHorizontal: 20, gap: 12, paddingBottom: 8 },
   mgmtCard: {
     width: 130,
