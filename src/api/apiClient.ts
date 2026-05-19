@@ -5,11 +5,11 @@ import axios, {
   AxiosError,
 } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import constant from '../utils/constant';
 
-export const BASE_URL = 'https://edyonelms.in/api/v1';
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: constant.API_BASE_URL,
   timeout: 15000,
   headers: { Accept: 'application/json' },
 });

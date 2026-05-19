@@ -175,6 +175,13 @@ export const changePassword = async (
   };
 };
 
+// ─── Student Profile ───────────────────────────────────────────────
+export const getStudentProfile = async () => {
+  const { data } = await apiClient.get('/user/profile');
+  console.log('[getStudentProfile] Raw response:', JSON.stringify(data, null, 2));
+  return data?.data ?? data;
+};
+
 // ─── About App ─────────────────────────────────────────────────────────────
 export const getAboutApp = async () => {
   const { data } = await apiClient.get('/about-app');
