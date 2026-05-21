@@ -175,6 +175,13 @@ export const changePassword = async (
   };
 };
 
+// ─── Terms & Conditions ──────────────────────────────────────────────────────
+export const getTermsConditions = async () => {
+  const { data } = await apiClient.get('/terms-and-conditions');
+  console.log('[getTermsConditions] Raw response:', JSON.stringify(data, null, 2));
+  return data?.data ?? data;
+};
+
 // ─── Student Profile ───────────────────────────────────────────────
 export const getStudentProfile = async () => {
   const { data } = await apiClient.get('/user/profile');
