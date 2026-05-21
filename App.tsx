@@ -31,6 +31,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#ade8f4',
+    backgroundColor: '#fff',
   },
 });
