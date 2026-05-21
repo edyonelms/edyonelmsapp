@@ -175,6 +175,27 @@ export const changePassword = async (
   };
 };
 
+// ─── Privacy Policy ─────────────────────────────────────────────────────────
+export const getPrivacyPolicy = async () => {
+  const { data } = await apiClient.get('/privacy-policy');
+  console.log('[getPrivacyPolicy] Raw response:', JSON.stringify(data, null, 2));
+  return data?.data ?? data;
+};
+
+// ─── Terms of Use ────────────────────────────────────────────────────────────
+export const getTermsOfUse = async () => {
+  const { data } = await apiClient.get('/terms-of-use');
+  console.log('[getTermsOfUse] Raw response:', JSON.stringify(data, null, 2));
+  return data?.data ?? data;
+};
+
+// ─── Rules & Regulations ───────────────────────────────────────────────────
+export const getRulesRegulations = async () => {
+  const { data } = await apiClient.get('/rules-and-regulation');
+  console.log('[getRulesRegulations] Raw response:', JSON.stringify(data, null, 2));
+  return data?.data ?? data;
+};
+
 // ─── Terms & Conditions ──────────────────────────────────────────────────────
 export const getTermsConditions = async () => {
   const { data } = await apiClient.get('/terms-and-conditions');
