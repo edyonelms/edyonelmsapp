@@ -114,7 +114,7 @@ export default TopBar;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ade8f4',
+    backgroundColor: '#fff',
     paddingBottom: theme.spacing.sm,
     borderBottomRightRadius: theme.radius.lg,
     borderBottomLeftRadius: theme.radius.lg,
