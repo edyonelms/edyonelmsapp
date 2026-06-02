@@ -9,6 +9,9 @@ export interface CalEvent {
   description: string;
   type: Exclude<FilterType, 'All'>;
   time?: string;
+  location?: string | null;
+  color?: string;
+  isAllDay?: boolean;
 }
 
 export const TYPE_META: Record<
@@ -48,75 +51,34 @@ export const FILTERS: FilterType[] = [
   'Event',
   'Assignment',
 ];
+
 export const WEEK_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 export const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 export const YEAR_RANGE = Array.from({ length: 20 }, (_, i) => 2020 + i);
 
-export const EVENTS: CalEvent[] = [
-  {
-    id: '1',
-    date: moment().format('YYYY-MM') + '-05',
-    title: 'Easter Holiday',
-    description: 'A holiday to celebrate Easter. Time to relax and enjoy!',
-    type: 'Holiday',
-    time: 'All Day',
-  },
-  {
-    id: '2',
-    date: moment().format('YYYY-MM') + '-12',
-    title: 'Math Mid-Term Exam',
-    description: 'Prepare for the Math Mid-Term Exam. Don’t forget to study!',
-    type: 'Exam',
-    time: '09:00 AM',
-  },
-  {
-    id: '3',
-    date: moment().format('YYYY-MM') + '-15',
-    title: 'Science Assignment Due',
-    description: 'Submit your Science Assignment by the deadline: 11:59 PM.',
-    type: 'Assignment',
-    time: '11:59 PM',
-  },
-  {
-    id: '4',
-    date: moment().format('YYYY-MM') + '-22',
-    title: 'Annual Sports Day',
-    description:
-      'Join us for the Annual Sports Day! Fun events and activities all day.',
-    type: 'Event',
-    time: '08:00 AM',
-  },
-  {
-    id: '5',
-    date: moment().format('YYYY-MM') + '-22',
-    title: 'English Exam',
-    description:
-      'Prepare for your English Exam. Make sure to review your notes.',
-    type: 'Exam',
-    time: '10:00 AM',
-  },
-  {
-    id: '6',
-    date: moment().format('YYYY-MM') + '-28',
-    title: 'Parent-Teacher Meet',
-    description: 'Attend the Parent-Teacher Meet to discuss student progress.',
-    type: 'Event',
-    time: '03:00 PM',
-  },
-];
+// Helper function to group events by date
+export const groupEventsByDate = (events: CalEvent[]): Record<string, CalEvent[]> => {
+  const grouped: Record<string, CalEvent[]> = {};
+  events.forEach(event => {
+    if (!grouped[event.date]) {
+      grouped[event.date] = [];
+    }
+    grouped[event.date].push(event);
+  });
+  return grouped;
+};
+
+// Helper function to get event types for a date (for calendar dots)
+export const getEventTypesForDate = (events: CalEvent[]): Exclude<FilterType, 'All'>[] => {
+  const types = new Set<Exclude<FilterType, 'All'>>();
+  events.forEach(event => {
+    types.add(event.type);
+  });
+  return Array.from(types);
+};
 
 export function chunkWeeks(days: (string | null)[]): (string | null)[][] {
   const rows: (string | null)[][] = [];

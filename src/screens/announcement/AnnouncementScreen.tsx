@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,23 +10,85 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { ANNOUNCEMENTS, FILTERS } from './announcementData';
-import type { FilterKey, Announcement } from './announcementData';
+import { FILTERS, mapApiItem, TAG_META } from './announcementData';
+import type {
+  Announcement,
+  AnnouncementApiResponse,
+  FilterKey,
+} from './announcementData';
 import AnnouncementCard from './AnnouncementCard';
+import apiClient from '../../api/apiClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const AnnouncementScreen = ({ navigation }: any) => {
+// ── Role → allowed tags ───────────────────────────────────────────────────────
+const ROLE_TAGS: Record<string, Array<Announcement['tag']>> = {
+  student: ['All', 'Student'],
+  teacher: ['All', 'Teacher'],
+  admin: ['All', 'Teacher', 'Student', 'Admin'],
+};
+
+const AnnouncementScreen = ({ navigation, route }: any) => {
+  const [role, setRole] = useState<string>('student');
+  useEffect(() => {
+    AsyncStorage.getItem('user_role').then(r => {
+      if (r) setRole(r);
+    });
+  }, []);
+
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('15 Days');
+
+  // ── Fetch ───────────────────────────────────────────────────────────────────
+  const fetchAnnouncements = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data } = await apiClient.post('/announcement', {
+        per_page: 50,
+      });
+      
+      console.log('[API Response]', JSON.stringify(data, null, 2));
+      
+      const items = data?.data ?? data?.announcements ?? [];
+      const mapped = items.map(mapApiItem);
+      
+      console.log('[Mapped Data] First item:', mapped[0]);
+      
+      setAnnouncements(mapped);
+      
+    } catch (err: any) {
+      console.error('[API Error]', err?.response?.data);
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  // ── Filter by date window + role ────────────────────────────────────────────
+  const allowedTags = ROLE_TAGS[role.toLowerCase()] ?? ROLE_TAGS.student;
 
   const filtered = useMemo(() => {
     const f = FILTERS.find(f => f.label === activeFilter)!;
-    if (f.days === 0) return ANNOUNCEMENTS.filter(d => d.daysAgo === 0);
-    return ANNOUNCEMENTS.filter(d => d.daysAgo <= f.days);
-  }, [activeFilter]);
+    return announcements.filter(d => {
+      const withinDays = f.days === 0 ? d.daysAgo === 0 : d.daysAgo <= f.days;
+      const roleMatch = allowedTags.includes(d.tag);
+      return withinDays && roleMatch;
+    });
+  }, [activeFilter, announcements, allowedTags]);
 
   const handleCardPress = (item: Announcement) => {
     navigation.navigate('ViewAnnouncement', { item });
   };
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <View style={s.root}>
       <Header title="Announcement" onBackPress={() => navigation.goBack()} />
@@ -63,34 +126,53 @@ const AnnouncementScreen = ({ navigation }: any) => {
         </ScrollView>
       </View>
 
-      {/* List */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.listContent}
-      >
-        {filtered.length === 0 ? (
-          <View style={s.emptyBox}>
-            <View style={s.emptyIconRing}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="megaphone-outline"
-                size={36}
-                color={theme.colors.primary}
-              />
+      {/* Body */}
+      {loading ? (
+        <View style={s.centeredBox}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : error ? (
+        <View style={s.centeredBox}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="cloud-offline-outline"
+            size={36}
+            color={theme.colors.textMuted}
+          />
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={fetchAnnouncements}>
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.listContent}
+        >
+          {filtered.length === 0 ? (
+            <View style={s.emptyBox}>
+              <View style={s.emptyIconRing}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="megaphone-outline"
+                  size={36}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <Text style={s.emptyTitle}>No announcements</Text>
+              <Text style={s.emptySubtitle}>Nothing posted in this period</Text>
             </View>
-            <Text style={s.emptyTitle}>No announcements</Text>
-            <Text style={s.emptySubtitle}>Nothing posted in this period</Text>
-          </View>
-        ) : (
-          filtered.map(item => (
-            <AnnouncementCard
-              key={item.id}
-              item={item}
-              onPress={handleCardPress}
-            />
-          ))
-        )}
-      </ScrollView>
+          ) : (
+            filtered.map(item => (
+              <AnnouncementCard
+                key={item.id}
+                item={item}
+                onPress={handleCardPress}
+              />
+            ))
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -130,6 +212,26 @@ const s = StyleSheet.create({
     paddingTop: 4,
     gap: 14,
   },
+
+  centeredBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { fontSize: 14, fontWeight: '700', color: theme.colors.white },
 
   emptyBox: { alignItems: 'center', paddingTop: 60 },
   emptyIconRing: {

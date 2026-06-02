@@ -24,6 +24,16 @@ interface Props {
   onClose: () => void;
 }
 
+// AttachmentPreviewModal.tsx - Add these props
+interface AttachmentPreviewModalProps {
+  visible: boolean;
+  type: PreviewType;
+  accentColor: string;
+  imageUrl?: string;
+  pdfUrl?: string;
+  onClose: () => void;
+}
+
 const AttachmentPreviewModal = ({
   visible,
   type,

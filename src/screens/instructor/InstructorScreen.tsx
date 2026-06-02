@@ -1,113 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dimensions,
   FlatList,
   Image,
-  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import { getInstructors, getInstructorDetails } from '../../api/instructorApi';
+import InstructorDetailModal from './InstructorDetailModal';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 36) / 2;
 
-const instructors = [
-  {
-    id: '1',
-    name: 'Ravi Sharma',
-    subject: 'Physics',
-    email: 'ravi.sharma@edyone.in',
-    qualification: 'M.Sc Physics, B.Ed',
-    phone: '+919876543210',
-    gradient: ['#6366F1', '#818CF8'],
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-  },
-  {
-    id: '2',
-    name: 'Priya Mehta',
-    subject: 'Mathematics',
-    email: 'priya.mehta@edyone.in',
-    qualification: 'M.Sc Mathematics',
-    phone: '+919123456789',
-    gradient: ['#EC4899', '#F472B6'],
-    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-  },
-  {
-    id: '3',
-    name: 'Anil Verma',
-    subject: 'Chemistry',
-    email: 'anil.verma@edyone.in',
-    qualification: 'Ph.D Chemistry',
-    phone: '+919988776655',
-    gradient: ['#F59E0B', '#FCD34D'],
-    avatar: 'https://randomuser.me/api/portraits/men/75.jpg',
-  },
-  {
-    id: '4',
-    name: 'Sunita Rao',
-    subject: 'Biology',
-    email: 'sunita.rao@edyone.in',
-    qualification: 'M.Sc Biology, B.Ed',
-    phone: '+918765432109',
-    gradient: ['#10B981', '#34D399'],
-    avatar: 'https://randomuser.me/api/portraits/women/65.jpg',
-  },
-  {
-    id: '5',
-    name: 'Deepak Singh',
-    subject: 'English',
-    email: 'deepak.singh@edyone.in',
-    qualification: 'M.A English, B.Ed',
-    phone: '+917654321098',
-    gradient: ['#3B82F6', '#60A5FA'],
-    avatar: 'https://randomuser.me/api/portraits/men/85.jpg',
-  },
-  {
-    id: '6',
-    name: 'Kavita Joshi',
-    subject: 'History',
-    email: 'kavita.joshi@edyone.in',
-    qualification: 'M.A History',
-    phone: '+916543210987',
-    gradient: ['#8B5CF6', '#A78BFA'],
-    avatar: 'https://randomuser.me/api/portraits/women/90.jpg',
-  },
-];
+const getGradient = (id: number) => {
+  const gradients = [
+    ['#6366F1', '#818CF8'],
+    ['#EC4899', '#F472B6'],
+    ['#F59E0B', '#FCD34D'],
+    ['#10B981', '#34D399'],
+    ['#3B82F6', '#60A5FA'],
+    ['#8B5CF6', '#A78BFA'],
+  ];
+  return gradients[id % gradients.length];
+};
 
-type Instructor = (typeof instructors)[0];
+const InstructorCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
+  const gradient = getGradient(item.id);
+  const subjectNames = item.subjects?.map((s: any) => s.name).join(', ') || 'No subjects';
 
-const InstructorCard = ({ item }: { item: Instructor }) => {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
       {/* Gradient header bg */}
       <LinearGradient
-        colors={item.gradient}
+        colors={gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.cardHeader}
       >
         {/* Subject pill */}
         <View style={styles.subjectPill}>
-          <Text style={styles.subjectText}>{item.subject}</Text>
+          <Text style={styles.subjectText} numberOfLines={1}>
+            {subjectNames}
+          </Text>
         </View>
       </LinearGradient>
 
       {/* Floating avatar */}
-      <View style={[styles.avatarWrapper, { borderColor: item.gradient[0] }]}>
+      <View style={[styles.avatarWrapper, { borderColor: gradient[0] }]}>
         {item.avatar ? (
           <Image source={{ uri: item.avatar }} style={styles.avatarImg} />
         ) : (
-          <LinearGradient colors={item.gradient} style={styles.avatarFallback}>
+          <LinearGradient colors={gradient} style={styles.avatarFallback}>
             <Text style={styles.initials}>
               {item.name
                 .split(' ')
-                .map(n => n[0])
+                .map((n: string) => n[0])
                 .join('')}
             </Text>
           </LinearGradient>
@@ -125,14 +79,14 @@ const InstructorCard = ({ item }: { item: Instructor }) => {
           <View
             style={[
               styles.iconBox,
-              { backgroundColor: item.gradient[0] + '18' },
+              { backgroundColor: gradient[0] + '18' },
             ]}
           >
             <VectorIcon
               iconSet="Feather"
               iconName="mail"
               size={11}
-              color={item.gradient[0]}
+              color={gradient[0]}
             />
           </View>
           <Text style={styles.infoText} numberOfLines={1}>
@@ -144,55 +98,148 @@ const InstructorCard = ({ item }: { item: Instructor }) => {
           <View
             style={[
               styles.iconBox,
-              { backgroundColor: item.gradient[0] + '18' },
+              { backgroundColor: gradient[0] + '18' },
             ]}
           >
             <VectorIcon
               iconSet="Ionicons"
-              iconName="school-outline"
+              iconName="briefcase-outline"
               size={11}
-              color={item.gradient[0]}
+              color={gradient[0]}
             />
           </View>
           <Text style={styles.infoText} numberOfLines={1}>
-            {item.qualification}
+            ID: {item.employee_id}
           </Text>
         </View>
 
-        {/* Call button */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-        //   onPress={() => Linking.openURL(`tel:${item.phone}`)}
-          style={styles.callBtnWrapper}
-        >
+        {/* Chat button */}
+        <View style={styles.callBtnWrapper}>
           <LinearGradient
-            colors={item.gradient}
+            colors={gradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.callBtn}
           >
-            <Text style={styles.callBtnText}>Chat Now</Text>
+            <Text style={styles.callBtnText}>View Profile</Text>
           </LinearGradient>
-        </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
-const InstructorScreen = () => (
-  <View style={styles.screen}>
-    <Header title="Instructors" />
-    <FlatList
-      data={instructors}
-      keyExtractor={i => i.id}
-      numColumns={2}
-      contentContainerStyle={styles.list}
-      columnWrapperStyle={styles.row}
-      renderItem={({ item }) => <InstructorCard item={item} />}
-      showsVerticalScrollIndicator={false}
-    />
-  </View>
-);
+const InstructorScreen = () => {
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedInstructor, setSelectedInstructor] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Fetch instructors
+  const fetchInstructors = useCallback(async () => {
+    console.log('[InstructorScreen] Fetching instructors...');
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await getInstructors(20);
+      console.log('[InstructorScreen] Instructors fetched:', data.length);
+      setInstructors(data);
+    } catch (err: any) {
+      console.error('[InstructorScreen] Error:', err?.message);
+      setError(err?.message || 'Failed to load instructors');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInstructors();
+  }, [fetchInstructors]);
+
+  // Handle instructor press - fetch details
+  const handleInstructorPress = async (instructor: any) => {
+    console.log('[InstructorScreen] Instructor pressed:', instructor.id);
+    setSelectedInstructor(instructor);
+    setModalVisible(true);
+    setDetailLoading(true);
+    
+    try {
+      const details = await getInstructorDetails(instructor.id);
+      console.log('[InstructorScreen] Details fetched successfully');
+      
+      // Merge details with existing instructor data
+      if (details?.data) {
+        setSelectedInstructor({
+          ...instructor,
+          ...details.data,
+        });
+      }
+    } catch (err: any) {
+      console.error('[InstructorScreen] Error fetching details:', err?.message);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    console.log('[InstructorScreen] Closing modal');
+    setModalVisible(false);
+    setSelectedInstructor(null);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.screen}>
+        <Header title="Instructors" />
+        <View style={styles.centeredBox}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.screen}>
+        <Header title="Instructors" />
+        <View style={styles.centeredBox}>
+          <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={36} color={theme.colors.textMuted} />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchInstructors}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.screen}>
+      <Header title="Instructors" />
+      <FlatList
+        data={instructors}
+        keyExtractor={(item) => String(item.id)}
+        numColumns={2}
+        contentContainerStyle={styles.list}
+        columnWrapperStyle={styles.row}
+        renderItem={({ item }) => (
+          <InstructorCard item={item} onPress={() => handleInstructorPress(item)} />
+        )}
+        showsVerticalScrollIndicator={false}
+      />
+      
+      <InstructorDetailModal
+        visible={modalVisible}
+        instructor={selectedInstructor}
+        loading={detailLoading}
+        onClose={handleCloseModal}
+      />
+    </View>
+  );
+};
 
 export default InstructorScreen;
 
@@ -200,6 +247,30 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F1F5F9' },
   list: { padding: 12, paddingBottom: 30 },
   row: { justifyContent: 'space-between', marginBottom: 0 },
+  centeredBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.white,
+  },
   card: {
     width: CARD_WIDTH,
     backgroundColor: '#fff',
@@ -228,6 +299,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
+    maxWidth: '100%',
   },
   subjectText: {
     color: '#fff',
@@ -297,7 +369,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     flex: 1,
   },
-
   callBtnWrapper: {
     width: '100%',
     marginTop: 12,

@@ -10,18 +10,39 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { studentContactAdmin, teacherContactAdmin } from '../../api/contactApi';
 
 const ContactSchoolScreen = ({ navigation }: any) => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [attachment, setAttachment] = useState<{ name: string; uri: string } | null>(null);
+  const [attachment, setAttachment] = useState<{ name: string; uri: string; type?: string } | null>(null);
   const [subjectFocused, setSubjectFocused] = useState(false);
   const [messageFocused, setMessageFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<string>('student');
+
+  // Load role on mount
+  React.useEffect(() => {
+    loadRole();
+  }, []);
+
+  const loadRole = async () => {
+    try {
+      const userRole = await AsyncStorage.getItem('user_role');
+      if (userRole) {
+        setRole(userRole);
+      }
+    } catch (error) {
+      console.error('Error loading role:', error);
+    }
+  };
 
   const requestAndroidPermission = async (): Promise<boolean> => {
     // Android 13+ (API 33+): image picker uses system photo picker — no permission needed
@@ -65,13 +86,14 @@ const ContactSchoolScreen = ({ navigation }: any) => {
           setAttachment({
             name: asset.fileName ?? 'attachment',
             uri: asset.uri ?? '',
+            type: asset.type ?? 'image/jpeg',
           });
         }
       },
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!subject.trim()) {
       Alert.alert('Missing Subject', 'Please enter a subject for your query.');
       return;
@@ -80,9 +102,47 @@ const ContactSchoolScreen = ({ navigation }: any) => {
       Alert.alert('Missing Message', 'Please enter your query message.');
       return;
     }
-    Alert.alert('Query Submitted', 'Your query has been submitted successfully.', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+
+    setLoading(true);
+    try {
+      console.log('[ContactSchoolScreen] Submitting as role:', role);
+      
+      let response;
+      if (role === 'student') {
+        response = await studentContactAdmin({
+          subject: subject.trim(),
+          message: message.trim(),
+          attachment: attachment || undefined,
+        });
+      } else {
+        response = await teacherContactAdmin({
+          subject: subject.trim(),
+          message: message.trim(),
+          attachment: attachment || undefined,
+        });
+      }
+
+      console.log('[ContactSchoolScreen] Submit success:', response);
+      
+      Alert.alert(
+        'Query Submitted',
+        'Your query has been submitted successfully. We will get back to you shortly.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (err: any) {
+      console.error('[ContactSchoolScreen] Submit error:', err?.response?.data || err.message);
+      
+      let errorMessage = 'Failed to submit query. Please try again.';
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
+      Alert.alert('Submission Failed', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -172,9 +232,16 @@ const ContactSchoolScreen = ({ navigation }: any) => {
             activeOpacity={0.85}
             onPress={handleSubmit}
             style={s.submitBtn}
+            disabled={loading}
           >
-            <VectorIcon iconSet="Ionicons" iconName="send" size={16} color="#fff" />
-            <Text style={s.submitText}>Submit Query</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <VectorIcon iconSet="Ionicons" iconName="send" size={16} color="#fff" />
+                <Text style={s.submitText}>Submit Query</Text>
+              </>
+            )}
           </TouchableOpacity>
 
         </ScrollView>

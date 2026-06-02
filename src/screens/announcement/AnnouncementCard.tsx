@@ -49,9 +49,9 @@ const AnnouncementCard = ({ item, onPress }: Props) => {
           </View>
         </View>
 
-        {/* Body preview */}
+        {/* Body preview - FIXED: changed from item.body to item.content */}
         <Text style={s.body} numberOfLines={2}>
-          {item.body}
+          {item.content}
         </Text>
 
         {/* Attachments hint */}
