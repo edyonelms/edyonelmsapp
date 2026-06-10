@@ -165,6 +165,8 @@ const DrawerNavigator = ({ route }: any) => {
           'auth_token',
           'user_data',
           'user_role',
+          'switch_accounts',
+          'switch_active_user_id',
         ]);
         console.log('[Logout] Storage cleared');
       } catch (e) {

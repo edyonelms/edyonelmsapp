@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,8 @@ import {
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { theme } from '../utils/theme';
 import VectorIcon from './VectorIcon';
+import AccountSwitcherSheet from './AccountSwitcherSheet';
+import { getActiveAccount } from '../utils/accountStore';
 
 interface TopBarProps {
   userName?: string;
@@ -19,13 +21,29 @@ interface TopBarProps {
 }
 
 const TopBar = ({
-  userName = 'Rahul Sharma',
+  userName,
   searchValue,
   onSearchChange,
   onBellPress,
   onAvatarPress,
 }: TopBarProps) => {
   const navigation = useNavigation<any>();
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [displayName, setDisplayName]   = useState<string>(userName ?? '');
+
+  const refreshName = useCallback(async () => {
+    if (userName) { setDisplayName(userName); return; }
+    const a = await getActiveAccount();
+    if (a?.name) setDisplayName(a.name);
+  }, [userName]);
+
+  useEffect(() => { refreshName(); }, [refreshName]);
+
+  // After the switcher closes the active account might have changed.
+  const onSwitcherClose = () => {
+    setSwitcherOpen(false);
+    refreshName();
+  };
 
   const openDrawer = () => {
     const parent = navigation.getParent?.();
@@ -48,28 +66,21 @@ const TopBar = ({
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.userInfo} >
-          {/* <View style={styles.userInfo}> */}
-            <Text style={styles.userName} numberOfLines={1}>
-              {userName}
-            </Text>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="caret-down"
-              size={20}
-              color="#111"
-            />
-          {/* </View> */}
-        </TouchableOpacity>
-
-        {/* <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
+        <TouchableOpacity
+          style={styles.userInfo}
+          activeOpacity={0.7}
+          onPress={() => setSwitcherOpen(true)}
+        >
+          <Text style={styles.userName} numberOfLines={1}>
+            {displayName || 'Account'}
+          </Text>
           <VectorIcon
             iconSet="Ionicons"
-            iconName="swap-horizontal-outline"
+            iconName="caret-down"
             size={20}
             color="#111"
           />
-        </TouchableOpacity> */}
+        </TouchableOpacity>
 
         <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
           <VectorIcon
@@ -106,6 +117,8 @@ const TopBar = ({
           style={styles.input}
         />
       </View>
+
+      <AccountSwitcherSheet visible={switcherOpen} onClose={onSwitcherClose} />
     </View>
   );
 };
