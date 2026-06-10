@@ -412,7 +412,7 @@ const DrawerNavigator = ({ route }: any) => {
       <Drawer.Screen
         name="Book"
         component={BooksScreen}
-        initialParams={{ title: 'Book' }}
+        initialParams={{ title: 'Book', userRole: role }}
       />
       <Drawer.Screen
         name="Instructor"

@@ -1,98 +1,48 @@
 import { theme } from '../../utils/theme';
 
-export interface Book {
-  id: string;
-  title: string;
-  subject: string;
-  imageUri: string;
-  pages: number;
-  size: string;
+// Per-subject color palette used by the chip filter and the card badge.
+// Known subjects get a fixed color; everything else falls back to a hashed
+// pick from PALETTE so two same-named subjects always render identically.
+
+export interface SubjectMeta {
+  color: string;
+  bg:    string;
 }
 
-export const SUBJECT_COLORS: Record<string, { color: string; bg: string }> = {
-  All: { color: theme.colors.primary, bg: theme.colors.primaryLight },
-  Hindi: { color: '#8B5CF6', bg: '#EDE9FE' },
-  Maths: { color: '#0EA5E9', bg: '#E0F2FE' },
-  Science: { color: '#10B981', bg: '#D1FAE5' },
-  SST: { color: '#F59E0B', bg: '#FEF3C7' },
-  English: { color: '#EF4444', bg: '#FEE2E2' },
+const KNOWN: Record<string, SubjectMeta> = {
+  All:      { color: theme.colors.primary, bg: theme.colors.primaryLight },
+  Hindi:    { color: '#8B5CF6', bg: '#EDE9FE' },
+  Maths:    { color: '#0EA5E9', bg: '#E0F2FE' },
+  Math:     { color: '#0EA5E9', bg: '#E0F2FE' },
+  Mathematics: { color: '#0EA5E9', bg: '#E0F2FE' },
+  Science:  { color: '#10B981', bg: '#D1FAE5' },
+  SST:      { color: '#F59E0B', bg: '#FEF3C7' },
+  'Social Studies': { color: '#F59E0B', bg: '#FEF3C7' },
+  English:  { color: '#EF4444', bg: '#FEE2E2' },
+  Physics:  { color: '#6366F1', bg: '#E0E7FF' },
+  Chemistry:{ color: '#14B8A6', bg: '#CCFBF1' },
+  Biology:  { color: '#22C55E', bg: '#DCFCE7' },
+  Computer: { color: '#F97316', bg: '#FFEDD5' },
 };
 
-export const SUBJECTS = [
-  'All',
-  ...Object.keys(SUBJECT_COLORS).filter(s => s !== 'All'),
+const PALETTE: SubjectMeta[] = [
+  { color: '#6366F1', bg: '#E0E7FF' },
+  { color: '#0EA5E9', bg: '#E0F2FE' },
+  { color: '#10B981', bg: '#D1FAE5' },
+  { color: '#F59E0B', bg: '#FEF3C7' },
+  { color: '#EF4444', bg: '#FEE2E2' },
+  { color: '#8B5CF6', bg: '#EDE9FE' },
+  { color: '#EC4899', bg: '#FCE7F3' },
+  { color: '#14B8A6', bg: '#CCFBF1' },
 ];
 
-export const BOOKS: Book[] = [
-  {
-    id: '1',
-    title: 'Hindi Book',
-    subject: 'Hindi',
-    imageUri:
-      'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400',
-    pages: 240,
-    size: '12 MB',
-  },
-  {
-    id: '2',
-    title: 'Mathematics Vol 1',
-    subject: 'Maths',
-    imageUri: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400',
-    pages: 320,
-    size: '18 MB',
-  },
-  {
-    id: '3',
-    title: 'Kshitij Bhag 2',
-    subject: 'Hindi',
-    imageUri:
-      'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400',
-    pages: 180,
-    size: '9 MB',
-  },
-  {
-    id: '4',
-    title: 'Science Explorer',
-    subject: 'Science',
-    imageUri:
-      'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400',
-    pages: 290,
-    size: '22 MB',
-  },
-  {
-    id: '5',
-    title: 'Social Studies',
-    subject: 'SST',
-    imageUri:
-      'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400',
-    pages: 210,
-    size: '14 MB',
-  },
-  {
-    id: '6',
-    title: 'English Reader',
-    subject: 'English',
-    imageUri:
-      'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400',
-    pages: 160,
-    size: '8 MB',
-  },
-  {
-    id: '7',
-    title: 'Physics Part 1',
-    subject: 'Science',
-    imageUri:
-      'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400',
-    pages: 350,
-    size: '25 MB',
-  },
-  {
-    id: '8',
-    title: 'Maths Vol 2',
-    subject: 'Maths',
-    imageUri:
-      'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400',
-    pages: 300,
-    size: '20 MB',
-  },
-];
+const hash = (s: string): number => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+};
+
+export const subjectMetaFor = (subject: string): SubjectMeta => {
+  if (KNOWN[subject]) return KNOWN[subject];
+  return PALETTE[hash(subject) % PALETTE.length];
+};
