@@ -15,7 +15,7 @@ import {
   SubjectSeat,
   TYPE_ICON,
 } from './examData';
-import ExamFilterChips from './ExamFilterChips';
+import ExamDropdown from './ExamDropdown';
 
 // Rotating accent colors so each subject card gets its own identity
 const ACCENTS = [
@@ -104,12 +104,12 @@ const SeatingPlanScreen = ({ navigation }: any) => {
     <View style={s.root}>
       <Header title="Seating Plan" onBackPress={() => navigation.goBack()} />
 
-      <ExamFilterChips selectedId={exam.id} onSelect={setExam} />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.listContent}
       >
+        <ExamDropdown selected={exam} onSelect={setExam} />
+
         {/* Summary banner */}
         <View style={s.summaryCard}>
           <View style={s.summaryIconRing}>

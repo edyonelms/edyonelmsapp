@@ -20,7 +20,7 @@ import {
   STUDENT_INFO,
   TYPE_ICON,
 } from './examData';
-import ExamFilterChips from './ExamFilterChips';
+import ExamDropdown from './ExamDropdown';
 
 const pdfName = (exam: Exam) =>
   `Admit_Card_${exam.name.replace(/\s+/g, '_')}_${exam.academicYear}.pdf`;
@@ -56,12 +56,12 @@ const AdmitCardScreen = ({ navigation }: any) => {
     <View style={s.root}>
       <Header title="Admit Card" onBackPress={() => navigation.goBack()} />
 
-      <ExamFilterChips selectedId={exam.id} onSelect={chooseExam} />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.listContent}
       >
+        <ExamDropdown selected={exam} onSelect={chooseExam} />
+
         {/* ── Selected exam card (announcement style) ── */}
         <View style={s.card}>
           <View style={[s.accent, { backgroundColor: status.accent }]} />

@@ -19,7 +19,7 @@ import {
   STUDENT_INFO,
   SubjectResult,
 } from './examData';
-import ExamFilterChips from './ExamFilterChips';
+import ExamDropdown from './ExamDropdown';
 
 // Question-wise mock split of the obtained marks for the copy preview
 const QUESTION_SPLIT = [0.2, 0.2, 0.25, 0.2, 0.15];
@@ -125,12 +125,12 @@ const ExamCopyScreen = ({ navigation }: any) => {
     <View style={s.root}>
       <Header title="Exam Copy" onBackPress={() => navigation.goBack()} />
 
-      <ExamFilterChips selectedId={exam.id} onSelect={setExam} />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.listContent}
       >
+        <ExamDropdown selected={exam} onSelect={setExam} />
+
         {results.length > 0 && (
           <View style={s.infoBanner}>
             <VectorIcon

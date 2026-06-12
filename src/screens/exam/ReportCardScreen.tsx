@@ -254,7 +254,7 @@ const ReportCardScreen = ({ navigation }: any) => {
               <Text style={s.thumbSchool}>EDYONE PUBLIC SCHOOL</Text>
               <Text style={s.thumbTitle}>REPORT CARD · {report.year}</Text>
               <View style={s.thumbTable}>
-                {report.subjects.slice(0, 4).map(r => (
+                {report.subjects.map(r => (
                   <View key={r.code} style={s.thumbRow}>
                     <View style={s.thumbCellWide} />
                     <View style={s.thumbCell} />
@@ -514,9 +514,9 @@ const s = StyleSheet.create({
   statLabel: { fontSize: 10, fontWeight: '600', color: theme.colors.textMuted },
 
   // WhatsApp-style bubble
-  bubbleWrap: { alignItems: 'flex-end' },
+  bubbleWrap: { alignItems: 'stretch' },
   bubble: {
-    width: '88%',
+    width: '100%',
     backgroundColor: '#E7FFDB',
     borderRadius: theme.radius.lg,
     borderTopRightRadius: 4,
@@ -532,7 +532,7 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.sm,
     padding: 12,
     overflow: 'hidden',
-    height: 120,
+    height: 160,
   },
   thumbSchool: {
     fontSize: 9,
