@@ -328,6 +328,8 @@ const DrawerNavigator = ({ route }: any) => {
         drawerStyle: {
           backgroundColor: theme.colors.surface,
           width: '70%',
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
         },
         drawerType: 'front',
       }}

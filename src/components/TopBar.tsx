@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   TextInput,
+  Image,
 } from 'react-native';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { theme } from '../utils/theme';
@@ -30,19 +31,22 @@ const TopBar = ({
   const navigation = useNavigation<any>();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [displayName, setDisplayName]   = useState<string>(userName ?? '');
+  const [avatarUri, setAvatarUri]       = useState<string | null>(null);
+  const [avatarBroken, setAvatarBroken] = useState(false);
 
-  const refreshName = useCallback(async () => {
-    if (userName) { setDisplayName(userName); return; }
+  const refreshAccount = useCallback(async () => {
     const a = await getActiveAccount();
-    if (a?.name) setDisplayName(a.name);
+    setDisplayName(userName || a?.name || '');
+    setAvatarUri(a?.image ?? null);
+    setAvatarBroken(false);
   }, [userName]);
 
-  useEffect(() => { refreshName(); }, [refreshName]);
+  useEffect(() => { refreshAccount(); }, [refreshAccount]);
 
   // After the switcher closes the active account might have changed.
   const onSwitcherClose = () => {
     setSwitcherOpen(false);
-    refreshName();
+    refreshAccount();
   };
 
   const openDrawer = () => {
@@ -59,9 +63,9 @@ const TopBar = ({
           style={styles.menuBtn}
         >
           <VectorIcon
-            iconSet="FontAwesome6"
-            iconName="bars-staggered"
-            size={28}
+            iconSet="Feather"
+            iconName="menu"
+            size={26}
             color="#111"
           />
         </TouchableOpacity>
@@ -92,12 +96,20 @@ const TopBar = ({
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onAvatarPress} style={styles.iconBtn}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="person-circle-outline"
-            size={22}
-            color="#111"
-          />
+          {avatarUri && !avatarBroken ? (
+            <Image
+              source={{ uri: avatarUri }}
+              onError={() => setAvatarBroken(true)}
+              style={styles.avatarImg}
+            />
+          ) : (
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="person-circle-outline"
+              size={22}
+              color="#111"
+            />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -181,5 +193,12 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: theme.radius.full,
+    resizeMode: 'cover',
   },
 });
