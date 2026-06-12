@@ -9,8 +9,9 @@ import {
   Image,
   KeyboardAvoidingView,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { theme } from '../../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import VectorIcon from '../../../components/VectorIcon';
@@ -22,8 +23,32 @@ const LoginTeacherScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Error popup: slide up from the bottom, auto-dismiss after a few seconds.
+  const errorAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!error) {
+      errorAnim.setValue(0);
+      return;
+    }
+    Animated.timing(errorAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+    const timer = setTimeout(() => {
+      Animated.timing(errorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setError(''));
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [error, errorAnim]);
 
   // Edge-to-edge Android ignores adjustResize, so scroll the form above the
   // keyboard ourselves once the keyboard animation has started. Scroll only
@@ -129,20 +154,32 @@ const LoginTeacherScreen = () => {
             <TextInput
               placeholder="teacher@school.com"
               placeholderTextColor={theme.colors.textMuted}
-              style={styles.input}
+              style={[
+                styles.input,
+                (emailFocused || !!email) && styles.inputActive,
+              ]}
               value={email}
               onChangeText={t => {
                 setEmail(t);
                 setError('');
               }}
-              onFocus={scrollFormIntoView}
+              onFocus={() => {
+                setEmailFocused(true);
+                scrollFormIntoView();
+              }}
+              onBlur={() => setEmailFocused(false)}
               keyboardType="email-address"
               autoCapitalize="none"
             />
 
             {/* Password */}
             <Text style={styles.label}>Password</Text>
-            <View style={styles.passWrap}>
+            <View
+              style={[
+                styles.passWrap,
+                (passwordFocused || !!password) && styles.inputActive,
+              ]}
+            >
               <TextInput
                 placeholder="Enter password"
                 placeholderTextColor={theme.colors.textMuted}
@@ -153,7 +190,11 @@ const LoginTeacherScreen = () => {
                   setPassword(t);
                   setError('');
                 }}
-                onFocus={scrollFormIntoView}
+                onFocus={() => {
+                  setPasswordFocused(true);
+                  scrollFormIntoView();
+                }}
+                onBlur={() => setPasswordFocused(false)}
               />
               <TouchableOpacity
                 onPress={() => setShowPass(v => !v)}
@@ -175,24 +216,15 @@ const LoginTeacherScreen = () => {
               <Text style={styles.forgot}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            {/* Error */}
-            {!!error && (
-              <View style={styles.errorBox}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="alert-circle-outline"
-                  size={14}
-                  color={theme.colors.danger}
-                />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
             <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                (loading || !email.trim() || !password.trim()) &&
+                  styles.buttonDisabled,
+              ]}
               activeOpacity={0.9}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loading || !email.trim() || !password.trim()}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -203,6 +235,34 @@ const LoginTeacherScreen = () => {
           </View>
           <View style={{ height: 100 }} />
         </ScrollView>
+
+        {/* Error popup pinned to the bottom of the screen */}
+        {!!error && (
+          <Animated.View
+            style={[
+              styles.errorToast,
+              {
+                opacity: errorAnim,
+                transform: [
+                  {
+                    translateY: errorAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [24, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="alert-circle-outline"
+              size={18}
+              color={theme.colors.white}
+            />
+            <Text style={styles.errorToastText}>{error}</Text>
+          </Animated.View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -228,7 +288,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   logo: { width: 140, height: 140, resizeMode: 'contain' },
   title: {
@@ -236,7 +296,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
     textAlign: 'center',
-    paddingTop: 26,
   },
   subtitle: {
     fontSize: 15,
@@ -266,6 +325,9 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     color: theme.colors.textPrimary,
   },
+  inputActive: {
+    borderColor: '#5B7FFF',
+  },
   passWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,29 +349,36 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
     fontWeight: '500',
   },
-  errorBox: {
+  errorToast: {
+    position: 'absolute',
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
+    bottom: theme.spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFF3F3',
-    borderWidth: 1,
-    borderColor: '#F6C7C7',
-    borderRadius: theme.radius.sm,
-    padding: 10,
-    marginBottom: theme.spacing.sm,
+    gap: 8,
+    backgroundColor: theme.colors.danger,
+    borderRadius: theme.radius.md,
+    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.md,
+    elevation: 6,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
-  errorText: {
+  errorToastText: {
     flex: 1,
-    fontSize: 12,
-    color: theme.colors.danger,
+    fontSize: 13,
+    color: theme.colors.white,
     fontWeight: '500',
   },
   button: {
-    backgroundColor: '#000',
-    paddingVertical: 14,
-    borderRadius: 100,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 12,
+    borderRadius: 99,
     alignItems: 'center',
   },
-  buttonDisabled: { opacity: 0.6 },
+  buttonDisabled: { backgroundColor: '#B0B0B0' },
   buttonText: { color: theme.colors.white, fontWeight: '600', fontSize: 16 },
 });
