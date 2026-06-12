@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   PermissionsAndroid,
   Platform,
   ScrollView,
@@ -25,6 +26,7 @@ const ContactSchoolScreen = ({ navigation }: any) => {
   const [attachment, setAttachment] = useState<{ name: string; uri: string; type?: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<string>('student');
+  const [successVisible, setSuccessVisible] = useState(false);
 
   // Load role on mount
   React.useEffect(() => {
@@ -122,11 +124,7 @@ const ContactSchoolScreen = ({ navigation }: any) => {
 
       console.log('[ContactSchoolScreen] Submit success:', response);
 
-      Alert.alert(
-        'Query Submitted',
-        'Your query has been submitted successfully. We will get back to you shortly.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      setSuccessVisible(true);
     } catch (err: any) {
       console.error('[ContactSchoolScreen] Submit error:', err?.response?.data || err.message);
 
@@ -266,6 +264,51 @@ const ContactSchoolScreen = ({ navigation }: any) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── Query submitted modal (logout style) ── */}
+      <Modal
+        transparent
+        visible={successVisible}
+        animationType="fade"
+        onRequestClose={() => {
+          setSuccessVisible(false);
+          navigation.goBack();
+        }}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <View style={s.modalIconWrap}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="checkmark-circle-outline"
+                size={28}
+                color="#16A34A"
+              />
+            </View>
+
+            <Text style={s.modalTitle}>Query Submitted</Text>
+            <Text style={s.modalDesc}>
+              Your query has been submitted successfully. We will get back to
+              you shortly.
+            </Text>
+
+            <View style={s.modalActions}>
+              <TouchableOpacity
+                style={[s.modalBtn, s.modalBtnConfirm]}
+                activeOpacity={0.9}
+                onPress={() => {
+                  setSuccessVisible(false);
+                  navigation.goBack();
+                }}
+              >
+                <Text style={[s.modalBtnText, s.modalBtnConfirmText]}>
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -396,4 +439,67 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   submitText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+
+  // Success modal (logout style)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  modalIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.full,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalDesc: {
+    marginTop: theme.spacing.sm,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  modalBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalBtnConfirm: {
+    backgroundColor: '#16A34A',
+  },
+  modalBtnConfirmText: {
+    color: theme.colors.white,
+  },
 });
