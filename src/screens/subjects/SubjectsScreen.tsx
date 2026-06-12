@@ -40,9 +40,6 @@ const SubjectCard = ({ item, onPress }: { item: Subject; onPress: () => void }) 
 );
 
 const SubjectsScreen = ({ navigation }: any) => {
-  const totalChapters = SUBJECTS.reduce((s, sub) => s + sub.chapters.length, 0);
-  const totalTopics   = SUBJECTS.reduce((s, sub) => sub.chapters.reduce((cs, c) => cs + c.topics.length, s), 0);
-
   return (
     <View style={s.root}>
       <Header title="Subjects" />
@@ -55,28 +52,11 @@ const SubjectsScreen = ({ navigation }: any) => {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
-            {/* Summary banner */}
-            <View style={s.banner}>
-              {/* <View style={s.bannerBlob} /> */}
-              <View style={s.bannerContent}>
-                <View style={s.bannerStat}>
-                  <Text style={s.bannerStatVal}>{SUBJECTS.length}</Text>
-                  <Text style={s.bannerStatLbl}>Subjects</Text>
-                </View>
-                <View style={s.bannerDivider} />
-                <View style={s.bannerStat}>
-                  <Text style={s.bannerStatVal}>{totalChapters}</Text>
-                  <Text style={s.bannerStatLbl}>Chapters</Text>
-                </View>
-                <View style={s.bannerDivider} />
-                <View style={s.bannerStat}>
-                  <Text style={s.bannerStatVal}>{totalTopics}</Text>
-                  <Text style={s.bannerStatLbl}>Topics</Text>
-                </View>
-              </View>
-            </View>
-
             <Text style={s.sectionTitle}>All Subjects</Text>
+            <Text style={s.sectionDesc}>
+              Browse all the subjects assigned to your class for this academic
+              year. Tap a subject to explore its chapters and topics in detail.
+            </Text>
           </>
         }
         columnWrapperStyle={s.row}
@@ -98,26 +78,9 @@ const s = StyleSheet.create({
   list: { padding: 16, paddingBottom: 32 },
   row:  { gap: GAP, marginBottom: GAP },
 
-  // Banner
-  banner: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 20, padding: 20, marginBottom: 20,
-    overflow: 'hidden',
-    shadowColor: theme.colors.primary, shadowOpacity: 0.25,
-    shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 6,
-  },
-  bannerBlob: {
-    position: 'absolute', width: 140, height: 140, borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.1)', top: -40, right: -30,
-  },
-  bannerContent: { flexDirection: 'row', alignItems: 'center' },
-  bannerStat:    { flex: 1, alignItems: 'center' },
-  bannerStatVal: { fontSize: 26, fontWeight: '900', color: '#fff' },
-  bannerStatLbl: { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: '600', marginTop: 2 },
-  bannerDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.25)' },
-
   // Section title
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
+  sectionDesc:  { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 14 },
 
   // Card
   card: {
