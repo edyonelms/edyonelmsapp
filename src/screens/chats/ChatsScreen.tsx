@@ -1,8 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -11,22 +13,9 @@ import {
   View,
 } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
+import { theme } from '../../utils/theme';
 
 type DrawerRole = 'student' | 'teacher';
-
-// WhatsApp palette
-const WA = {
-  teal: '#075E54',
-  tealDark: '#054D44',
-  green: '#25D366',
-  bubbleMe: '#DCF8C6',
-  bubbleOther: '#FFFFFF',
-  chatBg: '#ECE5DD',
-  blueTick: '#34B7F1',
-  textDark: '#111B21',
-  textGrey: '#667781',
-  chip: '#FFF5C4',
-};
 
 interface Message {
   id: string;
@@ -93,46 +82,55 @@ const Ticks = ({ status }: { status: Message['status'] }) => (
     iconSet="Ionicons"
     iconName={status === 'sent' ? 'checkmark' : 'checkmark-done'}
     size={14}
-    color={status === 'read' ? WA.blueTick : '#8696A0'}
+    color={status === 'read' ? '#A5B4FC' : 'rgba(255,255,255,0.6)'}
   />
 );
 
-const Bubble = ({ msg }: { msg: Message }) => {
+const Bubble = ({
+  msg,
+  selected,
+  selectionMode,
+  onLongPress,
+  onPress,
+}: {
+  msg: Message;
+  selected: boolean;
+  selectionMode: boolean;
+  onLongPress: () => void;
+  onPress: () => void;
+}) => {
   const isMe = msg.sender === 'me';
   return (
-    <View style={[s.bubbleWrap, isMe ? s.bubbleWrapMe : s.bubbleWrapOther]}>
+    <TouchableOpacity
+      style={[
+        s.bubbleWrap,
+        isMe ? s.bubbleWrapMe : s.bubbleWrapOther,
+        selected && s.bubbleWrapSelected,
+      ]}
+      onLongPress={onLongPress}
+      onPress={selectionMode ? onPress : undefined}
+      delayLongPress={2000}
+      activeOpacity={selectionMode ? 0.7 : 1}
+    >
       <View style={[s.bubble, isMe ? s.bubbleMe : s.bubbleOther]}>
-        <Text style={s.bubbleText}>{msg.text}</Text>
+        <Text style={[s.bubbleText, isMe ? s.bubbleTextMe : s.bubbleTextOther]}>
+          {msg.text}
+        </Text>
         <View style={s.meta}>
-          <Text style={s.metaTime}>{msg.time}</Text>
+          <Text style={[s.metaTime, isMe ? s.metaTimeMe : s.metaTimeOther]}>
+            {msg.time}
+          </Text>
           {isMe && <Ticks status={msg.status} />}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
 const DateChip = ({ label }: { label: string }) => (
-  <View style={s.dateChipWrap}>
+  <View style={s.chipWrap}>
     <View style={s.dateChip}>
       <Text style={s.dateChipText}>{label}</Text>
-    </View>
-  </View>
-);
-
-const EncryptionNotice = () => (
-  <View style={s.dateChipWrap}>
-    <View style={s.encChip}>
-      <VectorIcon
-        iconSet="Ionicons"
-        iconName="lock-closed"
-        size={10}
-        color="#54656F"
-      />
-      <Text style={s.encText}>
-        Messages are end-to-end encrypted. Only people in this chat can read
-        them.
-      </Text>
     </View>
   </View>
 );
@@ -152,7 +150,21 @@ const ChatsScreen = ({ navigation, route }: any) => {
 
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const listRef = useRef<FlatList>(null);
+
+  const selectionMode = selectedIds.length > 0;
+
+  // Keep the latest messages visible when the keyboard opens
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(showEvent, () => {
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
+    });
+    return () => sub.remove();
+  }, []);
 
   const send = () => {
     const text = input.trim();
@@ -174,6 +186,17 @@ const ChatsScreen = ({ navigation, route }: any) => {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
   };
 
+  const toggleSelect = (id: string) =>
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+
+  const deleteSelected = () => {
+    setMessages(prev => prev.filter(m => !selectedIds.includes(m.id)));
+    setSelectedIds([]);
+    setConfirmDelete(false);
+  };
+
   /*
     Subtitle rules:
     - logged in as STUDENT  → talking to a Teacher → show "Teacher · <subject>"
@@ -193,59 +216,68 @@ const ChatsScreen = ({ navigation, route }: any) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       enabled={Platform.OS === 'ios'}
     >
-      {/* ── Top bar (WhatsApp style) ── */}
+      {/* ── Top bar ── */}
       <View style={s.topBar}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={s.backBtn}
-          activeOpacity={0.7}
-        >
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="arrow-back"
-            size={22}
-            color="#fff"
-          />
-        </TouchableOpacity>
+        {selectionMode ? (
+          <>
+            <TouchableOpacity
+              onPress={() => setSelectedIds([])}
+              style={s.topIconBtn}
+              activeOpacity={0.7}
+            >
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="close"
+                size={22}
+                color="#fff"
+              />
+            </TouchableOpacity>
+            <Text style={s.selectionTitle}>
+              {selectedIds.length} selected
+            </Text>
+            <TouchableOpacity
+              onPress={() => setConfirmDelete(true)}
+              style={s.topIconBtn}
+              activeOpacity={0.7}
+            >
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="trash-outline"
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={s.topIconBtn}
+              activeOpacity={0.7}
+            >
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="arrow-back"
+                size={22}
+                color="#fff"
+              />
+            </TouchableOpacity>
 
-        <Image source={{ uri: chat.avatar }} style={s.topAvatar} />
+            <Image source={{ uri: chat.avatar }} style={s.topAvatar} />
 
-        <View style={s.topInfo}>
-          <Text style={s.topName} numberOfLines={1}>
-            {chat.name}
-          </Text>
-          <Text style={s.topSubtitle} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        </View>
-
-        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="videocam-outline"
-            size={22}
-            color="#fff"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="call-outline"
-            size={20}
-            color="#fff"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="ellipsis-vertical"
-            size={18}
-            color="#fff"
-          />
-        </TouchableOpacity>
+            <View style={s.topInfo}>
+              <Text style={s.topName} numberOfLines={1}>
+                {chat.name}
+              </Text>
+              <Text style={s.topSubtitle} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
 
-      {/* ── Messages over wallpaper ── */}
+      {/* ── Messages ── */}
       <FlatList
         ref={listRef}
         data={messages}
@@ -256,32 +288,33 @@ const ChatsScreen = ({ navigation, route }: any) => {
         onContentSizeChange={() =>
           listRef.current?.scrollToEnd({ animated: false })
         }
-        ListHeaderComponent={
-          <>
-            <EncryptionNotice />
-            <DateChip label="Today" />
-          </>
-        }
-        renderItem={({ item }) => <Bubble msg={item} />}
+        ListHeaderComponent={<DateChip label="Today" />}
+        renderItem={({ item }) => (
+          <Bubble
+            msg={item}
+            selected={selectedIds.includes(item.id)}
+            selectionMode={selectionMode}
+            onLongPress={() => toggleSelect(item.id)}
+            onPress={() => toggleSelect(item.id)}
+          />
+        )}
       />
 
-      {/* ── Input bar (WhatsApp style) ── */}
+      {/* ── Input bar ── */}
       <View style={s.inputBar}>
         <View style={s.inputPill}>
-          <TouchableOpacity activeOpacity={0.7}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="happy-outline"
-              size={22}
-              color="#8696A0"
-            />
-          </TouchableOpacity>
           <TextInput
             style={s.input}
             placeholder="Message"
-            placeholderTextColor="#8696A0"
+            placeholderTextColor={theme.colors.textMuted}
             value={input}
             onChangeText={setInput}
+            onFocus={() =>
+              setTimeout(
+                () => listRef.current?.scrollToEnd({ animated: true }),
+                100,
+              )
+            }
             multiline
             maxLength={500}
           />
@@ -290,30 +323,75 @@ const ChatsScreen = ({ navigation, route }: any) => {
               iconSet="Ionicons"
               iconName="attach"
               size={22}
-              color="#8696A0"
+              color={theme.colors.textMuted}
             />
           </TouchableOpacity>
-          {!hasText && (
-            <TouchableOpacity activeOpacity={0.7}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="camera-outline"
-                size={22}
-                color="#8696A0"
-              />
-            </TouchableOpacity>
-          )}
         </View>
 
-        <TouchableOpacity style={s.sendBtn} onPress={send} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[s.sendBtn, hasText && s.sendBtnActive]}
+          onPress={send}
+          activeOpacity={0.85}
+        >
           <VectorIcon
             iconSet="Ionicons"
-            iconName={hasText ? 'send' : 'mic'}
-            size={20}
-            color="#fff"
+            iconName="send"
+            size={18}
+            color={hasText ? '#fff' : theme.colors.textMuted}
           />
         </TouchableOpacity>
       </View>
+
+      {/* ── Delete confirmation (logout style) ── */}
+      <Modal
+        transparent
+        visible={confirmDelete}
+        animationType="fade"
+        onRequestClose={() => setConfirmDelete(false)}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <View style={s.modalIconWrap}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="trash-outline"
+                size={28}
+                color={theme.colors.danger}
+              />
+            </View>
+
+            <Text style={s.modalTitle}>
+              Delete Message{selectedIds.length > 1 ? 's' : ''}?
+            </Text>
+            <Text style={s.modalDesc}>
+              {selectedIds.length} message{selectedIds.length > 1 ? 's' : ''}{' '}
+              will be deleted. This cannot be undone.
+            </Text>
+
+            <View style={s.modalActions}>
+              <TouchableOpacity
+                style={[s.modalBtn, s.modalBtnGhost]}
+                activeOpacity={0.85}
+                onPress={() => setConfirmDelete(false)}
+              >
+                <Text style={[s.modalBtnText, s.modalBtnGhostText]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[s.modalBtn, s.modalBtnDanger]}
+                activeOpacity={0.9}
+                onPress={deleteSelected}
+              >
+                <Text style={[s.modalBtnText, s.modalBtnDangerText]}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -321,22 +399,22 @@ const ChatsScreen = ({ navigation, route }: any) => {
 export default ChatsScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: WA.chatBg },
+  root: { flex: 1, backgroundColor: '#EEF2FF' },
   flex: { flex: 1 },
 
   // Top bar
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: WA.teal,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 8,
     paddingTop: Platform.OS === 'ios' ? 52 : 14,
     paddingBottom: 12,
     gap: 8,
     elevation: 4,
   },
-  backBtn: {
-    width: 32,
+  topIconBtn: {
+    width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
@@ -345,78 +423,73 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   topInfo: { flex: 1, marginLeft: 2 },
   topName: { fontSize: 16, fontWeight: '700', color: '#fff' },
   topSubtitle: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '400',
+    color: 'rgba(255,255,255,0.78)',
+    fontWeight: '500',
     marginTop: 1,
   },
-  topIconBtn: {
-    width: 34,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+  selectionTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#fff',
+    marginLeft: 4,
   },
 
   msgList: { paddingHorizontal: 12, paddingBottom: 8, paddingTop: 4 },
 
-  // Date chip + encryption notice
-  dateChipWrap: { alignItems: 'center', marginVertical: 8 },
+  // Date chip
+  chipWrap: { alignItems: 'center', marginVertical: 10 },
   dateChip: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.full,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  dateChipText: { fontSize: 12, color: '#54656F', fontWeight: '500' },
-  encChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: WA.chip,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginHorizontal: 24,
-    elevation: 1,
-  },
-  encText: {
-    flex: 1,
+  dateChipText: {
     fontSize: 11,
-    color: '#54656F',
-    lineHeight: 16,
-    textAlign: 'center',
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
 
   // Bubbles
-  bubbleWrap: { marginBottom: 3 },
+  bubbleWrap: { marginBottom: 4, borderRadius: theme.radius.sm },
   bubbleWrapMe: { alignItems: 'flex-end' },
   bubbleWrapOther: { alignItems: 'flex-start' },
+  bubbleWrapSelected: {
+    backgroundColor: `${theme.colors.primary}26`,
+  },
   bubble: {
     maxWidth: '80%',
-    borderRadius: 10,
-    paddingHorizontal: 9,
-    paddingTop: 6,
+    borderRadius: 12,
+    paddingHorizontal: 11,
+    paddingTop: 7,
     paddingBottom: 5,
     elevation: 1,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
   },
   bubbleMe: {
-    backgroundColor: WA.bubbleMe,
-    borderTopRightRadius: 0,
+    backgroundColor: theme.colors.primary,
+    borderTopRightRadius: 2,
   },
   bubbleOther: {
-    backgroundColor: WA.bubbleOther,
-    borderTopLeftRadius: 0,
+    backgroundColor: theme.colors.card,
+    borderTopLeftRadius: 2,
   },
-  bubbleText: { fontSize: 14.5, lineHeight: 20, color: WA.textDark },
+  bubbleText: { fontSize: 14.5, lineHeight: 20 },
+  bubbleTextMe: { color: '#fff' },
+  bubbleTextOther: { color: theme.colors.textPrimary },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -425,43 +498,111 @@ const s = StyleSheet.create({
     marginTop: 2,
     marginLeft: 8,
   },
-  metaTime: { fontSize: 10.5, color: WA.textGrey },
+  metaTime: { fontSize: 10.5 },
+  metaTimeMe: { color: 'rgba(255,255,255,0.65)' },
+  metaTimeOther: { color: theme.colors.textMuted },
 
   // Input bar
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
   },
   inputPill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card,
     borderRadius: 24,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     gap: 10,
     elevation: 1,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: WA.textDark,
+    color: theme.colors.textPrimary,
     maxHeight: 110,
     paddingVertical: 2,
     paddingHorizontal: 0,
   },
   sendBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#00A884',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
   },
+  sendBtnActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+    elevation: 3,
+  },
+
+  // Delete confirmation modal (logout style)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  modalIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.full,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalDesc: {
+    marginTop: theme.spacing.sm,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  modalBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnText: { fontSize: 15, fontWeight: '700' },
+  modalBtnGhost: { backgroundColor: '#F1F5F9' },
+  modalBtnGhostText: { color: theme.colors.textPrimary },
+  modalBtnDanger: { backgroundColor: theme.colors.danger },
+  modalBtnDangerText: { color: theme.colors.white },
 });
