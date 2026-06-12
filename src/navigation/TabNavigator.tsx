@@ -140,7 +140,7 @@ const TabNavigator = ({ route }: any) => {
         name={lastTabName}
         component={role === 'teacher' ? markAttendanceScreen : FeesScreen}
         options={{
-          tabBarLabel: role === 'teacher' ? 'Mark Attendance' : 'Fees',
+          tabBarLabel: role === 'teacher' ? 'Attendance' : 'Fees',
         }}
         initialParams={
           role === 'teacher' ? { title: 'Mark Attendance' } : undefined
