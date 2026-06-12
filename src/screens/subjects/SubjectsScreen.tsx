@@ -54,8 +54,7 @@ const SubjectsScreen = ({ navigation }: any) => {
           <>
             <Text style={s.sectionTitle}>All Subjects</Text>
             <Text style={s.sectionDesc}>
-              Browse all the subjects assigned to your class for this academic
-              year. Tap a subject to explore its chapters and topics in detail.
+              Tap a subject to explore its chapters and topics.
             </Text>
           </>
         }
@@ -80,7 +79,7 @@ const s = StyleSheet.create({
 
   // Section title
   sectionTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
-  sectionDesc:  { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 14 },
+  sectionDesc:  { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 24 },
 
   // Card
   card: {
