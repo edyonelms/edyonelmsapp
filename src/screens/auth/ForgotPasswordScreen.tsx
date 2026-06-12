@@ -291,11 +291,18 @@ const ForgotPasswordScreen = () => {
                       '[ResendOTP] ❌ Error:',
                       JSON.stringify(e?.response?.data, null, 2),
                     );
-                    setError(
+                    const msg =
                       e?.response?.data?.message ??
-                        e?.message ??
-                        'Failed to resend OTP.',
-                    );
+                      e?.message ??
+                      'Failed to resend OTP.';
+                    // The backend throttles OTP requests ("Please wait N
+                    // seconds before requesting a new OTP."). Sync our
+                    // countdown to it so Resend hides until it will succeed.
+                    const waitMatch = String(msg).match(/(\d+)\s*second/i);
+                    if (waitMatch) {
+                      setTimer(parseInt(waitMatch[1], 10));
+                    }
+                    setError(msg);
                   }
                 }}
               >
