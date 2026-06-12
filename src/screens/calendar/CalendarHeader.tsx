@@ -61,7 +61,7 @@ const CalendarHeader = ({
             iconSet="Ionicons"
             iconName="chevron-down"
             size={14}
-            color="#C7D2FE"
+            color={theme.colors.primary}
           />
         </TouchableOpacity>
 
@@ -73,7 +73,7 @@ const CalendarHeader = ({
                 iconSet="Ionicons"
                 iconName="chevron-back"
                 size={15}
-                color="#C7D2FE"
+                color={theme.colors.primary}
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={onNextMonth} style={s.navBtn}>
@@ -81,7 +81,7 @@ const CalendarHeader = ({
                 iconSet="Ionicons"
                 iconName="chevron-forward"
                 size={15}
-                color="#C7D2FE"
+                color={theme.colors.primary}
               />
             </TouchableOpacity>
           </View>
@@ -165,7 +165,7 @@ export default CalendarHeader;
 
 const s = StyleSheet.create({
   header: {
-    backgroundColor: theme.colors.textPrimary,
+    backgroundColor: '#FAF9F6',
     paddingHorizontal: 16,
     paddingTop: 14,
     overflow: 'hidden',
@@ -175,7 +175,7 @@ const s = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: `${theme.colors.primary}20`,
+    backgroundColor: `${theme.colors.primary}0D`,
     top: -60,
     right: -40,
   },
@@ -184,7 +184,7 @@ const s = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#818CF820',
+    backgroundColor: '#818CF810',
     bottom: 20,
     left: -20,
   },
@@ -193,7 +193,7 @@ const s = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: `${theme.colors.primary}15`,
+    backgroundColor: `${theme.colors.primary}0A`,
     top: 30,
     left: width / 2 - 40,
   },
@@ -208,20 +208,24 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#ffffff18',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     borderRadius: theme.radius.full,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  monthPillText: { fontSize: 16, fontWeight: '800', color: theme.colors.white },
+  monthPillText: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
   rightSide: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  eventCountText: { fontSize: 11, color: '#A5B4FC', fontWeight: '600' },
+  eventCountText: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '600' },
   navPair: { flexDirection: 'row', gap: 6 },
   navBtn: {
     width: 30,
     height: 30,
     borderRadius: theme.radius.sm,
-    backgroundColor: '#ffffff18',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -231,11 +235,11 @@ const s = StyleSheet.create({
   weekLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#A5B4FC',
+    color: theme.colors.textMuted,
     paddingVertical: 4,
   },
-  satLabel: { color: '#FCD34D' },
-  sunLabel: { color: '#FCA5A5' },
+  satLabel: { color: '#D97706' },
+  sunLabel: { color: '#DC2626' },
 
   dayInner: {
     width: CELL_SIZE - 8,
@@ -245,15 +249,15 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   daySelected: {
-    backgroundColor: theme.colors.primary + '90',
+    backgroundColor: theme.colors.primary,
     borderRadius: theme.radius.md,
   },
-  dayToday: { borderWidth: 1.5, borderColor: '#A5B4FC' },
-  dayNum: { fontSize: 13, fontWeight: '600', color: '#E0E7FF' },
+  dayToday: { borderWidth: 1.5, borderColor: theme.colors.primary },
+  dayNum: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
   dayNumSelected: { color: theme.colors.white, fontWeight: '800' },
-  dayNumToday: { color: '#A5B4FC', fontWeight: '800' },
-  satNum: { color: '#FCD34D' },
-  sunNum: { color: '#FCA5A5' },
+  dayNumToday: { color: theme.colors.primary, fontWeight: '800' },
+  satNum: { color: '#D97706' },
+  sunNum: { color: '#DC2626' },
 
   dotsRow: { flexDirection: 'row', gap: 4, position: 'absolute', bottom: 8 },
   dot: { width: 6, height: 6, borderRadius: 99 },

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { ScrollView, StatusBar, StyleSheet, View, ActivityIndicator, Text } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import moment from 'moment';
 import { theme } from '../../utils/theme';
 import { FILTERS, chunkWeeks, groupEventsByDate, getEventTypesForDate } from './calendarTypes';
@@ -33,7 +33,7 @@ const CalendarScreen = ({ navigation }: any) => {
     console.log('[CalendarScreen] Fetching events for month:', startDate, 'to', endDate);
     
     try {
-      const apiEvents = await getCalendarEvents(startDate, endDate, null, 100);
+      const apiEvents = await getCalendarEvents(startDate, endDate, undefined, 100);
       console.log('[CalendarScreen] Received events count:', apiEvents.length);
       
       const mappedEvents = apiEvents.map(mapApiEventToCalEvent);
@@ -110,7 +110,7 @@ const CalendarScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
           <CalendarHeader
             currentMonth={currentMonth}
             selectedDate={selectedDate}
@@ -124,19 +124,17 @@ const CalendarScreen = ({ navigation }: any) => {
             onDayPress={setSelectedDate}
           />
 
-          {/* Bottom sheet */}
+          {/* Events sheet */}
           <View style={s.sheet}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <EventTimeline
-                events={filteredEvents}
-                selectedDate={moment(selectedDate).format('dddd, MMMM D, YYYY')}
-                activeFilter={activeFilter}
-                onFilterChange={setActiveFilter}
-                eventCount={filteredEvents.length}
-              />
-            </ScrollView>
+            <EventTimeline
+              events={filteredEvents}
+              selectedDate={moment(selectedDate).format('dddd, MMMM D, YYYY')}
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              eventCount={filteredEvents.length}
+            />
           </View>
-        </>
+        </ScrollView>
       )}
 
       <MonthYearPicker
@@ -152,19 +150,19 @@ const CalendarScreen = ({ navigation }: any) => {
 export default CalendarScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.textPrimary },
+  root: { flex: 1, backgroundColor: '#FAF9F6' },
   sheet: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     marginTop: -20,
+    minHeight: 300,
   },
   loaderContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FAF9F6',
   },
   loaderText: {
     marginTop: 12,
@@ -173,7 +171,7 @@ const s = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: theme.colors.error,
+    color: theme.colors.danger,
     textAlign: 'center',
     marginBottom: 12,
   },
