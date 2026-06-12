@@ -112,8 +112,8 @@ const TopBar = ({
           <VectorIcon
             iconSet="Feather"
             iconName="menu"
-            size={26}
-            color="#111"
+            size={20}
+            color={theme.colors.textPrimary}
           />
         </TouchableOpacity>
 
@@ -122,15 +122,18 @@ const TopBar = ({
           activeOpacity={0.7}
           onPress={() => setSwitcherOpen(true)}
         >
-          <Text style={styles.userName} numberOfLines={1}>
-            {displayName || 'Account'}
-          </Text>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="chevron-down-circle-outline"
-            size={18}
-            color="#111"
-          />
+          <Text style={styles.greeting}>Welcome back</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.userName} numberOfLines={1}>
+              {displayName || 'Account'}
+            </Text>
+            <VectorIcon
+              iconSet="Feather"
+              iconName="chevron-down"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onBellPress} style={styles.iconBtn}>
@@ -138,11 +141,12 @@ const TopBar = ({
             iconSet="Ionicons"
             iconName="notifications-outline"
             size={19}
-            color="#111"
+            color={theme.colors.textPrimary}
           />
+          <View style={styles.bellDot} />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onAvatarPress} style={styles.iconBtn}>
+        <TouchableOpacity onPress={onAvatarPress} style={[styles.iconBtn, styles.avatarBtn]}>
           {avatarUri && !avatarBroken ? (
             <Image
               source={{ uri: avatarUri }}
@@ -153,8 +157,8 @@ const TopBar = ({
             <VectorIcon
               iconSet="Ionicons"
               iconName="person-circle-outline"
-              size={21}
-              color="#111"
+              size={22}
+              color={theme.colors.primary}
             />
           )}
         </TouchableOpacity>
@@ -164,7 +168,7 @@ const TopBar = ({
         <VectorIcon
           iconSet="Feather"
           iconName="search"
-          size={18}
+          size={17}
           color={theme.colors.textMuted}
           style={{ marginRight: 8 }}
         />
@@ -187,59 +191,90 @@ export default TopBar;
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingBottom: theme.spacing.sm,
-    borderBottomRightRadius: theme.radius.lg,
-    borderBottomLeftRadius: theme.radius.lg,
+    paddingBottom: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F7',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
   },
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
   },
   menuBtn: {
-    paddingVertical: 6,
-    paddingRight: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   userInfo: {
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
+  },
+  greeting: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    marginTop: 1,
   },
   userName: {
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
     color: theme.colors.textPrimary,
+    flexShrink: 1,
   },
   searchWrap: {
-    marginTop: 10,
+    marginTop: 12,
     marginHorizontal: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingHorizontal: 12,
-    height: 44,
+    backgroundColor: '#F1F5F9',
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 16,
+    height: 42,
   },
   input: {
     flex: 1,
     color: theme.colors.textPrimary,
     fontSize: 14,
+    paddingVertical: 0,
   },
   iconBtn: {
     width: 40,
     height: 40,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 9,
+    right: 11,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: theme.colors.danger,
+    borderWidth: 1.5,
+    borderColor: '#F1F5F9',
+  },
+  avatarBtn: {
+    backgroundColor: theme.colors.primaryLight,
     overflow: 'hidden',
   },
   avatarImg: {
