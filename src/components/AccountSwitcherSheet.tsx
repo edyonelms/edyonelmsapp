@@ -15,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import VectorIcon from './VectorIcon';
 import { theme } from '../utils/theme';
@@ -267,14 +266,13 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
       transparent
       animationType="slide"
       statusBarTranslucent
-      navigationBarTranslucent
       onRequestClose={onClose}
     >
       <View style={s.backdrop}>
         {/* Tap outside to close */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <SafeAreaView edges={['bottom']} style={s.sheet}>
+        <KeyboardAvoidingView behavior="padding">
+          <View style={s.sheet}>
             <View style={s.handle} />
 
               {/* Header */}
@@ -315,7 +313,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
                   onSubmit={onSubmitAdd}
                 />
               )}
-          </SafeAreaView>
+          </View>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -507,68 +505,69 @@ const s = StyleSheet.create({
   },
   sheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    paddingBottom: 8,
-    maxHeight: Dimensions.get('window').height * 0.88,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 16,
+    maxHeight: Dimensions.get('window').height * 0.85,
   },
   handle: {
     alignSelf: 'center',
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: '#D1D5DB',
-    marginTop: 8, marginBottom: 4,
+    width: 44, height: 5, borderRadius: 3,
+    backgroundColor: '#E2E8F0',
+    marginTop: 10, marginBottom: 4,
   },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: 20, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
   },
-  title: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  title: { fontSize: 17, fontWeight: '800', color: theme.colors.textPrimary },
 
   loadingBox: { paddingVertical: 48, alignItems: 'center' },
 
   // ─── List ──
-  listContent: { paddingHorizontal: 12, paddingBottom: 12 },
+  listContent: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4 },
   row: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 8, paddingVertical: 10,
-    borderRadius: 12,
-    marginBottom: 2,
+    paddingHorizontal: 10, paddingVertical: 12,
+    borderRadius: 14,
+    marginBottom: 4,
   },
-  rowActive: { backgroundColor: '#F3F4F6' },
+  rowActive: { backgroundColor: '#EEF2FF' },
   rowMain: { flex: 1, marginLeft: 12 },
-  rowName: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  rowName: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
   rowSub:  { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
 
   checkBadge: {
-    width: 22, height: 22, borderRadius: 11,
+    width: 24, height: 24, borderRadius: 12,
     backgroundColor: theme.colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
   removeBtn: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
   },
 
   addRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 14, paddingHorizontal: 8,
-    marginTop: 4,
-    borderTopWidth: 1, borderTopColor: '#F1F1F4',
+    paddingVertical: 12, paddingHorizontal: 10,
+    marginTop: 6,
+    borderTopWidth: 1, borderTopColor: '#F1F5F9',
   },
   addPlus: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: theme.colors.primaryLight,
     alignItems: 'center', justifyContent: 'center',
   },
-  addText: { marginLeft: 12, fontSize: 14, fontWeight: '700', color: theme.colors.primary },
+  addText: { marginLeft: 12, fontSize: 15, fontWeight: '700', color: theme.colors.primary },
 
   // ─── Add form ──
-  addContent: { paddingHorizontal: 16, paddingBottom: 20 },
+  addContent: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
   tabRow: {
-    flexDirection: 'row', backgroundColor: '#F3F4F6',
-    borderRadius: 10, padding: 4, marginBottom: 16,
+    flexDirection: 'row', backgroundColor: '#F1F5F9',
+    borderRadius: 12, padding: 4, marginBottom: 18,
   },
   tab: {
     flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 8,
@@ -602,13 +601,13 @@ const s = StyleSheet.create({
   errorText: { flex: 1, fontSize: 12, color: theme.colors.danger, fontWeight: '500' },
 
   saveBtn: {
-    backgroundColor: '#111',
+    backgroundColor: theme.colors.primary,
     borderRadius: 100,
-    paddingVertical: 13,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
-  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   hint: { fontSize: 11, color: theme.colors.textMuted, textAlign: 'center', marginTop: 14 },
 });
