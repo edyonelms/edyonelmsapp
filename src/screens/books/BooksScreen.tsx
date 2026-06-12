@@ -69,7 +69,7 @@ const BooksScreen = ({ navigation, route }: any) => {
         if (stored === 'teacher' || stored === 'student') setRole(stored);
       }
       const { items } = await getBooks({ per_page: 50 });
-      setBooks(items);
+      setBooks(Array.isArray(items) ? items : []);
     } catch (e: any) {
       console.log('[BooksScreen] ❌', e?.response?.data ?? e?.message);
       setError(e?.response?.data?.message ?? 'Failed to load books.');
