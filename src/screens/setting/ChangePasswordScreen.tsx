@@ -5,47 +5,74 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  ToastAndroid,
+  Modal,
   Platform,
-  Alert,
   KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
 import React, { useState } from 'react';
 import Header from '../../components/Header';
+import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import { updatePassword } from '../../api/authApi';
 
-const showToast = (msg: string) => {
-  if (Platform.OS === 'android') {
-    ToastAndroid.show(msg, ToastAndroid.SHORT);
-  } else {
-    Alert.alert('Success', msg);
-  }
-};
+// Mirrors the backend update-password validation rules so the checklist
+// and the API accept exactly the same passwords.
+const passwordRules: { label: string; test: (p: string) => boolean }[] = [
+  { label: 'At least 8 characters', test: p => p.length >= 8 },
+  { label: 'One lowercase letter (a-z)', test: p => /[a-z]/.test(p) },
+  { label: 'One uppercase letter (A-Z)', test: p => /[A-Z]/.test(p) },
+  { label: 'One number (0-9)', test: p => /[0-9]/.test(p) },
+  {
+    label: 'One special character (@ $ ! % * # ? &)',
+    test: p => /[@$!%*#?&]/.test(p),
+  },
+];
 
-const checks = (p: string) => ({
-  length: p.length >= 8 && p.length <= 16,
-  capital: /[A-Z]/.test(p),
-  special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p),
-});
-
-const RuleRow = ({
-  pass,
+const PasswordField = ({
   label,
-  rule,
+  placeholder,
+  value,
+  onChangeText,
 }: {
-  pass: string;
   label: string;
-  rule: keyof ReturnType<typeof checks>;
+  placeholder: string;
+  value: string;
+  onChangeText: (t: string) => void;
 }) => {
-  const met = pass.length > 0 && checks(pass)[rule];
+  const [focused, setFocused] = useState(false);
+  const [show, setShow] = useState(false);
+
   return (
-    <View style={styles.ruleRow}>
-      <View style={[styles.ruleDot, met && styles.ruleDotMet]} />
-      <Text style={[styles.ruleText, met && styles.ruleTextMet]}>{label}</Text>
-    </View>
+    <>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.passwordWrap}>
+        <TextInput
+          style={[
+            styles.input,
+            styles.inputWithIcon,
+            (focused || !!value) && styles.inputActive,
+          ]}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.textMuted}
+          secureTextEntry={!show}
+          autoCapitalize="none"
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        />
+        <TouchableOpacity style={styles.eyeBtn} onPress={() => setShow(v => !v)}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName={show ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color={theme.colors.textMuted}
+          />
+        </TouchableOpacity>
+      </View>
+    </>
   );
 };
 
@@ -56,17 +83,16 @@ const ChangePasswordScreen = () => {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const c = checks(newPass);
-  const passwordsMatch = confirm.length > 0 && newPass === confirm;
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleChange = async () => {
     if (!current) {
       setError('Enter your current password.');
       return;
     }
-    if (!c.length || !c.capital || !c.special) {
-      setError('New password does not meet all requirements.');
+    const unmet = passwordRules.find(r => !r.test(newPass));
+    if (unmet) {
+      setError(`Password needs: ${unmet.label.toLowerCase()}.`);
       return;
     }
     if (newPass !== confirm) {
@@ -83,8 +109,7 @@ const ChangePasswordScreen = () => {
         '[ChangePassword] ✅ Response:',
         JSON.stringify(res, null, 2),
       );
-      showToast(res.message || 'Password changed successfully!');
-      navigation.goBack();
+      setSuccessMsg(res.message || 'Your password has been changed.');
     } catch (err: any) {
       console.log(
         '[ChangePassword] ❌ Error:',
@@ -117,70 +142,92 @@ const ChangePasswordScreen = () => {
             Enter your current password and choose a new one.
           </Text>
 
-          <Text style={styles.label}>Current Password</Text>
-          <TextInput
-            style={styles.input}
+          <PasswordField
+            label="Current Password"
             placeholder="Enter current password"
-            placeholderTextColor={theme.colors.textMuted}
-            secureTextEntry
             value={current}
-            onChangeText={setCurrent}
+            onChangeText={t => {
+              setCurrent(t);
+              setError('');
+            }}
           />
 
-          <Text style={styles.label}>New Password</Text>
-          <TextInput
-            style={styles.input}
+          <PasswordField
+            label="New Password"
             placeholder="Enter new password"
-            placeholderTextColor={theme.colors.textMuted}
-            secureTextEntry
             value={newPass}
-            onChangeText={setNewPass}
+            onChangeText={t => {
+              setNewPass(t);
+              setError('');
+            }}
           />
 
-          <View style={styles.rulesBox}>
-            <RuleRow pass={newPass} label="8 to 16 characters" rule="length" />
-            <RuleRow
-              pass={newPass}
-              label="At least one capital letter"
-              rule="capital"
-            />
-            <RuleRow
-              pass={newPass}
-              label="At least one special character"
-              rule="special"
-            />
-          </View>
-
-          <Text style={styles.label}>Confirm New Password</Text>
-          <TextInput
-            style={styles.input}
+          <PasswordField
+            label="Confirm New Password"
             placeholder="Confirm new password"
-            placeholderTextColor={theme.colors.textMuted}
-            secureTextEntry
             value={confirm}
-            onChangeText={setConfirm}
+            onChangeText={t => {
+              setConfirm(t);
+              setError('');
+            }}
           />
 
-          {confirm.length > 0 && (
-            <View style={styles.ruleRow}>
-              <View
-                style={[styles.ruleDot, passwordsMatch && styles.ruleDotMet]}
-              />
-              <Text
-                style={[styles.ruleText, passwordsMatch && styles.ruleTextMet]}
-              >
-                {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
-              </Text>
-            </View>
-          )}
+          <View style={styles.ruleList}>
+            {passwordRules.map(rule => {
+              const met = rule.test(newPass);
+              return (
+                <View key={rule.label} style={styles.ruleRow}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName={met ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={15}
+                    color={met ? theme.colors.success : theme.colors.textMuted}
+                  />
+                  <Text style={[styles.ruleText, met && styles.ruleTextMet]}>
+                    {rule.label}
+                  </Text>
+                </View>
+              );
+            })}
+            {!!confirm && (
+              <View style={styles.ruleRow}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName={
+                    newPass === confirm ? 'checkmark-circle' : 'close-circle'
+                  }
+                  size={15}
+                  color={
+                    newPass === confirm
+                      ? theme.colors.success
+                      : theme.colors.danger
+                  }
+                />
+                <Text
+                  style={[
+                    styles.ruleText,
+                    newPass === confirm
+                      ? styles.ruleTextMet
+                      : styles.ruleTextFail,
+                  ]}
+                >
+                  Passwords match
+                </Text>
+              </View>
+            )}
+          </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TouchableOpacity
-            style={[styles.button, loading && { opacity: 0.6 }]}
+            style={[
+              styles.button,
+              (loading || !current || !newPass || !confirm) &&
+                styles.buttonDisabled,
+            ]}
             onPress={handleChange}
             activeOpacity={0.7}
-            disabled={loading}
+            disabled={loading || !current || !newPass || !confirm}
           >
             {loading ? (
               <ActivityIndicator color="#fff" size="small" />
@@ -191,6 +238,39 @@ const ChangePasswordScreen = () => {
         </View>
         <View style={{ height: 80 }} />
       </ScrollView>
+
+      {/* Success acknowledgement */}
+      <Modal
+        transparent
+        visible={!!successMsg}
+        animationType="fade"
+        onRequestClose={() => navigation.goBack()}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalIconWrap}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="checkmark-circle"
+                size={40}
+                color={theme.colors.success}
+              />
+            </View>
+            <Text style={styles.modalTitle}>Password Changed</Text>
+            <Text style={styles.modalDesc}>{successMsg}</Text>
+            <TouchableOpacity
+              style={styles.modalBtn}
+              activeOpacity={0.9}
+              onPress={() => {
+                setSuccessMsg('');
+                navigation.goBack();
+              }}
+            >
+              <Text style={styles.modalBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -230,34 +310,44 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     borderRadius: theme.radius.sm,
     padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
     color: theme.colors.textPrimary,
   },
-  rulesBox: {
+  inputActive: {
+    borderColor: '#5B7FFF',
+  },
+  passwordWrap: {
     marginBottom: theme.spacing.md,
-    gap: 6,
+  },
+  inputWithIcon: {
+    paddingRight: 44,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  ruleList: {
+    marginBottom: theme.spacing.md,
+    gap: 5,
   },
   ruleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  ruleDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.textMuted,
-  },
-  ruleDotMet: {
-    backgroundColor: theme.colors.success,
+    gap: 6,
   },
   ruleText: {
     fontSize: 12,
-    color: theme.colors.textMuted,
+    color: theme.colors.textSecondary,
+    lineHeight: 18,
   },
   ruleTextMet: {
     color: theme.colors.success,
+  },
+  ruleTextFail: {
+    color: theme.colors.danger,
   },
   error: {
     fontSize: 12,
@@ -271,5 +361,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: theme.spacing.xs,
   },
+  buttonDisabled: { backgroundColor: '#B0B0B0' },
   buttonText: { color: theme.colors.white, fontWeight: '600' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+  },
+  modalIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.full,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalDesc: {
+    marginTop: theme.spacing.sm,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalBtn: {
+    marginTop: theme.spacing.xl,
+    alignSelf: 'stretch',
+    height: 48,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary,
+  },
+  modalBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.white,
+  },
 });

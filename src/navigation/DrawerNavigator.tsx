@@ -13,6 +13,12 @@ import {
 } from '@react-navigation/drawer';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  activateAccount,
+  getActiveAccountId,
+  removeAccount,
+} from '../utils/accountStore';
+import { revokeAccountToken } from '../api/switchAccountApi';
 import TabNavigator from './TabNavigator';
 import SettingsScreen from '../screens/setting/SettingsScreen';
 import { theme } from '../utils/theme';
@@ -161,7 +167,41 @@ const DrawerNavigator = ({ route }: any) => {
 
     const doLogout = async () => {
       setLogoutVisible(false);
+      const parentNav = navigation.getParent?.();
+      const rootNav = parentNav ?? navigation;
+
+      // Only the current account logs out. If the switcher still holds other
+      // signed-in accounts, promote one of them and open its dashboard
+      // instead of dropping the user back to the select-user screen.
       try {
+        const token = await AsyncStorage.getItem('auth_token');
+        if (token) {
+          try {
+            await revokeAccountToken(token); // best-effort
+          } catch (e) {
+            console.log('[Logout] Token revoke failed:', e);
+          }
+        }
+
+        const activeId = await getActiveAccountId();
+        const remaining =
+          activeId != null ? await removeAccount(activeId) : [];
+        const next = remaining[0];
+
+        if (next) {
+          await activateAccount(next.user_id);
+          console.log('[Logout] Switched to account:', next.user_id);
+          rootNav.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                { name: 'DrawerRoot', params: { userRole: next.user_type } },
+              ],
+            }),
+          );
+          return;
+        }
+
         await AsyncStorage.multiRemove([
           'auth_token',
           'user_data',
@@ -171,11 +211,10 @@ const DrawerNavigator = ({ route }: any) => {
         ]);
         console.log('[Logout] Storage cleared');
       } catch (e) {
-        console.log('[Logout] Storage clear error:', e);
+        console.log('[Logout] Error:', e);
       }
 
-      const parentNav = navigation.getParent?.();
-      (parentNav ?? navigation).dispatch(
+      rootNav.dispatch(
         CommonActions.reset({
           index: 0,
           routes: [{ name: 'SelectUser' }],
