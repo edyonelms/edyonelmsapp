@@ -6,6 +6,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { Homework, HOMEWORK_STORE } from './homeworkData';
+import AttachmentPreviewModal from '../announcement/AttachmentPreviewModal';
 
 const PRIMARY = theme.colors.primary;
 
@@ -26,36 +27,68 @@ const toKey = (d: Date) => d.toISOString().slice(0, 10);
 const DAY_NAMES  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// ─── Homework card (exam-card template) ───────────────────────────────────────
-const HWCard = ({
-  hw,
+interface SubjectGroup {
+  subjectId: string;
+  subjectName: string;
+  subjectIcon: string;
+  subjectColor: string;
+  teacherName: string;
+  items: Homework[];
+}
+
+// Group one day's homework into one card per subject
+const groupBySubject = (homeworks: Homework[]): SubjectGroup[] => {
+  const groups: SubjectGroup[] = [];
+  homeworks.forEach(hw => {
+    let g = groups.find(x => x.subjectId === hw.subjectId);
+    if (!g) {
+      g = {
+        subjectId: hw.subjectId,
+        subjectName: hw.subjectName,
+        subjectIcon: hw.subjectIcon,
+        subjectColor: hw.subjectColor,
+        teacherName: hw.teacherName,
+        items: [],
+      };
+      groups.push(g);
+    }
+    g.items.push(hw);
+  });
+  return groups;
+};
+
+// ─── Subject card (exam-card template) ────────────────────────────────────────
+const SubjectCard = ({
+  group,
   isCompleted,
   expanded,
   onToggleExpand,
-  onToggleComplete,
+  onMarkComplete,
+  onPreviewImage,
 }: {
-  hw: Homework;
+  group: SubjectGroup;
   isCompleted: boolean;
   expanded: boolean;
   onToggleExpand: () => void;
-  onToggleComplete: () => void;
+  onMarkComplete: () => void;
+  onPreviewImage: (url?: string) => void;
 }) => (
   <View style={s.card}>
     {/* Accent bar */}
-    <View style={[s.accentBar, { backgroundColor: isCompleted ? '#22C55E' : hw.subjectColor }]} />
+    <View style={[s.accentBar, { backgroundColor: isCompleted ? '#22C55E' : group.subjectColor }]} />
 
     <View style={s.cardInner}>
-      {/* Top row: icon + title/desc + status badge */}
+      {/* Top row: subject icon + name/teacher + status badge */}
       <View style={s.cardTop}>
-        <View style={[s.iconWrap, { backgroundColor: hw.subjectColor + '20' }]}>
-          <Text style={s.iconEmoji}>{hw.subjectIcon}</Text>
+        <View style={[s.iconWrap, { backgroundColor: group.subjectColor + '20' }]}>
+          <Text style={s.iconEmoji}>{group.subjectIcon}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[s.hwName, isCompleted && s.hwNameDone]} numberOfLines={1}>
-            {hw.title}
+          <Text style={[s.subName, isCompleted && s.subNameDone]} numberOfLines={1}>
+            {group.subjectName}
           </Text>
-          <Text style={s.hwSubtitle} numberOfLines={1}>
-            {hw.description}
+          <Text style={s.subMeta} numberOfLines={1}>
+            {group.teacherName} · {group.items.length} task{group.items.length !== 1 ? 's' : ''}
           </Text>
         </View>
         <View style={[s.badge, { backgroundColor: isCompleted ? '#DCFCE7' : '#FEF3C7' }]}>
@@ -63,28 +96,6 @@ const HWCard = ({
           <Text style={[s.badgeText, { color: isCompleted ? '#16A34A' : '#D97706' }]}>
             {isCompleted ? 'Completed' : 'Pending'}
           </Text>
-        </View>
-      </View>
-
-      {/* Info pills row: subject + teacher */}
-      <View style={s.pillsRow}>
-        <View style={[s.pill, { backgroundColor: hw.subjectColor + '15' }]}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="book-outline"
-            size={12}
-            color={hw.subjectColor}
-          />
-          <Text style={[s.pillText, { color: hw.subjectColor }]}>{hw.subjectName}</Text>
-        </View>
-        <View style={s.pill}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="person-outline"
-            size={12}
-            color={PRIMARY}
-          />
-          <Text style={s.pillText}>{hw.teacherName}</Text>
         </View>
       </View>
     </View>
@@ -114,7 +125,7 @@ const HWCard = ({
           <Text style={[s.actionText, { color: '#16A34A' }]}>Completed</Text>
         </View>
       ) : (
-        <TouchableOpacity style={s.actionBtn} onPress={onToggleComplete} activeOpacity={0.7}>
+        <TouchableOpacity style={s.actionBtn} onPress={onMarkComplete} activeOpacity={0.7}>
           <VectorIcon
             iconSet="Ionicons"
             iconName="checkmark-circle-outline"
@@ -126,14 +137,60 @@ const HWCard = ({
       )}
     </View>
 
-    {/* Description expanded */}
+    {/* Dropdown — homework details */}
     {expanded && (
-      <View style={s.descBox}>
-        <View style={s.descHeader}>
-          <View style={[s.subjectDot, { backgroundColor: hw.subjectColor }]} />
-          <Text style={s.descTitle}>Description</Text>
-        </View>
-        <Text style={s.descText}>{hw.description}</Text>
+      <View style={s.dropBox}>
+        {group.items.map((hw, i) => (
+          <View
+            key={hw.id}
+            style={[s.hwItem, i < group.items.length - 1 && s.hwItemBorder]}
+          >
+            <View style={s.hwItemHeader}>
+              <View style={[s.subjectDot, { backgroundColor: group.subjectColor }]} />
+              <Text style={[s.hwItemTitle, isCompleted && s.subNameDone]}>
+                {hw.title}
+              </Text>
+            </View>
+            <Text style={s.hwItemDesc}>{hw.description}</Text>
+
+            {/* Attachments (image / pdf) */}
+            {!!hw.attachments?.length && (
+              <View style={s.attachRow}>
+                {hw.attachments.map((att, ai) => (
+                  <TouchableOpacity
+                    key={ai}
+                    style={s.attachChip}
+                    activeOpacity={att.type === 'image' ? 0.7 : 1}
+                    onPress={() => att.type === 'image' && onPreviewImage(att.url)}
+                  >
+                    <View
+                      style={[
+                        s.attachIconBox,
+                        { backgroundColor: att.type === 'image' ? theme.colors.primaryLight : '#FEE2E2' },
+                      ]}
+                    >
+                      <VectorIcon
+                        iconSet="Ionicons"
+                        iconName={att.type === 'image' ? 'image-outline' : 'document-text-outline'}
+                        size={14}
+                        color={att.type === 'image' ? PRIMARY : '#EF4444'}
+                      />
+                    </View>
+                    <Text style={s.attachText} numberOfLines={1}>{att.name}</Text>
+                    {att.type === 'image' && (
+                      <VectorIcon
+                        iconSet="Ionicons"
+                        iconName="eye-outline"
+                        size={13}
+                        color={theme.colors.textMuted}
+                      />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        ))}
       </View>
     )}
   </View>
@@ -146,17 +203,23 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
   const stripRef = useRef<ScrollView>(null);
   const [selectedKey, setSelectedKey] = useState(todayKey);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [confirmHw, setConfirmHw] = useState<Homework | null>(null);
+  const [expandedSub, setExpandedSub] = useState<string | null>(null);
+  const [confirmGroup, setConfirmGroup] = useState<SubjectGroup | null>(null);
+  const [preview, setPreview] = useState<{ url?: string; color: string } | null>(null);
 
   const homeworks: Homework[] = HOMEWORK_STORE.filter(h => h.dueDate === selectedKey);
-  const pending   = homeworks.filter(h => !completedIds.includes(h.id));
-  const completed = homeworks.filter(h => completedIds.includes(h.id));
+  const groups = groupBySubject(homeworks);
+  const isGroupDone = (g: SubjectGroup) => g.items.every(h => completedIds.includes(h.id));
+  const pending   = groups.filter(g => !isGroupDone(g));
+  const completed = groups.filter(g => isGroupDone(g));
 
   // One-way: once confirmed complete, it cannot be reversed.
   const confirmComplete = () => {
-    if (confirmHw) setCompletedIds(prev => [...prev, confirmHw.id]);
-    setConfirmHw(null);
+    if (confirmGroup) {
+      const ids = confirmGroup.items.map(h => h.id);
+      setCompletedIds(prev => [...prev, ...ids.filter(id => !prev.includes(id))]);
+    }
+    setConfirmGroup(null);
   };
 
   const selectedDate = new Date(selectedKey + 'T00:00:00');
@@ -193,7 +256,7 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
               <TouchableOpacity
                 key={key}
                 style={[s.dateCell, active && s.dateCellActive]}
-                onPress={() => setSelectedKey(key)}
+                onPress={() => { setSelectedKey(key); setExpandedSub(null); }}
                 activeOpacity={0.8}
               >
                 <Text style={[s.dateDayName, active && s.dateDayNameActive]}>
@@ -212,16 +275,18 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
         </ScrollView>
       </View>
 
-      {/* ── Homework list ── */}
+      {/* ── Subject cards ── */}
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <View style={s.listHeader}>
           <Text style={s.listTitle}>{listTitle}</Text>
           <View style={s.countBadge}>
-            <Text style={s.countText}>{homeworks.length} task{homeworks.length !== 1 ? 's' : ''}</Text>
+            <Text style={s.countText}>
+              {groups.length} subject{groups.length !== 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
 
-        {homeworks.length === 0 ? (
+        {groups.length === 0 ? (
           <View style={s.empty}>
             <VectorIcon iconSet="Ionicons" iconName="checkmark-circle-outline" size={52} color={theme.colors.textMuted} />
             <Text style={s.emptyTitle}>No homework!</Text>
@@ -229,14 +294,15 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
           </View>
         ) : (
           <>
-            {pending.map(hw => (
-              <HWCard
-                key={hw.id}
-                hw={hw}
+            {pending.map(g => (
+              <SubjectCard
+                key={g.subjectId}
+                group={g}
                 isCompleted={false}
-                expanded={expandedId === hw.id}
-                onToggleExpand={() => setExpandedId(expandedId === hw.id ? null : hw.id)}
-                onToggleComplete={() => setConfirmHw(hw)}
+                expanded={expandedSub === g.subjectId}
+                onToggleExpand={() => setExpandedSub(expandedSub === g.subjectId ? null : g.subjectId)}
+                onMarkComplete={() => setConfirmGroup(g)}
+                onPreviewImage={url => setPreview({ url, color: g.subjectColor })}
               />
             ))}
 
@@ -256,14 +322,15 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
                     <Text style={s.completedBadgeText}>{completed.length}</Text>
                   </View>
                 </View>
-                {completed.map(hw => (
-                  <HWCard
-                    key={hw.id}
-                    hw={hw}
+                {completed.map(g => (
+                  <SubjectCard
+                    key={g.subjectId}
+                    group={g}
                     isCompleted
-                    expanded={expandedId === hw.id}
-                    onToggleExpand={() => setExpandedId(expandedId === hw.id ? null : hw.id)}
-                    onToggleComplete={() => {}}
+                    expanded={expandedSub === g.subjectId}
+                    onToggleExpand={() => setExpandedSub(expandedSub === g.subjectId ? null : g.subjectId)}
+                    onMarkComplete={() => {}}
+                    onPreviewImage={url => setPreview({ url, color: g.subjectColor })}
                   />
                 ))}
               </>
@@ -274,12 +341,20 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* ── Image attachment preview ── */}
+      <AttachmentPreviewModal
+        visible={!!preview}
+        accentColor={preview?.color ?? PRIMARY}
+        imageUrl={preview?.url}
+        onClose={() => setPreview(null)}
+      />
+
       {/* ── Mark-as-complete confirmation ── */}
       <Modal
         transparent
-        visible={!!confirmHw}
+        visible={!!confirmGroup}
         animationType="fade"
-        onRequestClose={() => setConfirmHw(null)}
+        onRequestClose={() => setConfirmGroup(null)}
       >
         <View style={s.modalOverlay}>
           <View style={s.modalCard}>
@@ -294,15 +369,15 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
 
             <Text style={s.modalTitle}>Mark as Complete?</Text>
             <Text style={s.modalDesc}>
-              "{confirmHw?.title}" will be moved to Completed. This cannot be
-              undone.
+              {confirmGroup?.subjectName} homework will be moved to Completed.
+              This cannot be undone.
             </Text>
 
             <View style={s.modalActions}>
               <TouchableOpacity
                 style={[s.modalBtn, s.modalBtnGhost]}
                 activeOpacity={0.85}
-                onPress={() => setConfirmHw(null)}
+                onPress={() => setConfirmGroup(null)}
               >
                 <Text style={[s.modalBtnText, s.modalBtnGhostText]}>Cancel</Text>
               </TouchableOpacity>
@@ -380,9 +455,9 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
   accentBar: { height: 4, width: '100%' },
-  cardInner: { padding: theme.spacing.md, gap: 10 },
+  cardInner: { padding: theme.spacing.md },
 
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconWrap: {
     width: 40,
     height: 40,
@@ -391,9 +466,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   iconEmoji: { fontSize: 20 },
-  hwName: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
-  hwNameDone: { textDecorationLine: 'line-through', color: theme.colors.textSecondary },
-  hwSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  subName: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  subNameDone: { textDecorationLine: 'line-through', color: theme.colors.textSecondary },
+  subMeta: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -404,18 +479,6 @@ const s = StyleSheet.create({
   },
   badgeDot: { width: 6, height: 6, borderRadius: 3 },
   badgeText: { fontSize: 12, fontWeight: '700' },
-
-  pillsRow: { flexDirection: 'row', gap: 8 },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: theme.colors.primaryLight,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: theme.radius.full,
-  },
-  pillText: { fontSize: 12, fontWeight: '600', color: theme.colors.primary },
 
   // Bottom actions — exam toggle template
   actionsRow: {
@@ -435,16 +498,44 @@ const s = StyleSheet.create({
   actionDivider: { width: 1, backgroundColor: theme.colors.border },
   actionText: { fontSize: 13, fontWeight: '600', color: theme.colors.primary },
 
-  // Description expanded — exam syllabus-box template
-  descBox: {
+  // Dropdown — homework details
+  dropBox: {
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    gap: 6,
+    paddingVertical: 4,
   },
-  descHeader: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  hwItem: { paddingVertical: 12, gap: 6 },
+  hwItemBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  hwItemHeader: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   subjectDot: { width: 7, height: 7, borderRadius: 4 },
-  descTitle: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
-  descText: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 20, paddingLeft: 14 },
+  hwItemTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  hwItemDesc: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 20, paddingLeft: 14 },
+
+  // Attachments
+  attachRow: { gap: 8, paddingLeft: 14, marginTop: 2 },
+  attachChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  attachIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
 
   // Completed section
   completedHeader: {
