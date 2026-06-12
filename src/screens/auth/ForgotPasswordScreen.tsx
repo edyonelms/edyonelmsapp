@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
+  useWindowDimensions,
 } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import { theme } from '../../utils/theme';
@@ -27,6 +28,19 @@ const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
   const scrollRef = useRef<ScrollView>(null);
   const [step, setStep] = useState(1);
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Size OTP boxes from the screen width (minus screen + card padding and
+  // the gaps) so the row always fits. The row container gets an exact fixed
+  // width and centers itself: with the library's default full-width
+  // container the row drifts left once digits fill in (its cells remount on
+  // every keystroke and Yoga mis-centers the leftover space).
+  const otpGap = theme.spacing.xs;
+  const otpBoxWidth = Math.min(
+    48,
+    Math.floor((windowWidth - theme.spacing.lg * 4 - otpGap * 5) / 6),
+  );
+  const otpRowWidth = otpBoxWidth * 6 + otpGap * 5;
 
   // Edge-to-edge Android ignores adjustResize, so scroll the form above the
   // keyboard ourselves once the keyboard animation has started. Scroll only
@@ -182,20 +196,23 @@ const ForgotPasswordScreen = () => {
               }}
               onFocus={scrollFormIntoView}
               focusColor={theme.colors.primary}
+              // RN 0.85 removed StyleSheet.absoluteFillObject, which the
+              // library relies on to take its hidden TextInput out of the
+              // layout flow. Without it the invisible input sits in the row
+              // and widens as digits are typed, squeezing the boxes together
+              // and shifting the row left. Re-apply absolute positioning.
+              textInputProps={{ style: StyleSheet.absoluteFill }}
               theme={{
-                // Flexible boxes with a fixed gap: the library's default lays
-                // fixed-width boxes edge-to-edge on narrow screens, making
-                // them merge once digits fill in.
                 containerStyle: {
-                  justifyContent: 'center',
-                  gap: theme.spacing.xs,
+                  width: otpRowWidth,
+                  alignSelf: 'center',
+                  marginBottom: theme.spacing.sm,
                 },
                 pinCodeContainerStyle: {
                   borderWidth: 1,
                   borderColor: theme.colors.border,
                   borderRadius: theme.radius.sm,
-                  flex: 1,
-                  maxWidth: 48,
+                  width: otpBoxWidth,
                   height: 50,
                   backgroundColor: theme.colors.surface,
                 },
