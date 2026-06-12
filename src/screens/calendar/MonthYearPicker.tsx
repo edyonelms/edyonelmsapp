@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import moment from 'moment';
+import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { MONTHS, YEAR_RANGE } from './calendarTypes';
 
@@ -22,6 +24,7 @@ interface Props {
 }
 
 const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
+  const insets = useSafeAreaInsets();
   const [pickerYear, setPickerYear] = useState(current.year());
   const [pickerMonth, setPickerMonth] = useState(current.month());
   const yearRef = useRef<FlatList>(null);
@@ -39,6 +42,11 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
     }, 50);
   }, [visible, current]);
 
+  const apply = () => {
+    onSelect(moment().year(pickerYear).month(pickerMonth).date(1));
+    onClose();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -46,13 +54,35 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
       animationType="slide"
       onRequestClose={onClose}
       statusBarTranslucent
+      navigationBarTranslucent
     >
       <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={s.sheet}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]}
+        >
           <View style={s.handle} />
-          <Text style={s.title}>Select Month & Year</Text>
+
+          {/* Header */}
+          <View style={s.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.title}>Select Month & Year</Text>
+              <Text style={s.subtitle}>
+                {MONTHS[pickerMonth]} {pickerYear}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={s.closeBtn} activeOpacity={0.7}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="close"
+                size={18}
+                color={theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
 
           {/* Year strip */}
+          <Text style={s.sectionLabel}>YEAR</Text>
           <View style={s.yearSection}>
             <FlatList
               ref={yearRef}
@@ -66,7 +96,7 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
                 offset: 72 * i,
                 index: i,
               })}
-              contentContainerStyle={{ paddingHorizontal: 16 }}
+              contentContainerStyle={{ paddingHorizontal: 20 }}
               renderItem={({ item: y }) => {
                 const active = y === pickerYear;
                 return (
@@ -85,11 +115,12 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
           </View>
 
           {/* Month grid 4×3 */}
+          <Text style={s.sectionLabel}>MONTH</Text>
           <View style={s.monthGrid}>
             {MONTHS.map((m, i) => {
               const active = i === pickerMonth;
               const isCurrent =
-                i === current.month() && pickerYear === current.year();
+                i === moment().month() && pickerYear === moment().year();
               return (
                 <TouchableOpacity
                   key={m}
@@ -97,11 +128,17 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
                   activeOpacity={0.8}
                   style={[
                     s.monthCell,
-                    active && s.monthCellActive,
                     isCurrent && !active && s.monthCellCurrent,
+                    active && s.monthCellActive,
                   ]}
                 >
-                  <Text style={[s.monthText, active && s.monthTextActive]}>
+                  <Text
+                    style={[
+                      s.monthText,
+                      isCurrent && !active && s.monthTextCurrent,
+                      active && s.monthTextActive,
+                    ]}
+                  >
                     {m}
                   </Text>
                 </TouchableOpacity>
@@ -111,16 +148,10 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
 
           {/* Actions */}
           <View style={s.actions}>
-            <TouchableOpacity onPress={onClose} style={s.cancelBtn}>
+            <TouchableOpacity onPress={onClose} style={s.cancelBtn} activeOpacity={0.8}>
               <Text style={s.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                onSelect(moment().year(pickerYear).month(pickerMonth).date(1));
-                onClose();
-              }}
-              style={s.confirmBtn}
-            >
+            <TouchableOpacity onPress={apply} style={s.confirmBtn} activeOpacity={0.8}>
               <Text style={s.confirmText}>Apply</Text>
             </TouchableOpacity>
           </View>
@@ -132,7 +163,7 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
 
 export default MonthYearPicker;
 
-const CELL_W = (width - 32 - 30) / 4;
+const CELL_W = (width - 40 - 30) / 4;
 
 const s = StyleSheet.create({
   overlay: {
@@ -142,9 +173,8 @@ const s = StyleSheet.create({
   },
   sheet: {
     backgroundColor: theme.colors.white,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingBottom: 36,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     overflow: 'hidden',
   },
   handle: {
@@ -153,19 +183,47 @@ const s = StyleSheet.create({
     borderRadius: 99,
     backgroundColor: '#CBD5E1',
     alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 20,
+    marginTop: 10,
+    marginBottom: 14,
+  },
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 18,
   },
   title: {
     fontSize: 17,
     fontWeight: '800',
     color: theme.colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 20,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.primary,
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.textMuted,
+    letterSpacing: 0.8,
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
 
   // Year
-  yearSection: { marginBottom: 24 },
+  yearSection: { marginBottom: 18 },
   yearChip: {
     width: 64,
     height: 40,
@@ -183,32 +241,25 @@ const s = StyleSheet.create({
   monthGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     gap: 10,
-    marginBottom: 28,
+    marginBottom: 22,
   },
   monthCell: {
-    width: CELL_W ,
-    paddingVertical: 14,
-    borderRadius: theme.radius.lg,
+    width: CELL_W,
+    paddingVertical: 13,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F1F5F9',
   },
   monthCellActive: { backgroundColor: theme.colors.primary },
   monthCellCurrent: {
-    borderWidth: 1.5,
-    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryLight,
   },
   monthText: { fontSize: 14, fontWeight: '700', color: theme.colors.textSecondary },
   monthTextActive: { color: theme.colors.white },
-  monthDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: theme.colors.primary,
-    marginTop: 4,
-  },
+  monthTextCurrent: { color: theme.colors.primary },
 
   // Actions
   actions: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
