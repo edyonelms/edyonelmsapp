@@ -29,9 +29,23 @@ const ForgotPasswordScreen = () => {
   const [step, setStep] = useState(1);
 
   // Edge-to-edge Android ignores adjustResize, so scroll the form above the
-  // keyboard ourselves once the keyboard animation has started.
+  // keyboard ourselves once the keyboard animation has started. Scroll only
+  // up to the description so the view shows description → submit button.
+  // The desc lives inside the card, so its scroll offset is cardY + descY.
+  const cardYRef = useRef(0);
+  const descYRef = useRef(0);
   const scrollFormIntoView = () => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+    setTimeout(
+      () =>
+        scrollRef.current?.scrollTo({
+          y: Math.max(
+            cardYRef.current + descYRef.current - theme.spacing.sm,
+            0,
+          ),
+          animated: true,
+        }),
+      150,
+    );
   };
 
   const [email, setEmail] = useState('');
@@ -76,7 +90,12 @@ const ForgotPasswordScreen = () => {
               <Image source={{ uri: 'logo' }} style={styles.logo} />
             </View>
             <Text style={styles.heading}>Reset Password</Text>
-            <Text style={styles.desc}>
+            <Text
+              style={styles.desc}
+              onLayout={e => {
+                descYRef.current = e.nativeEvent.layout.y;
+              }}
+            >
               Enter your registered email address to reset your account
               password.
             </Text>
@@ -147,7 +166,12 @@ const ForgotPasswordScreen = () => {
               <Image source={{ uri: 'logo' }} style={styles.logo} />
             </View>
             <Text style={styles.heading}>Enter OTP</Text>
-            <Text style={styles.desc}>
+            <Text
+              style={styles.desc}
+              onLayout={e => {
+                descYRef.current = e.nativeEvent.layout.y;
+              }}
+            >
               Enter the 6-digit code sent to {email || 'your registered email'}.
             </Text>
             <OtpInput
@@ -159,11 +183,19 @@ const ForgotPasswordScreen = () => {
               onFocus={scrollFormIntoView}
               focusColor={theme.colors.primary}
               theme={{
+                // Flexible boxes with a fixed gap: the library's default lays
+                // fixed-width boxes edge-to-edge on narrow screens, making
+                // them merge once digits fill in.
+                containerStyle: {
+                  justifyContent: 'center',
+                  gap: theme.spacing.xs,
+                },
                 pinCodeContainerStyle: {
                   borderWidth: 1,
                   borderColor: theme.colors.border,
                   borderRadius: theme.radius.sm,
-                  width: 44,
+                  flex: 1,
+                  maxWidth: 48,
                   height: 50,
                   backgroundColor: theme.colors.surface,
                 },
@@ -250,7 +282,12 @@ const ForgotPasswordScreen = () => {
               <Image source={{ uri: 'logo' }} style={styles.logo} />
             </View>
             <Text style={styles.heading}>Set New Password</Text>
-            <Text style={styles.desc}>
+            <Text
+              style={styles.desc}
+              onLayout={e => {
+                descYRef.current = e.nativeEvent.layout.y;
+              }}
+            >
               Create a new password for your account
             </Text>
 
@@ -364,7 +401,14 @@ const ForgotPasswordScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.card}>{renderStep()}</View>
+          <View
+            style={styles.card}
+            onLayout={e => {
+              cardYRef.current = e.nativeEvent.layout.y;
+            }}
+          >
+            {renderStep()}
+          </View>
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>
