@@ -44,20 +44,17 @@ const SelectUserScreen = () => {
         <Text
           style={{
             fontSize: 26,
-            // fontWeight: '700',
             color: theme.colors.textPrimary,
             textAlign: 'center',
             top: -20,
-            marginBottom: theme.spacing.xs,
-            lineHeight: 44,
+            lineHeight: 34,
           }}
         >
           Welcome!
         </Text>
         <Text style={styles.title}>Edyone LMS</Text>
         <Text style={styles.subtitle}>
-          Continue as Student or Teacher to access your tools, dashboards, and
-          resources.
+          Continue as Student or Teacher to access your dashboard.
         </Text>
 
         <View style={styles.gridContainer}>
@@ -126,13 +123,13 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: theme.spacing.xs,
-    lineHeight: 44,
+    lineHeight: 34,
     top: -26,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 16,
     color: theme.colors.textSecondary,
-    paddingHorizontal: 12,
+    paddingHorizontal: 28,
     textAlign: 'center',
     marginBottom: theme.spacing.xl,
   },
