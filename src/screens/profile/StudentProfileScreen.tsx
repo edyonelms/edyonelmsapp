@@ -112,7 +112,7 @@ const StudentProfileScreen = () => {
 
         {/* ── Gradient hero ── */}
         <LinearGradient
-          colors={['#4F46E5', '#7C3AED']}
+          colors={['#E0F2FE', '#E0E7FF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.hero}
@@ -148,22 +148,9 @@ const StudentProfileScreen = () => {
             <InfoRow label="DOB"         value={p.dob} />
             <InfoRow label="Gender"      value={p.gender} />
             {!!p.religion && <InfoRow label="Religion" value={p.religion} />}
-            {!!p.aadhar_no && <InfoRow label="Aadhar No" value={p.aadhar_no} last />}
-          </SectionCard>
-
-          {/* ── Family Info ── */}
-          <SectionCard title="Family Information" accent="#8B5CF6">
+            {!!p.aadhar_no && <InfoRow label="Aadhar No" value={p.aadhar_no} />}
             <InfoRow label="Father Name" value={f.father_name} />
             <InfoRow label="Mother Name" value={f.mother_name} last />
-          </SectionCard>
-
-          {/* ── Address ── */}
-          <SectionCard title="Address" accent="#0EA5E9">
-            <InfoRow label="Local Address"     value={a.local_address} />
-            <InfoRow label="Permanent Address" value={a.permanent_address} />
-            {!!a.city && <InfoRow label="City" value={a.city} />}
-            <InfoRow label="State"             value={a.state} />
-            <InfoRow label="Pincode"           value={a.pincode} last />
           </SectionCard>
 
           {/* ── Academic Info ── */}
@@ -174,6 +161,15 @@ const StudentProfileScreen = () => {
             <InfoRow label="Class"             value={ac.standard_name} />
             <InfoRow label="Section"           value={ac.section_name ?? 'N/A'} />
             <InfoRow label="Board"             value={ac.board} last />
+          </SectionCard>
+
+          {/* ── Address ── */}
+          <SectionCard title="Address" accent="#0EA5E9">
+            <InfoRow label="Local Address"     value={a.local_address} />
+            <InfoRow label="Permanent Address" value={a.permanent_address} />
+            {!!a.city && <InfoRow label="City" value={a.city} />}
+            <InfoRow label="State"             value={a.state} />
+            <InfoRow label="Pincode"           value={a.pincode} last />
           </SectionCard>
 
         </View>
@@ -198,38 +194,36 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 32,
     paddingBottom: 36,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
     overflow: 'hidden',
   },
   heroBlob1: {
     position: 'absolute', width: 180, height: 180, borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.08)', top: -60, right: -40,
+    backgroundColor: 'rgba(79,70,229,0.06)', top: -60, right: -40,
   },
   heroBlob2: {
     position: 'absolute', width: 120, height: 120, borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.07)', bottom: -30, left: -30,
+    backgroundColor: 'rgba(14,165,233,0.06)', bottom: -30, left: -30,
   },
   avatarRing: {
-    width: 118, height: 118, borderRadius: 59,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    width: 92, height: 92, borderRadius: 46,
+    backgroundColor: 'rgba(255,255,255,0.7)',
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+    borderWidth: 2, borderColor: '#C7D2FE',
   },
-  avatarImage: { width: 104, height: 104, borderRadius: 52, resizeMode: 'cover' },
+  avatarImage: { width: 80, height: 80, borderRadius: 40, resizeMode: 'cover' },
   avatarCircle: {
-    width: 104, height: 104, borderRadius: 52,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#E0E7FF',
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarInitial: { fontSize: 40, fontWeight: '800', color: '#fff' },
-  studentName: { fontSize: 23, fontWeight: '800', color: '#fff', marginTop: 14, letterSpacing: 0.2 },
+  avatarInitial: { fontSize: 30, fontWeight: '800', color: theme.colors.primary },
+  studentName: { fontSize: 22, fontWeight: '800', color: theme.colors.textPrimary, marginTop: 12, letterSpacing: 0.2 },
   roleBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
-    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, marginTop: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1, borderColor: '#C7D2FE',
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, marginTop: 8,
   },
-  roleBadgeText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  roleBadgeText: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
 
   // Sections
   sectionsContainer: { paddingHorizontal: 16, marginTop: 22 },
