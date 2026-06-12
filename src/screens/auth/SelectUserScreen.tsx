@@ -70,7 +70,7 @@ const SelectUserScreen = () => {
             onPress={() => setSelectedUser('Student')}
             activeOpacity={0.9}
           >
-            <Image source={{ uri: 'student' }} style={styles.cardImage} />
+            <Text style={styles.cardEmoji}>👨‍🎓</Text>
             <Text style={styles.gridTitle}>Student</Text>
           </TouchableOpacity>
 
@@ -83,7 +83,7 @@ const SelectUserScreen = () => {
             onPress={() => setSelectedUser('Teacher')}
             activeOpacity={0.9}
           >
-            <Image source={{ uri: 'teacher' }} style={styles.cardImage} />
+            <Text style={styles.cardEmoji}>👩‍🏫</Text>
             <Text style={styles.gridTitle}>Teacher</Text>
           </TouchableOpacity>
         </View>
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    // fontWeight: '700',
+    fontWeight: '600',
     color: theme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: theme.spacing.xs,
@@ -132,8 +132,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     color: theme.colors.textSecondary,
-    paddingHorizontal: 40,
-    // paddingTop: 30,
+    paddingHorizontal: 12,
     textAlign: 'center',
     marginBottom: theme.spacing.xl,
   },
@@ -157,11 +156,10 @@ const styles = StyleSheet.create({
   selectedCard: {
     borderColor: '#5B7FFF',
   },
-  cardImage: {
-    width: 90,
-    height: 90,
-    resizeMode: 'contain',
-    marginBottom: 15,
+  cardEmoji: {
+    fontSize: 56,
+    lineHeight: 78,
+    marginBottom: 8,
   },
   gridTitle: {
     fontSize: 16,
