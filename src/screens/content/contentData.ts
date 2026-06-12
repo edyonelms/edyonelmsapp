@@ -6,6 +6,7 @@ export interface ContentItem {
   id: string;
   chapterId: string;
   subjectId: string;
+  topicId?: string;
   type: ContentType;
   title: string;
   value: string; // text body | url string | file name
@@ -16,16 +17,40 @@ export { SUBJECTS };
 
 export const CONTENT_STORE: ContentItem[] = [
   {
-    id: 'ci1', chapterId: 'c1', subjectId: '1', type: 'text',
+    id: 'ci1', chapterId: 'c1', subjectId: '1', topicId: 't2', type: 'text',
     title: "Newton's Laws Overview",
     value: "Newton's three laws of motion describe the relationship between a body and the forces acting upon it.",
     addedAt: '10:00 AM',
   },
   {
-    id: 'ci2', chapterId: 'c1', subjectId: '1', type: 'url',
+    id: 'ci2', chapterId: 'c1', subjectId: '1', topicId: 't2', type: 'url',
     title: 'Khan Academy – Newton\'s Laws',
     value: 'https://www.khanacademy.org/science/physics',
     addedAt: '10:05 AM',
+  },
+  {
+    id: 'ci3', chapterId: 'c1', subjectId: '1', topicId: 't2', type: 'pdf',
+    title: "Newton's Laws Notes",
+    value: 'newtons_laws_notes.pdf',
+    addedAt: '10:10 AM',
+  },
+  {
+    id: 'ci4', chapterId: 'c1', subjectId: '1', topicId: 't1', type: 'text',
+    title: 'What is Motion?',
+    value: 'Motion is the change in position of an object with respect to time. It is described in terms of distance, displacement, speed and velocity.',
+    addedAt: '09:40 AM',
+  },
+  {
+    id: 'ci5', chapterId: 'c2', subjectId: '1', topicId: 't1', type: 'image',
+    title: 'Work & Energy Diagram',
+    value: 'https://picsum.photos/seed/energy/900/600',
+    addedAt: '11:20 AM',
+  },
+  {
+    id: 'ci6', chapterId: 'c1', subjectId: '2', topicId: 't1', type: 'url',
+    title: "Euclid's Division Lemma – Video",
+    value: 'https://www.khanacademy.org/math',
+    addedAt: '12:15 PM',
   },
 ];
 

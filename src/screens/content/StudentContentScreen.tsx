@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,7 +9,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { ContentItem, CONTENT_STORE, SUBJECTS, TYPE_META } from './contentData';
+import { CONTENT_STORE, SUBJECTS } from './contentData';
 import type { Subject } from '../subjects/subjectsData';
 
 const PRIMARY = theme.colors.primary;
@@ -80,86 +79,6 @@ const SubjectDropdown = ({
   );
 };
 
-// ─── Content item block (view only) ───────────────────────────────────────────
-const ContentBlock = ({ item }: { item: ContentItem }) => {
-  const meta = TYPE_META[item.type];
-
-  const handlePress = () => {
-    if (item.type === 'url') Linking.openURL(item.value).catch(() => {});
-  };
-
-  return (
-    <TouchableOpacity
-      style={s.contentBlock}
-      onPress={item.type === 'url' ? handlePress : undefined}
-      activeOpacity={item.type === 'url' ? 0.75 : 1}
-    >
-      <View style={[s.contentAccent, { backgroundColor: meta.color }]} />
-      <View style={s.contentBody}>
-        <View style={s.contentTopRow}>
-          <View style={[s.typeBadge, { backgroundColor: meta.bg }]}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={meta.icon}
-              size={12}
-              color={meta.color}
-            />
-            <Text style={[s.typeBadgeText, { color: meta.color }]}>
-              {meta.label}
-            </Text>
-          </View>
-          <Text style={s.contentTime}>{item.addedAt}</Text>
-        </View>
-
-        <Text style={s.contentTitle}>{item.title}</Text>
-
-        {item.type === 'text' && (
-          <Text style={s.contentText} numberOfLines={3}>
-            {item.value}
-          </Text>
-        )}
-        {item.type === 'url' && (
-          <View style={s.urlRow}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="open-outline"
-              size={13}
-              color={meta.color}
-            />
-            <Text style={[s.urlText, { color: meta.color }]} numberOfLines={1}>
-              {item.value}
-            </Text>
-          </View>
-        )}
-        {item.type === 'pdf' && (
-          <View style={s.fileRow}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="document-outline"
-              size={14}
-              color={meta.color}
-            />
-            <Text style={[s.fileText, { color: meta.color }]}>{item.value}</Text>
-          </View>
-        )}
-        {item.type === 'image' && (
-          <View style={[s.imagePreview, { backgroundColor: meta.bg }]}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="image-outline"
-              size={28}
-              color={meta.color}
-            />
-            <Text style={[s.imagePreviewText, { color: meta.color }]}>
-              {item.value}
-            </Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const StudentContentScreen = ({ navigation }: any) => {
   const [selectedSub, setSelectedSub] = useState<Subject>(SUBJECTS[0]);
@@ -167,6 +86,10 @@ const StudentContentScreen = ({ navigation }: any) => {
     SUBJECTS[0].chapters[0]?.id ?? null,
   );
 
+  const totalTopics = selectedSub.chapters.reduce(
+    (sum, c) => sum + c.topics.length,
+    0,
+  );
   const totalItems = CONTENT_STORE.filter(
     c => c.subjectId === selectedSub.id,
   ).length;
@@ -176,9 +99,12 @@ const StudentContentScreen = ({ navigation }: any) => {
     setExpandedId(sub.chapters[0]?.id ?? null);
   };
 
-  const itemsFor = (chapterId: string) =>
+  const itemsFor = (chapterId: string, topicId: string) =>
     CONTENT_STORE.filter(
-      c => c.subjectId === selectedSub.id && c.chapterId === chapterId,
+      c =>
+        c.subjectId === selectedSub.id &&
+        c.chapterId === chapterId &&
+        c.topicId === topicId,
     );
 
   return (
@@ -190,6 +116,56 @@ const StudentContentScreen = ({ navigation }: any) => {
         showsVerticalScrollIndicator={false}
       >
         <SubjectDropdown selected={selectedSub} onSelect={selectSubject} />
+
+        {/* ── Subject overview card ── */}
+        <View style={s.card}>
+          <View style={[s.accentBar, { backgroundColor: selectedSub.color }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View
+                style={[s.iconWrap, { backgroundColor: selectedSub.color + '20' }]}
+              >
+                <Text style={s.iconEmoji}>{selectedSub.icon}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>{selectedSub.name}</Text>
+                <Text style={s.cardSubtitle} numberOfLines={1}>
+                  {selectedSub.teacher}
+                </Text>
+              </View>
+              <View
+                style={[s.countBadge, { backgroundColor: selectedSub.color + '15' }]}
+              >
+                <Text style={[s.countBadgeText, { color: selectedSub.color }]}>
+                  {totalItems} res
+                </Text>
+              </View>
+            </View>
+
+            {/* Stats footer */}
+            <View style={s.tableFooter}>
+              <View style={s.footerItem}>
+                <View
+                  style={[s.footerDot, { backgroundColor: selectedSub.color }]}
+                />
+                <Text style={s.footerLabel}>Chapters</Text>
+                <Text style={s.footerValue}>{selectedSub.chapters.length}</Text>
+              </View>
+              <View style={s.footerDivider} />
+              <View style={s.footerItem}>
+                <View style={[s.footerDot, { backgroundColor: '#0EA5E9' }]} />
+                <Text style={s.footerLabel}>Topics</Text>
+                <Text style={s.footerValue}>{totalTopics}</Text>
+              </View>
+              <View style={s.footerDivider} />
+              <View style={s.footerItem}>
+                <View style={[s.footerDot, { backgroundColor: '#16A34A' }]} />
+                <Text style={s.footerLabel}>Resources</Text>
+                <Text style={s.footerValue}>{totalItems}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
 
         {/* ── Chapters card ── */}
         <View style={s.card}>
@@ -207,17 +183,9 @@ const StudentContentScreen = ({ navigation }: any) => {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.cardTitle}>Chapters</Text>
+                <Text style={s.cardTitle}>Chapters & Topics</Text>
                 <Text style={s.cardSubtitle}>
-                  {selectedSub.chapters.length} chapters · {totalItems} resource
-                  {totalItems !== 1 ? 's' : ''}
-                </Text>
-              </View>
-              <View
-                style={[s.countBadge, { backgroundColor: selectedSub.color + '15' }]}
-              >
-                <Text style={[s.countBadgeText, { color: selectedSub.color }]}>
-                  {totalItems}
+                  Tap a topic to view its study content
                 </Text>
               </View>
             </View>
@@ -234,7 +202,6 @@ const StudentContentScreen = ({ navigation }: any) => {
               </View>
             ) : (
               selectedSub.chapters.map((chapter, i) => {
-                const items = itemsFor(chapter.id);
                 const expanded = expandedId === chapter.id;
                 return (
                   <View key={chapter.id}>
@@ -261,7 +228,8 @@ const StudentContentScreen = ({ navigation }: any) => {
                           {chapter.name}
                         </Text>
                         <Text style={s.chapterMeta}>
-                          {items.length} item{items.length !== 1 ? 's' : ''}
+                          {chapter.topics.length} topic
+                          {chapter.topics.length !== 1 ? 's' : ''}
                         </Text>
                       </View>
                       <View
@@ -283,30 +251,98 @@ const StudentContentScreen = ({ navigation }: any) => {
                       </View>
                     </TouchableOpacity>
 
-                    {/* Expanded content items */}
+                    {/* Expanded topics — tap a topic to open its content */}
                     {expanded && (
                       <View
                         style={[
-                          s.itemsBox,
+                          s.topicsBox,
                           i < selectedSub.chapters.length - 1 && s.rowBorder,
                         ]}
                       >
-                        {items.length === 0 ? (
-                          <View style={s.noItems}>
+                        {chapter.topics.length === 0 ? (
+                          <View style={s.noTopics}>
                             <VectorIcon
                               iconSet="Ionicons"
-                              iconName="folder-open-outline"
-                              size={24}
+                              iconName="document-outline"
+                              size={16}
                               color={theme.colors.textMuted}
                             />
-                            <Text style={s.noItemsText}>
-                              No content added yet
+                            <Text style={s.noTopicsText}>
+                              No topics added yet
                             </Text>
                           </View>
                         ) : (
-                          items.map(item => (
-                            <ContentBlock key={item.id} item={item} />
-                          ))
+                          chapter.topics.map((topic, ti) => {
+                            const items = itemsFor(chapter.id, topic.id);
+                            return (
+                              <TouchableOpacity
+                                key={topic.id}
+                                style={[
+                                  s.topicRow,
+                                  ti === chapter.topics.length - 1 && {
+                                    borderBottomWidth: 0,
+                                  },
+                                ]}
+                                onPress={() =>
+                                  navigation.navigate('ViewContent', {
+                                    topicName: topic.name,
+                                    chapterName: chapter.name,
+                                    subjectName: selectedSub.name,
+                                    subjectIcon: selectedSub.icon,
+                                    subjectColor: selectedSub.color,
+                                    items,
+                                  })
+                                }
+                                activeOpacity={0.7}
+                              >
+                                <View
+                                  style={[
+                                    s.topicIndexBadge,
+                                    {
+                                      backgroundColor:
+                                        selectedSub.color + '18',
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      s.topicIndexText,
+                                      { color: selectedSub.color },
+                                    ]}
+                                  >
+                                    {ti + 1}
+                                  </Text>
+                                </View>
+                                <Text style={s.topicName}>{topic.name}</Text>
+                                {items.length > 0 && (
+                                  <View
+                                    style={[
+                                      s.resBadge,
+                                      {
+                                        backgroundColor:
+                                          selectedSub.color + '15',
+                                      },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        s.resBadgeText,
+                                        { color: selectedSub.color },
+                                      ]}
+                                    >
+                                      {items.length}
+                                    </Text>
+                                  </View>
+                                )}
+                                <VectorIcon
+                                  iconSet="Ionicons"
+                                  iconName="chevron-forward"
+                                  size={14}
+                                  color={theme.colors.textMuted}
+                                />
+                              </TouchableOpacity>
+                            );
+                          })
                         )}
                       </View>
                     )}
@@ -400,6 +436,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconEmoji: { fontSize: 20 },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
@@ -416,6 +453,38 @@ const s = StyleSheet.create({
     paddingVertical: 5,
   },
   countBadgeText: { fontSize: 13, fontWeight: '800' },
+
+  // Stats footer (shared template)
+  tableFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  footerItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  footerDot: { width: 7, height: 7, borderRadius: 4 },
+  footerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  footerValue: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: theme.colors.textPrimary,
+  },
+  footerDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: theme.colors.border,
+  },
 
   // Chapter rows
   chapterRow: {
@@ -457,74 +526,58 @@ const s = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 
-  // Expanded items box
-  itemsBox: {
+  // Topics (expanded)
+  topicsBox: {
     backgroundColor: theme.colors.background,
     borderRadius: theme.radius.sm,
-    padding: 10,
-    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     marginBottom: 6,
   },
-  noItems: { alignItems: 'center', paddingVertical: 18, gap: 6 },
-  noItemsText: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-    fontWeight: '600',
-  },
-
-  // Content block
-  contentBlock: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-  },
-  contentAccent: { width: 4 },
-  contentBody: { flex: 1, padding: 10, gap: 5 },
-  contentTopRow: {
+  topicRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
-  typeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  typeBadgeText: { fontSize: 11, fontWeight: '800' },
-  contentTime: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
-  contentTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-  },
-  contentText: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    lineHeight: 19,
-  },
-  urlRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  urlText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-  fileRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  fileText: { fontSize: 12, fontWeight: '700' },
-  imagePreview: {
-    borderRadius: theme.radius.sm,
+  topicIndexBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 4,
   },
-  imagePreviewText: { fontSize: 12, fontWeight: '700' },
+  topicIndexText: { fontSize: 10, fontWeight: '800' },
+  topicName: {
+    flex: 1,
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  resBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  resBadgeText: { fontSize: 10, fontWeight: '800' },
+
+  // No topics
+  noTopics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  noTopicsText: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+  },
 
   // Empty
   empty: { alignItems: 'center', paddingVertical: 36, gap: 8 },

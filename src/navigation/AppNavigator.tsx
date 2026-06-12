@@ -20,6 +20,7 @@ import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
 import ChatsScreen from '../screens/chats/ChatsScreen';
 import ChatsListScreen from '../screens/chats/ChatsListScreen';
 import SubjectDetailsScreen from '../screens/subjects/SubjectDetailsScreen';
+import ViewContentScreen from '../screens/content/ViewContentScreen';
 import ChangePasswordScreen from '../screens/setting/ChangePasswordScreen';
 import ExamsScreen from '../screens/exam/ExamsScreen';
 import TeacherExamsScreen from '../screens/exam/TeacherExamsScreen';
@@ -81,6 +82,9 @@ const AppNavigator = () => {
 
       {/* Subjects */}
       <Stack.Screen name="SubjectDetails" component={SubjectDetailsScreen} />
+
+      {/* Study Content */}
+      <Stack.Screen name="ViewContent" component={ViewContentScreen} />
 
       {/* ChangePasswordScreen */}
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
