@@ -26,7 +26,7 @@ const AnnouncementCard = ({ item, onPress }: Props) => {
       <View style={s.inner}>
         {/* Top row */}
         <View style={s.topRow}>
-          <View style={[s.iconBox, { backgroundColor: tag.bg }]}>
+          <View style={[s.iconBox, { backgroundColor: tag.bgColor }]}>
             <VectorIcon
               iconSet="Ionicons"
               iconName="megaphone"
@@ -36,23 +36,48 @@ const AnnouncementCard = ({ item, onPress }: Props) => {
           </View>
 
           <View style={s.meta}>
-            <Text style={s.title}>{item.title}</Text>
-            <View style={s.timeRow}>
-              <VectorIcon
-                iconSet="Feather"
-                iconName="clock"
-                size={11}
-                color={theme.colors.textMuted}
-              />
-              <Text style={s.timeText}>{timeLabel}</Text>
+            <View style={s.titleRow}>
+              <Text style={s.title} numberOfLines={1}>
+                {item.title}
+              </Text>
+              {item.isNew && (
+                <View style={s.newPill}>
+                  <Text style={s.newPillText}>New</Text>
+                </View>
+              )}
+            </View>
+            <View style={s.metaRow}>
+              <View style={[s.tagPill, { backgroundColor: tag.bgColor }]}>
+                <Text style={[s.tagText, { color: tag.color }]}>
+                  {item.tag}
+                </Text>
+              </View>
+              <View style={s.timeRow}>
+                <VectorIcon
+                  iconSet="Feather"
+                  iconName="clock"
+                  size={11}
+                  color={theme.colors.textMuted}
+                />
+                <Text style={s.timeText}>{timeLabel}</Text>
+              </View>
             </View>
           </View>
+
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="chevron-forward"
+            size={16}
+            color={theme.colors.textMuted}
+          />
         </View>
 
-        {/* Body preview - FIXED: changed from item.body to item.content */}
-        <Text style={s.body} numberOfLines={2}>
-          {item.content}
-        </Text>
+        {/* Body preview */}
+        {!!item.content && (
+          <Text style={s.body} numberOfLines={2}>
+            {item.content}
+          </Text>
+        )}
 
         {/* Attachments hint */}
         {(item.hasImage || item.hasPdf) && (
@@ -82,16 +107,6 @@ const AnnouncementCard = ({ item, onPress }: Props) => {
           </View>
         )}
       </View>
-
-      {/* Chevron */}
-      <View style={s.chevronBox}>
-        <VectorIcon
-          iconSet="Ionicons"
-          iconName="chevron-forward"
-          size={16}
-          color={theme.colors.textMuted}
-        />
-      </View>
     </TouchableOpacity>
   );
 };
@@ -103,7 +118,6 @@ const s = StyleSheet.create({
     backgroundColor: theme.colors.white,
     borderRadius: theme.radius.lg,
     flexDirection: 'row',
-    alignItems: 'center',
     overflow: 'hidden',
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 3 },
@@ -115,9 +129,8 @@ const s = StyleSheet.create({
   inner: { flex: 1, padding: 14 },
   topRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
-    marginBottom: 8,
   },
   iconBox: {
     width: 42,
@@ -126,30 +139,46 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  meta: { flex: 1, flexDirection: 'row', justifyContent: 'space-between' },
+  meta: { flex: 1 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 5,
+  },
   title: {
+    flex: 1,
     fontSize: 15,
     fontWeight: '800',
     color: theme.colors.textPrimary,
-    marginBottom: 3,
   },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  timeText: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '500' },
-  rightCol: { alignItems: 'center', gap: 6, flexDirection: 'row' },
-  newDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.success,
+  newPill: {
+    backgroundColor: '#DCFCE7',
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
+  newPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: theme.colors.success,
+  },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tagPill: {
     borderRadius: theme.radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
   },
   tagText: { fontSize: 10, fontWeight: '700' },
-  body: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 20 },
-  attachRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  timeText: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '500' },
+  body: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  attachRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   attachChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,5 +191,4 @@ const s = StyleSheet.create({
     backgroundColor: theme.colors.white,
   },
   attachText: { fontSize: 11, fontWeight: '600' },
-  chevronBox: { paddingRight: 12 },
 });

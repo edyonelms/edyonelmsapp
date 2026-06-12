@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dimensions,
+  Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,74 +9,88 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
+import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { TAG_META } from './announcementData';
 import type { Announcement } from './announcementData';
 import AttachmentPreviewModal from './AttachmentPreviewModal';
-import type { PreviewType } from './AttachmentPreviewModal';
 import apiClient from '../../api/apiClient';
+import constant from '../../utils/constant';
+
+// Files come from the same host as the API but outside the /api/v1 prefix
+const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+
+const resolveFileUrl = (url?: string): string | undefined => {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${FILE_ORIGIN}/${url.replace(/^\/+/, '')}`;
+};
 
 const ViewAnnouncementScreen = ({ navigation, route }: any) => {
   const initialItem: Announcement = route.params?.item;
   const [item, setItem] = useState<Announcement>(initialItem);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [previewType, setPreviewType] = useState<PreviewType>(null);
-  
+  const [imageVisible, setImageVisible] = useState(false);
+
   const tag = TAG_META[item?.tag || 'All'];
   const timeLabel = item?.daysAgo === 0 ? 'Today' : `${item?.daysAgo || 0}d ago`;
+  const dateLabel = item?.date
+    ? moment(item.date).format('DD MMM YYYY, hh:mm A')
+    : '';
+
+  const imageUrl = resolveFileUrl(item?.imageUrl);
+  const pdfUrl = resolveFileUrl(item?.pdfUrl);
 
   // Fetch full announcement details by ID
   const fetchAnnouncementDetails = async () => {
     if (!item?.id) return;
-    
+
     setLoading(true);
-    setError(null);
-    
+
     try {
-      const url = `/announcement/${item.id}`;
-      console.log('[ViewAnnouncement] Fetching from URL:', apiClient.defaults.baseURL + url);
-      
-      const response = await apiClient.get(url);
-      console.log('[ViewAnnouncement] Full response:', JSON.stringify(response.data, null, 2));
-      
-      // Extract the announcement data from response
+      const response = await apiClient.get(`/announcement/${item.id}`);
       const announcementData = response.data?.data || response.data;
-      console.log('[ViewAnnouncement] Announcement data:', announcementData);
-      
+
       if (announcementData && announcementData.id) {
-        // Update the item with full details from API
-        const updatedItem = {
-          ...item,
-          title: announcementData.announcement_name || item.title,
-          content: announcementData.announcement_content || item.content,
-          date: announcementData.created_at || item.date,
-          imageUrl: announcementData.announcement_image || item.imageUrl,
-          pdfUrl: announcementData.announcement_pdf || item.pdfUrl,
-          creatorName: announcementData.creator_name || item.creatorName,
-          creatorEmail: announcementData.creator_email || item.creatorEmail,
-        };
-        console.log('[ViewAnnouncement] Updated item:', updatedItem);
-        setItem(updatedItem);
+        setItem(prev => ({
+          ...prev,
+          title: announcementData.announcement_name || prev.title,
+          content: announcementData.announcement_content || prev.content,
+          date: announcementData.created_at || prev.date,
+          imageUrl: announcementData.announcement_image || prev.imageUrl,
+          pdfUrl: announcementData.announcement_pdf || prev.pdfUrl,
+          hasImage: !!(announcementData.announcement_image || prev.imageUrl),
+          hasPdf: !!(announcementData.announcement_pdf || prev.pdfUrl),
+          creatorName: announcementData.creator_name || prev.creatorName,
+          creatorEmail: announcementData.creator_email || prev.creatorEmail,
+        }));
       }
     } catch (err: any) {
-      console.error('[ViewAnnouncement] Error fetching details:', err?.response?.data || err.message);
-      // Don't show error to user, just use the passed item
-      if (err?.response?.status === 403) {
-        console.log('[ViewAnnouncement] Access forbidden, using passed item data');
-      }
+      // Silently fall back to the item passed via navigation
+      console.log(
+        '[ViewAnnouncement] Fetch failed, using passed item:',
+        err?.response?.status ?? err?.message,
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (item?.id) {
-      fetchAnnouncementDetails();
+    fetchAnnouncementDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialItem?.id]);
+
+  const openPdf = async () => {
+    if (!pdfUrl) return;
+    try {
+      await Linking.openURL(pdfUrl);
+    } catch {
+      Alert.alert('Error', 'Unable to open the PDF on this device.');
     }
-  }, [item?.id]);
+  };
 
   if (!item) {
     return (
@@ -104,165 +119,154 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
         >
-          {/* ── Top banner card ── */}
-          <View style={[s.bannerCard, { backgroundColor: tag.color }]}>
-            {/* Decorative circles */}
-            <View style={s.circle1} />
-            <View style={s.circle2} />
+          {/* ── Single detail card ── */}
+          <View style={s.card}>
+            {/* Top accent strip */}
+            <View style={[s.accentStrip, { backgroundColor: tag.color }]} />
 
-            {/* Icon */}
-            <View style={s.iconWrap}>
-              <View style={s.iconBox}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="megaphone"
-                  size={30}
-                  color={tag.color}
-                />
-              </View>
-            </View>
-
-            {/* Title */}
-            <Text style={s.bannerTitle}>{item.title}</Text>
-
-            {/* Chips row */}
-            <View style={s.chipsRow}>
-              <View style={s.infoPill}>
-                <VectorIcon
-                  iconSet="Feather"
-                  iconName="clock"
-                  size={11}
-                  color={tag.color}
-                />
-                <Text style={[s.infoPillText, { color: tag.color }]}>
-                  {timeLabel}
-                </Text>
-              </View>
-              <View style={s.infoPill}>
-                <VectorIcon
-                  iconSet="Feather"
-                  iconName="tag"
-                  size={11}
-                  color={tag.color}
-                />
-                <Text style={[s.infoPillText, { color: tag.color }]}>
-                  {item.tag}
-                </Text>
-              </View>
-              {item.isNew && (
-                <View style={[s.infoPill, { backgroundColor: '#DCFCE7' }]}>
-                  <View style={s.newDot} />
-                  <Text style={[s.infoPillText, { color: theme.colors.success }]}>
-                    New
+            <View style={s.cardInner}>
+              {/* Meta row: tag + new + time */}
+              <View style={s.metaRow}>
+                <View style={[s.tagPill, { backgroundColor: tag.bgColor }]}>
+                  <VectorIcon
+                    iconSet="Feather"
+                    iconName="tag"
+                    size={11}
+                    color={tag.color}
+                  />
+                  <Text style={[s.tagPillText, { color: tag.color }]}>
+                    {item.tag}
                   </Text>
                 </View>
+                {item.isNew && (
+                  <View style={[s.tagPill, { backgroundColor: '#DCFCE7' }]}>
+                    <View style={s.newDot} />
+                    <Text style={[s.tagPillText, { color: theme.colors.success }]}>
+                      New
+                    </Text>
+                  </View>
+                )}
+                <View style={s.metaSpacer} />
+                <View style={s.timeRow}>
+                  <VectorIcon
+                    iconSet="Feather"
+                    iconName="clock"
+                    size={12}
+                    color={theme.colors.textMuted}
+                  />
+                  <Text style={s.timeText}>{timeLabel}</Text>
+                </View>
+              </View>
+
+              {/* Title */}
+              <Text style={s.title}>{item.title}</Text>
+              {!!dateLabel && <Text style={s.dateText}>{dateLabel}</Text>}
+
+              <View style={s.divider} />
+
+              {/* Description */}
+              <Text style={s.sectionLabel}>Description</Text>
+              <Text style={s.bodyText}>
+                {item.content || 'No description available'}
+              </Text>
+
+              {/* Attachments */}
+              {(imageUrl || pdfUrl) && (
+                <>
+                  <View style={s.divider} />
+                  <Text style={s.sectionLabel}>Attachments</Text>
+                  <View style={s.attachList}>
+                    {!!imageUrl && (
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => setImageVisible(true)}
+                        style={[s.attachBtn, { borderColor: tag.color + '40' }]}
+                      >
+                        <View
+                          style={[s.attachIconBox, { backgroundColor: tag.bgColor }]}
+                        >
+                          <VectorIcon
+                            iconSet="Feather"
+                            iconName="image"
+                            size={18}
+                            color={tag.color}
+                          />
+                        </View>
+                        <View style={s.attachTextBox}>
+                          <Text style={s.attachTitle}>Image</Text>
+                          <Text style={s.attachSub}>Tap to view full image</Text>
+                        </View>
+                        <VectorIcon
+                          iconSet="Ionicons"
+                          iconName="chevron-forward"
+                          size={16}
+                          color={theme.colors.textMuted}
+                        />
+                      </TouchableOpacity>
+                    )}
+
+                    {!!pdfUrl && (
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={openPdf}
+                        style={[s.attachBtn, { borderColor: tag.color + '40' }]}
+                      >
+                        <View
+                          style={[s.attachIconBox, { backgroundColor: tag.bgColor }]}
+                        >
+                          <VectorIcon
+                            iconSet="Feather"
+                            iconName="file-text"
+                            size={18}
+                            color={tag.color}
+                          />
+                        </View>
+                        <View style={s.attachTextBox}>
+                          <Text style={s.attachTitle}>PDF Document</Text>
+                          <Text style={s.attachSub}>Tap to open PDF</Text>
+                        </View>
+                        <VectorIcon
+                          iconSet="Feather"
+                          iconName="external-link"
+                          size={16}
+                          color={theme.colors.textMuted}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </>
+              )}
+
+              {/* Posted by */}
+              {!!item.creatorName && (
+                <>
+                  <View style={s.divider} />
+                  <Text style={s.sectionLabel}>Posted By</Text>
+                  <View style={s.creatorRow}>
+                    <View style={[s.creatorAvatar, { backgroundColor: tag.bgColor }]}>
+                      <Text style={[s.creatorInitial, { color: tag.color }]}>
+                        {item.creatorName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={s.creatorInfo}>
+                      <Text style={s.creatorName}>{item.creatorName}</Text>
+                      {!!item.creatorEmail && (
+                        <Text style={s.creatorEmail}>{item.creatorEmail}</Text>
+                      )}
+                    </View>
+                  </View>
+                </>
               )}
             </View>
           </View>
-
-          {/* ── Description card ── */}
-          <View style={s.card}>
-            <View style={s.cardHeader}>
-              <View style={[s.cardBar, { backgroundColor: tag.color }]} />
-              <Text style={s.cardTitle}>Description</Text>
-            </View>
-            {/* FIXED: Changed from item.body to item.content */}
-            <Text style={s.bodyText}>{item.content || 'No description available'}</Text>
-          </View>
-
-          {/* ── Attachments ── */}
-          {(item.hasImage || item.hasPdf) && (
-            <View style={s.card}>
-              <View style={s.cardHeader}>
-                <View style={[s.cardBar, { backgroundColor: tag.color }]} />
-                <Text style={s.cardTitle}>Attachments</Text>
-              </View>
-
-              <View style={s.attachList}>
-                {item.hasImage && item.imageUrl && (
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => setPreviewType('image')}
-                    style={[s.attachBtn, { backgroundColor: tag.color }]}
-                  >
-                    <View style={s.attachLeft}>
-                      <View style={s.attachIconBox}>
-                        <VectorIcon
-                          iconSet="Feather"
-                          iconName="image"
-                          size={20}
-                          color="#fff"
-                        />
-                      </View>
-                      <View>
-                        <Text style={s.attachTitle}>View Image</Text>
-                        <Text style={s.attachSub}>Tap to view full image</Text>
-                      </View>
-                    </View>
-                    <VectorIcon
-                      iconSet="Ionicons"
-                      iconName="chevron-forward"
-                      size={18}
-                      color="#fff"
-                    />
-                  </TouchableOpacity>
-                )}
-
-                {item.hasPdf && item.pdfUrl && (
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => setPreviewType('pdf')}
-                    style={[s.attachBtn, { backgroundColor: tag.color }]}
-                  >
-                    <View style={s.attachLeft}>
-                      <View style={s.attachIconBox}>
-                        <VectorIcon
-                          iconSet="Feather"
-                          iconName="file-text"
-                          size={20}
-                          color="#fff"
-                        />
-                      </View>
-                      <View>
-                        <Text style={s.attachTitle}>View PDF</Text>
-                        <Text style={s.attachSub}>Tap to read PDF document</Text>
-                      </View>
-                    </View>
-                    <VectorIcon
-                      iconSet="Ionicons"
-                      iconName="chevron-forward"
-                      size={18}
-                      color="#fff"
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
-
-          {/* ── Creator Info (if available) ── */}
-          {item.creatorName && (
-            <View style={s.card}>
-              <View style={s.cardHeader}>
-                <View style={[s.cardBar, { backgroundColor: tag.color }]} />
-                <Text style={s.cardTitle}>Posted By</Text>
-              </View>
-              <Text style={s.creatorName}>{item.creatorName}</Text>
-              {item.creatorEmail && (
-                <Text style={s.creatorEmail}>{item.creatorEmail}</Text>
-              )}
-            </View>
-          )}
         </ScrollView>
       )}
 
       <AttachmentPreviewModal
-        visible={previewType !== null}
-        type={previewType}
+        visible={imageVisible}
         accentColor={tag.color}
-        imageUrl={item.imageUrl}
-        pdfUrl={item.pdfUrl}
-        onClose={() => setPreviewType(null)}
+        imageUrl={imageUrl}
+        onClose={() => setImageVisible(false)}
       />
     </View>
   );
@@ -272,7 +276,7 @@ export default ViewAnnouncementScreen;
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { padding: 16, paddingBottom: 40, gap: 16 },
+  scroll: { padding: 16, paddingBottom: 40 },
   centeredBox: {
     flex: 1,
     alignItems: 'center',
@@ -285,149 +289,126 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Banner card
-  bannerCard: {
+  // Single card
+  card: {
+    backgroundColor: theme.colors.white,
     borderRadius: theme.radius.lg,
-    padding: 24,
-    alignItems: 'center',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-  circle1: {
-    position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: '#ffffff15',
-    top: -60,
-    right: -50,
-  },
-  circle2: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#ffffff10',
-    bottom: -30,
-    left: -20,
-  },
-  iconWrap: { marginBottom: 14 },
-  iconBox: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  bannerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#fff',
-    textAlign: 'center',
+  accentStrip: { height: 5 },
+  cardInner: { padding: 18 },
+
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 14,
   },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  infoPill: {
+  metaSpacer: { flex: 1 },
+  tagPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#fff',
     borderRadius: theme.radius.full,
-    paddingHorizontal: 12,
+    paddingHorizontal: 11,
     paddingVertical: 5,
   },
-  infoPillText: { fontSize: 12, fontWeight: '700' },
+  tagPillText: { fontSize: 12, fontWeight: '700' },
   newDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: theme.colors.success,
   },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  timeText: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    fontWeight: '600',
+  },
 
-  // Content card
-  card: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.lg,
-    padding: 18,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-  },
-  cardBar: { width: 4, height: 20, borderRadius: 2 },
-  cardTitle: {
-    fontSize: 15,
+  title: {
+    fontSize: 20,
     fontWeight: '800',
     color: theme.colors.textPrimary,
+    lineHeight: 28,
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    fontWeight: '500',
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: 16,
+  },
+
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.textMuted,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 10,
   },
   bodyText: {
     fontSize: 15,
     color: theme.colors.textPrimary,
-    lineHeight: 26,
-    textAlign: 'justify',
-  },
-  creatorName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-    marginBottom: 4,
-  },
-  creatorEmail: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
+    lineHeight: 25,
   },
 
   // Attachments
-  attachList: { gap: 12 },
+  attachList: { gap: 10 },
   attachBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: theme.radius.lg,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  attachLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  attachIconBox: {
-    width: 44,
-    height: 44,
+    gap: 12,
     borderRadius: theme.radius.md,
-    backgroundColor: '#ffffff25',
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: theme.colors.white,
+  },
+  attachIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  attachTextBox: { flex: 1 },
   attachTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: 1,
+  },
+  attachSub: { fontSize: 12, color: theme.colors.textMuted },
+
+  // Creator
+  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  creatorAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  creatorInitial: { fontSize: 17, fontWeight: '800' },
+  creatorInfo: { flex: 1 },
+  creatorName: {
     fontSize: 15,
-    fontWeight: '800',
-    color: '#fff',
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
     marginBottom: 2,
   },
-  attachSub: { fontSize: 12, color: '#ffffffcc', fontWeight: '500' },
+  creatorEmail: { fontSize: 13, color: theme.colors.textSecondary },
 });

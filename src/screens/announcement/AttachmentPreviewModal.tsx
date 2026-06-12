@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Modal,
@@ -13,34 +14,22 @@ import { theme } from '../../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
-export type PreviewType = 'image' | 'pdf' | null;
-
 interface Props {
   visible: boolean;
-  type: PreviewType;
-  accentColor: string;
-  imageUri?: string;
-  pdfUri?: string;
-  onClose: () => void;
-}
-
-// AttachmentPreviewModal.tsx - Add these props
-interface AttachmentPreviewModalProps {
-  visible: boolean;
-  type: PreviewType;
   accentColor: string;
   imageUrl?: string;
-  pdfUrl?: string;
   onClose: () => void;
 }
 
 const AttachmentPreviewModal = ({
   visible,
-  type,
   accentColor,
-  imageUri,
+  imageUrl,
   onClose,
 }: Props) => {
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
   return (
     <Modal
       visible={visible}
@@ -64,42 +53,56 @@ const AttachmentPreviewModal = ({
               color="#fff"
             />
           </TouchableOpacity>
-          <Text style={s.topTitle}>
-            {type === 'image' ? 'Image Preview' : 'PDF Preview'}
-          </Text>
+          <Text style={s.topTitle}>Image Preview</Text>
           <View style={{ width: 36 }} />
         </View>
 
         {/* Content */}
         <View style={s.content}>
-          {type === 'image' ? (
-            <View style={s.imageContainer}>
-              {imageUri ? (
+          <View style={s.imageContainer}>
+            {imageUrl && !failed ? (
+              <>
                 <Image
-                  source={{ uri: imageUri }}
+                  source={{ uri: imageUrl }}
                   style={s.image}
                   resizeMode="contain"
+                  onLoadStart={() => setLoading(true)}
+                  onLoadEnd={() => setLoading(false)}
+                  onError={() => {
+                    setLoading(false);
+                    setFailed(true);
+                  }}
                 />
-              ) : (
-                <View style={s.PreviewContainer}>
-                  <PlaceholderBox
-                    icon="image-outline"
-                    label="No image available"
+                {loading && (
+                  <View style={s.loaderOverlay}>
+                    <ActivityIndicator size="large" color={accentColor} />
+                  </View>
+                )}
+              </>
+            ) : (
+              <View style={s.placeholderBox}>
+                <View
+                  style={[
+                    s.iconRing,
+                    {
+                      backgroundColor: accentColor + '20',
+                      borderColor: accentColor + '40',
+                    },
+                  ]}
+                >
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="image-outline"
+                    size={48}
                     color={accentColor}
                   />
                 </View>
-              )}
-            </View>
-          ) : (
-            <View style={s.PreviewContainer}>
-              {/* PDF placeholder — replace with react-native-pdf if available */}
-              <PlaceholderBox
-                icon="document-text-outline"
-                label="PDF Viewer"
-                color={accentColor}
-              />
-            </View>
-          )}
+                <Text style={s.placeholderLabel}>
+                  {failed ? 'Failed to load image' : 'No image available'}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Bottom action */}
@@ -116,35 +119,6 @@ const AttachmentPreviewModal = ({
     </Modal>
   );
 };
-
-// ─── Placeholder ──────────────────────────────────────────────────────────────
-const PlaceholderBox = ({
-  icon,
-  label,
-  color,
-}: {
-  icon: string;
-  label: string;
-  sublabel?: string;
-  color: string;
-}) => (
-  <View style={p.box}>
-    <View
-      style={[
-        p.iconRing,
-        { backgroundColor: color + '20', borderColor: color + '40' },
-      ]}
-    >
-      <VectorIcon
-        iconSet="Ionicons"
-        iconName={icon as any}
-        size={48}
-        color={color}
-      />
-    </View>
-    <Text style={p.label}>{label}</Text>
-  </View>
-);
 
 export default AttachmentPreviewModal;
 
@@ -198,14 +172,31 @@ const s = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  PreviewContainer: {
-    width: width - 32,
-    height: height * 0.6,
-    borderRadius: theme.radius.lg,
-    overflow: 'hidden',
-    backgroundColor: '#1a1a2e',
+  loaderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  // Placeholder
+  placeholderBox: { alignItems: 'center', gap: 16, paddingHorizontal: 24 },
+  iconRing: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
   },
 
   // Bottom
@@ -220,28 +211,4 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   doneBtnText: { fontSize: 15, fontWeight: '800', color: '#fff' },
-});
-
-const p = StyleSheet.create({
-  box: { alignItems: 'center', gap: 16, paddingHorizontal: 24 },
-  iconRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
-  },
-  sublabel: {
-    fontSize: 13,
-    color: '#94A3B8',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
 });
