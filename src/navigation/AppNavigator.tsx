@@ -17,6 +17,7 @@ import StudentProfileScreen from '../screens/profile/StudentProfileScreen';
 import TeacherProfileScreen from '../screens/profile/TeacherProfileScreen';
 import ViewAnnouncementScreen from '../screens/announcement/ViewAnnouncementScreen';
 import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
+import ViewQueryScreen from '../screens/contactSchool/ViewQueryScreen';
 import ChatsScreen from '../screens/chats/ChatsScreen';
 import ChatsListScreen from '../screens/chats/ChatsListScreen';
 import SubjectDetailsScreen from '../screens/subjects/SubjectDetailsScreen';
@@ -75,6 +76,7 @@ const AppNavigator = () => {
 
       {/* Contact School */}
       <Stack.Screen name="NewQuery" component={ContactSchoolScreen} />
+      <Stack.Screen name="ViewQuery" component={ViewQueryScreen} />
 
       {/* Chats */}
       <Stack.Screen name="ChatsList" component={ChatsListScreen} />

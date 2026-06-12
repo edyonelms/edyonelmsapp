@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
@@ -7,15 +7,15 @@ import type { Query } from './queryTypes';
 
 interface Props {
   item: Query;
+  onPress?: () => void;
 }
 
-const QueryCard = ({ item }: Props) => {
+const QueryCard = ({ item, onPress }: Props) => {
   const meta = STATUS_META[item.status];
   const timeLabel = item.daysAgo === 0 ? 'Today' : `${item.daysAgo}d ago`;
-  const [replyOpen, setReplyOpen] = useState(false);
 
   return (
-    <View style={s.card}>
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.8}>
       {/* Accent bar */}
       <View style={[s.accentBar, { backgroundColor: meta.color }]} />
 
@@ -50,6 +50,12 @@ const QueryCard = ({ item }: Props) => {
               {item.status}
             </Text>
           </View>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="chevron-forward"
+            size={16}
+            color={theme.colors.textMuted}
+          />
         </View>
 
         {/* Message preview */}
@@ -57,59 +63,37 @@ const QueryCard = ({ item }: Props) => {
           {item.message}
         </Text>
 
-        {/* Attachment */}
-        {item.attachmentName && (
-          <View style={s.attachRow}>
-            <VectorIcon
-              iconSet="Feather"
-              iconName="paperclip"
-              size={11}
-              color={theme.colors.primary}
-            />
-            <Text style={s.attachText}>{item.attachmentName}</Text>
+        {/* Footer hints: attachment + reply */}
+        {(item.attachmentName || item.admin_reply) && (
+          <View style={s.hintRow}>
+            {item.attachmentName && (
+              <View style={s.hintItem}>
+                <VectorIcon
+                  iconSet="Feather"
+                  iconName="paperclip"
+                  size={11}
+                  color={theme.colors.primary}
+                />
+                <Text style={s.hintText}>{item.attachmentName}</Text>
+              </View>
+            )}
+            {item.admin_reply && (
+              <View style={s.hintItem}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="chatbox-ellipses-outline"
+                  size={11}
+                  color="#10B981"
+                />
+                <Text style={[s.hintText, { color: '#10B981' }]}>
+                  School replied
+                </Text>
+              </View>
+            )}
           </View>
         )}
       </View>
-
-      {/* Admin reply toggle (exam-card actions template) */}
-      {!!item.admin_reply && (
-        <>
-          <View style={s.actionsRow}>
-            <TouchableOpacity
-              style={s.actionBtn}
-              onPress={() => setReplyOpen(v => !v)}
-              activeOpacity={0.7}
-            >
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="chatbox-ellipses-outline"
-                size={14}
-                color={theme.colors.primary}
-              />
-              <Text style={s.actionText}>
-                {replyOpen ? 'Hide Reply' : 'View Reply'}
-              </Text>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName={replyOpen ? 'chevron-up' : 'chevron-down'}
-                size={14}
-                color={theme.colors.primary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {replyOpen && (
-            <View style={s.replyBox}>
-              <View style={s.replyHeader}>
-                <View style={[s.replyDot, { backgroundColor: meta.color }]} />
-                <Text style={s.replyTitle}>School's Reply</Text>
-              </View>
-              <Text style={s.replyText}>{item.admin_reply}</Text>
-            </View>
-          )}
-        </>
-      )}
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -166,49 +150,13 @@ const s = StyleSheet.create({
     color: theme.colors.textSecondary,
     lineHeight: 19,
   },
-  attachRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  attachText: {
+
+  // Footer hints
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  hintItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  hintText: {
     fontSize: 11,
     color: theme.colors.primary,
     fontWeight: '600',
-  },
-
-  // Reply toggle (exam-card actions template)
-  actionsRow: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 11,
-  },
-  actionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.primary,
-  },
-  replyBox: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    gap: 6,
-  },
-  replyHeader: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  replyDot: { width: 7, height: 7, borderRadius: 4 },
-  replyTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
-  replyText: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-    paddingLeft: 14,
   },
 });

@@ -7,6 +7,8 @@ export type Query = {
   created_at: string;
   daysAgo: number;
   attachmentName?: string | null;
+  attachmentUrl?: string | null;
+  pdfUrl?: string | null;
   admin_reply?: string | null;
   replied_at?: string | null;
 };

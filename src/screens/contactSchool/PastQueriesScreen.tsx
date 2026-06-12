@@ -59,6 +59,8 @@ const PastQueriesScreen = () => {
       created_at: apiItem.created_at,
       daysAgo: daysAgo,
       attachmentName: apiItem.image_url ? 'Image attached' : null,
+      attachmentUrl: apiItem.image_url ?? null,
+      pdfUrl: apiItem.pdf_url ?? apiItem.pdf ?? null,
       admin_reply: apiItem.admin_text,
       replied_at: apiItem.updated_at,
     };
@@ -227,7 +229,11 @@ const PastQueriesScreen = () => {
         ) : (
           <View style={s.list}>
             {queries.map(item => (
-              <QueryCard key={String(item.id)} item={item} />
+              <QueryCard
+                key={String(item.id)}
+                item={item}
+                onPress={() => navigation.navigate('ViewQuery', { item })}
+              />
             ))}
           </View>
         )}
