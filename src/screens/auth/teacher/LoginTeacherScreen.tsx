@@ -26,9 +26,18 @@ const LoginTeacherScreen = () => {
   const [error, setError] = useState('');
 
   // Edge-to-edge Android ignores adjustResize, so scroll the form above the
-  // keyboard ourselves once the keyboard animation has started.
+  // keyboard ourselves once the keyboard animation has started. Scroll only
+  // up to the subtitle so the view shows description → Continue button.
+  const subtitleYRef = useRef(0);
   const scrollFormIntoView = () => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+    setTimeout(
+      () =>
+        scrollRef.current?.scrollTo({
+          y: Math.max(subtitleYRef.current - theme.spacing.sm, 0),
+          animated: true,
+        }),
+      150,
+    );
   };
 
   const handleLogin = async () => {
@@ -105,7 +114,12 @@ const LoginTeacherScreen = () => {
           </View>
 
           <Text style={styles.title}>Teacher Login</Text>
-          <Text style={styles.subtitle}>
+          <Text
+            style={styles.subtitle}
+            onLayout={e => {
+              subtitleYRef.current = e.nativeEvent.layout.y;
+            }}
+          >
             Enter your email address and password to access your dashboard
           </Text>
 
