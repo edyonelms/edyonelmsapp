@@ -2,15 +2,25 @@ import React from 'react';
 import {
   FlatList,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Header from '../../components/Header';
+
+import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 
 type DrawerRole = 'student' | 'teacher';
+
+// WhatsApp palette
+const WA = {
+  teal: '#075E54',
+  green: '#25D366',
+  textDark: '#111B21',
+  textGrey: '#667781',
+};
 
 export interface ChatItem {
   id: string;
@@ -173,9 +183,7 @@ const ChatRow = ({
             </View>
           )}
         </View>
-        <Text
-          style={[s.time, item.unread > 0 && { color: theme.colors.primary }]}
-        >
+        <Text style={[s.time, item.unread > 0 && { color: WA.green }]}>
           {item.time}
         </Text>
       </View>
@@ -204,7 +212,47 @@ const ChatsListScreen = ({ navigation, route }: any) => {
 
   return (
     <View style={s.root}>
-      <Header title="Chats" />
+      {/* ── Top bar (WhatsApp style) ── */}
+      <View style={s.topBar}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={s.topIconBtn}
+          activeOpacity={0.7}
+        >
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="arrow-back"
+            size={22}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <Text style={s.topTitle}>Chats</Text>
+        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="camera-outline"
+            size={22}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="search"
+            size={20}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="ellipsis-vertical"
+            size={18}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={chats}
         keyExtractor={i => i.id}
@@ -223,6 +271,16 @@ const ChatsListScreen = ({ navigation, route }: any) => {
           />
         )}
       />
+
+      {/* ── New chat FAB (WhatsApp style) ── */}
+      <TouchableOpacity style={s.fab} activeOpacity={0.85}>
+        <VectorIcon
+          iconSet="MaterialCommunityIcons"
+          iconName="message-text"
+          size={24}
+          color="#fff"
+        />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -230,18 +288,44 @@ const ChatsListScreen = ({ navigation, route }: any) => {
 export default ChatsListScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
-  list: { paddingVertical: 8 },
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
+
+  // Top bar
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: WA.teal,
+    paddingHorizontal: 8,
+    paddingTop: Platform.OS === 'ios' ? 52 : 14,
+    paddingBottom: 12,
+    gap: 4,
+    elevation: 4,
+  },
+  topIconBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topTitle: {
+    flex: 1,
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#fff',
+    marginLeft: 4,
+  },
+
+  list: { paddingVertical: 6, paddingBottom: 90 },
 
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    backgroundColor: theme.colors.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    backgroundColor: '#FFFFFF',
   },
 
-  avatarWrap: { position: 'relative', marginRight: 12 },
+  avatarWrap: { position: 'relative', marginRight: 13 },
   avatar: { width: 52, height: 52, borderRadius: 26 },
   onlineDot: {
     position: 'absolute',
@@ -250,9 +334,9 @@ const s = StyleSheet.create({
     width: 13,
     height: 13,
     borderRadius: 7,
-    backgroundColor: theme.colors.success,
+    backgroundColor: WA.green,
     borderWidth: 2,
-    borderColor: theme.colors.surface,
+    borderColor: '#FFFFFF',
   },
 
   body: { flex: 1 },
@@ -260,7 +344,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   nameRow: {
     flexDirection: 'row',
@@ -270,9 +354,9 @@ const s = StyleSheet.create({
     marginRight: 8,
   },
   name: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+    color: WA.textDark,
     flexShrink: 1,
   },
   subjectBadge: {
@@ -286,7 +370,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.primary,
   },
-  time: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500' },
+  time: { fontSize: 12, color: WA.textGrey, fontWeight: '400' },
 
   bottomRow: {
     flexDirection: 'row',
@@ -294,27 +378,45 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
   },
   lastMsg: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
+    fontSize: 14,
+    color: WA.textGrey,
     flex: 1,
     marginRight: 8,
   },
-  lastMsgBold: { color: theme.colors.textSecondary, fontWeight: '600' },
+  lastMsgBold: { color: WA.textDark, fontWeight: '500' },
 
   unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: theme.colors.primary,
+    minWidth: 21,
+    height: 21,
+    borderRadius: 11,
+    backgroundColor: WA.green,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
   },
   unreadText: { fontSize: 11, fontWeight: '800', color: '#fff' },
 
   separator: {
     height: 1,
-    backgroundColor: theme.colors.border,
-    marginLeft: 80,
+    backgroundColor: '#F0F2F5',
+    marginLeft: 79,
+  },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 18,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: WA.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
 });

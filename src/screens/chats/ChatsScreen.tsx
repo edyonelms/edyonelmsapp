@@ -4,7 +4,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -12,9 +11,22 @@ import {
   View,
 } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
 
 type DrawerRole = 'student' | 'teacher';
+
+// WhatsApp palette
+const WA = {
+  teal: '#075E54',
+  tealDark: '#054D44',
+  green: '#25D366',
+  bubbleMe: '#DCF8C6',
+  bubbleOther: '#FFFFFF',
+  chatBg: '#ECE5DD',
+  blueTick: '#34B7F1',
+  textDark: '#111B21',
+  textGrey: '#667781',
+  chip: '#FFF5C4',
+};
 
 interface Message {
   id: string;
@@ -76,39 +88,52 @@ const INITIAL_MESSAGES: Message[] = [
   },
 ];
 
+const Ticks = ({ status }: { status: Message['status'] }) => (
+  <VectorIcon
+    iconSet="Ionicons"
+    iconName={status === 'sent' ? 'checkmark' : 'checkmark-done'}
+    size={14}
+    color={status === 'read' ? WA.blueTick : '#8696A0'}
+  />
+);
+
 const Bubble = ({ msg }: { msg: Message }) => {
   const isMe = msg.sender === 'me';
   return (
     <View style={[s.bubbleWrap, isMe ? s.bubbleWrapMe : s.bubbleWrapOther]}>
       <View style={[s.bubble, isMe ? s.bubbleMe : s.bubbleOther]}>
-        <Text style={[s.bubbleText, isMe ? s.bubbleTextMe : s.bubbleTextOther]}>
-          {msg.text}
-        </Text>
+        <Text style={s.bubbleText}>{msg.text}</Text>
         <View style={s.meta}>
-          <Text style={[s.metaTime, isMe ? s.metaTimeMe : s.metaTimeOther]}>
-            {msg.time}
-          </Text>
-          {isMe && (
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={msg.status === 'read' ? 'checkmark-done' : 'checkmark'}
-              size={13}
-              color={
-                msg.status === 'read' ? '#A5B4FC' : 'rgba(255,255,255,0.55)'
-              }
-            />
-          )}
+          <Text style={s.metaTime}>{msg.time}</Text>
+          {isMe && <Ticks status={msg.status} />}
         </View>
       </View>
     </View>
   );
 };
 
-const DateSep = ({ label }: { label: string }) => (
-  <View style={s.dateSep}>
-    <View style={s.dateLine} />
-    <Text style={s.dateLabel}>{label}</Text>
-    <View style={s.dateLine} />
+const DateChip = ({ label }: { label: string }) => (
+  <View style={s.dateChipWrap}>
+    <View style={s.dateChip}>
+      <Text style={s.dateChipText}>{label}</Text>
+    </View>
+  </View>
+);
+
+const EncryptionNotice = () => (
+  <View style={s.dateChipWrap}>
+    <View style={s.encChip}>
+      <VectorIcon
+        iconSet="Ionicons"
+        iconName="lock-closed"
+        size={10}
+        color="#54656F"
+      />
+      <Text style={s.encText}>
+        Messages are end-to-end encrypted. Only people in this chat can read
+        them.
+      </Text>
+    </View>
   </View>
 );
 
@@ -154,8 +179,13 @@ const ChatsScreen = ({ navigation, route }: any) => {
     - logged in as STUDENT  → talking to a Teacher → show "Teacher · <subject>"
     - logged in as TEACHER  → talking to a Student → show "Student"
   */
-  const subtitle =
-    userRole === 'student' ? `Teacher · ${chat.subject ?? ''}` : 'Student';
+  const subtitle = chat.online
+    ? 'online'
+    : userRole === 'student'
+    ? `Teacher · ${chat.subject ?? ''}`
+    : 'Student';
+
+  const hasText = input.trim().length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -163,7 +193,7 @@ const ChatsScreen = ({ navigation, route }: any) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       enabled={Platform.OS === 'ios'}
     >
-      {/* Top Bar */}
+      {/* ── Top bar (WhatsApp style) ── */}
       <View style={s.topBar}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -172,16 +202,13 @@ const ChatsScreen = ({ navigation, route }: any) => {
         >
           <VectorIcon
             iconSet="Ionicons"
-            iconName="chevron-back"
+            iconName="arrow-back"
             size={22}
             color="#fff"
           />
         </TouchableOpacity>
 
-        <View style={s.topAvatarWrap}>
-          <Image source={{ uri: chat.avatar }} style={s.topAvatar} />
-          {chat.online && <View style={s.topOnlineDot} />}
-        </View>
+        <Image source={{ uri: chat.avatar }} style={s.topAvatar} />
 
         <View style={s.topInfo}>
           <Text style={s.topName} numberOfLines={1}>
@@ -191,9 +218,34 @@ const ChatsScreen = ({ navigation, route }: any) => {
             {subtitle}
           </Text>
         </View>
+
+        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="videocam-outline"
+            size={22}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="call-outline"
+            size={20}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.topIconBtn} activeOpacity={0.7}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="ellipsis-vertical"
+            size={18}
+            color="#fff"
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* Messages */}
+      {/* ── Messages over wallpaper ── */}
       <FlatList
         ref={listRef}
         data={messages}
@@ -204,31 +256,61 @@ const ChatsScreen = ({ navigation, route }: any) => {
         onContentSizeChange={() =>
           listRef.current?.scrollToEnd({ animated: false })
         }
-        ListHeaderComponent={<DateSep label="Today" />}
+        ListHeaderComponent={
+          <>
+            <EncryptionNotice />
+            <DateChip label="Today" />
+          </>
+        }
         renderItem={({ item }) => <Bubble msg={item} />}
       />
 
-      {/* Input Bar */}
+      {/* ── Input bar (WhatsApp style) ── */}
       <View style={s.inputBar}>
-        <TextInput
-          style={s.input}
-          placeholder="Type a message…"
-          placeholderTextColor={theme.colors.textMuted}
-          value={input}
-          onChangeText={setInput}
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          style={[s.sendBtn, input.trim().length > 0 && s.sendBtnActive]}
-          onPress={send}
-          activeOpacity={0.85}
-        >
+        <View style={s.inputPill}>
+          <TouchableOpacity activeOpacity={0.7}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="happy-outline"
+              size={22}
+              color="#8696A0"
+            />
+          </TouchableOpacity>
+          <TextInput
+            style={s.input}
+            placeholder="Message"
+            placeholderTextColor="#8696A0"
+            value={input}
+            onChangeText={setInput}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity activeOpacity={0.7}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="attach"
+              size={22}
+              color="#8696A0"
+            />
+          </TouchableOpacity>
+          {!hasText && (
+            <TouchableOpacity activeOpacity={0.7}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="camera-outline"
+                size={22}
+                color="#8696A0"
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity style={s.sendBtn} onPress={send} activeOpacity={0.85}>
           <VectorIcon
             iconSet="Ionicons"
-            iconName="send"
-            size={18}
-            color={input.trim().length > 0 ? '#fff' : theme.colors.textMuted}
+            iconName={hasText ? 'send' : 'mic'}
+            size={20}
+            color="#fff"
           />
         </TouchableOpacity>
       </View>
@@ -239,152 +321,147 @@ const ChatsScreen = ({ navigation, route }: any) => {
 export default ChatsScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#EEF2FF' },
-  flex: { flex: 1 }, // used by FlatList
+  root: { flex: 1, backgroundColor: WA.chatBg },
+  flex: { flex: 1 },
 
+  // Top bar
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 12,
+    backgroundColor: WA.teal,
+    paddingHorizontal: 8,
     paddingTop: Platform.OS === 'ios' ? 52 : 14,
     paddingBottom: 12,
-    gap: 10,
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    gap: 8,
+    elevation: 4,
   },
   backBtn: {
-    width: 36,
+    width: 32,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topAvatarWrap: { position: 'relative' },
   topAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.35)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
   },
-  topOnlineDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: theme.colors.success,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-  },
-  topInfo: { flex: 1 },
-  topName: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  topInfo: { flex: 1, marginLeft: 2 },
+  topName: { fontSize: 16, fontWeight: '700', color: '#fff' },
   topSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.72)',
-    fontWeight: '500',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '400',
     marginTop: 1,
   },
+  topIconBtn: {
+    width: 34,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-  msgList: { paddingHorizontal: 14, paddingBottom: 10, paddingTop: 6 },
+  msgList: { paddingHorizontal: 12, paddingBottom: 8, paddingTop: 4 },
 
-  dateSep: {
+  // Date chip + encryption notice
+  dateChipWrap: { alignItems: 'center', marginVertical: 8 },
+  dateChip: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    elevation: 1,
+  },
+  dateChipText: { fontSize: 12, color: '#54656F', fontWeight: '500' },
+  encChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 14,
-    gap: 8,
+    gap: 6,
+    backgroundColor: WA.chip,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginHorizontal: 24,
+    elevation: 1,
   },
-  dateLine: { flex: 1, height: 1, backgroundColor: '#C7D2FE' },
-  dateLabel: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
+  encText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#54656F',
+    lineHeight: 16,
+    textAlign: 'center',
+  },
 
-  bubbleWrap: { marginBottom: 6 },
+  // Bubbles
+  bubbleWrap: { marginBottom: 3 },
   bubbleWrapMe: { alignItems: 'flex-end' },
   bubbleWrapOther: { alignItems: 'flex-start' },
   bubble: {
-    maxWidth: '78%',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    maxWidth: '80%',
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingTop: 6,
+    paddingBottom: 5,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
   },
   bubbleMe: {
-    backgroundColor: '#7161ef',
-    borderBottomRightRadius: 4,
-    shadowColor: '#7161ef',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    backgroundColor: WA.bubbleMe,
+    borderTopRightRadius: 0,
   },
   bubbleOther: {
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: WA.bubbleOther,
+    borderTopLeftRadius: 0,
   },
-  bubbleText: { fontSize: 14, lineHeight: 20 },
-  bubbleTextMe: { color: '#fff' },
-  bubbleTextOther: { color: theme.colors.textPrimary },
+  bubbleText: { fontSize: 14.5, lineHeight: 20, color: WA.textDark },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    marginTop: 4,
-    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginLeft: 8,
   },
-  metaTime: { fontSize: 10, fontWeight: '500' },
-  metaTimeMe: { color: 'rgba(255,255,255,0.6)' },
-  metaTimeOther: { color: theme.colors.textMuted },
+  metaTime: { fontSize: 10.5, color: WA.textGrey },
 
+  // Input bar
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+  },
+  inputPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     gap: 10,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    elevation: 1,
   },
   input: {
     flex: 1,
-    minHeight: 42,
+    fontSize: 15,
+    color: WA.textDark,
     maxHeight: 110,
-    backgroundColor: theme.colors.background,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: theme.colors.textPrimary,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    paddingVertical: 2,
+    paddingHorizontal: 0,
   },
   sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: theme.colors.background,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#00A884',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  sendBtnActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    elevation: 2,
   },
 });
