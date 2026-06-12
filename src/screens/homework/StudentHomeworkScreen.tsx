@@ -26,7 +26,7 @@ const toKey = (d: Date) => d.toISOString().slice(0, 10);
 const DAY_NAMES  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// ─── Homework card ────────────────────────────────────────────────────────────
+// ─── Homework card (exam-card template) ───────────────────────────────────────
 const HWCard = ({
   hw,
   isCompleted,
@@ -40,29 +40,61 @@ const HWCard = ({
   onToggleExpand: () => void;
   onToggleComplete: () => void;
 }) => (
-  <View style={[s.hwCard, isCompleted && s.hwCardDone]}>
-    {/* Left accent */}
-    <View style={[s.hwAccent, { backgroundColor: isCompleted ? '#22C55E' : hw.subjectColor }]} />
+  <View style={s.card}>
+    {/* Accent bar */}
+    <View style={[s.accentBar, { backgroundColor: isCompleted ? '#22C55E' : hw.subjectColor }]} />
 
-    <View style={s.hwBody}>
-      {/* Subject + teacher row */}
-      <View style={s.hwTopRow}>
-        <View style={[s.subjectBadge, { backgroundColor: hw.subjectColor + '20' }]}>
-          <Text style={s.subjectIcon}>{hw.subjectIcon}</Text>
-          <Text style={[s.subjectName, { color: hw.subjectColor }]}>{hw.subjectName}</Text>
+    <View style={s.cardInner}>
+      {/* Top row: icon + title/desc + status badge */}
+      <View style={s.cardTop}>
+        <View style={[s.iconWrap, { backgroundColor: hw.subjectColor + '20' }]}>
+          <Text style={s.iconEmoji}>{hw.subjectIcon}</Text>
         </View>
-        <View style={s.teacherRow}>
-          <VectorIcon iconSet="Ionicons" iconName="person-outline" size={13} color={theme.colors.textMuted} />
-          <Text style={s.teacherName}>{hw.teacherName}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.hwName, isCompleted && s.hwNameDone]} numberOfLines={1}>
+            {hw.title}
+          </Text>
+          <Text style={s.hwSubtitle} numberOfLines={1}>
+            {hw.description}
+          </Text>
+        </View>
+        <View style={[s.badge, { backgroundColor: isCompleted ? '#DCFCE7' : '#FEF3C7' }]}>
+          <View style={[s.badgeDot, { backgroundColor: isCompleted ? '#16A34A' : '#D97706' }]} />
+          <Text style={[s.badgeText, { color: isCompleted ? '#16A34A' : '#D97706' }]}>
+            {isCompleted ? 'Completed' : 'Pending'}
+          </Text>
         </View>
       </View>
 
-      {/* Title */}
-      <Text style={[s.hwTitle, isCompleted && s.hwTitleDone]}>{hw.title}</Text>
+      {/* Info pills row: subject + teacher */}
+      <View style={s.pillsRow}>
+        <View style={[s.pill, { backgroundColor: hw.subjectColor + '15' }]}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="book-outline"
+            size={12}
+            color={hw.subjectColor}
+          />
+          <Text style={[s.pillText, { color: hw.subjectColor }]}>{hw.subjectName}</Text>
+        </View>
+        <View style={s.pill}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="person-outline"
+            size={12}
+            color={PRIMARY}
+          />
+          <Text style={s.pillText}>{hw.teacherName}</Text>
+        </View>
+      </View>
+    </View>
 
-      {/* View Homework dropdown */}
-      <TouchableOpacity style={s.viewToggle} onPress={onToggleExpand} activeOpacity={0.7}>
-        <Text style={s.viewToggleText}>{expanded ? 'Hide Homework' : 'View Homework'}</Text>
+    {/* Bottom action row — exam-card toggle template */}
+    <View style={s.actionsRow}>
+      <TouchableOpacity style={s.actionBtn} onPress={onToggleExpand} activeOpacity={0.7}>
+        <Text style={s.actionText}>
+          {expanded ? 'Hide Homework' : 'View Homework'}
+        </Text>
         <VectorIcon
           iconSet="Ionicons"
           iconName={expanded ? 'chevron-up' : 'chevron-down'}
@@ -70,30 +102,30 @@ const HWCard = ({
           color={PRIMARY}
         />
       </TouchableOpacity>
-
-      {expanded && (
-        <View style={s.descBox}>
-          <Text style={s.descText}>{hw.description}</Text>
-        </View>
-      )}
-
-      {/* Mark as complete */}
-      <TouchableOpacity
-        style={[s.completeBtn, isCompleted && s.completeBtnDone]}
-        onPress={onToggleComplete}
-        activeOpacity={0.8}
-      >
+      <View style={s.actionDivider} />
+      <TouchableOpacity style={s.actionBtn} onPress={onToggleComplete} activeOpacity={0.7}>
         <VectorIcon
           iconSet="Ionicons"
           iconName={isCompleted ? 'checkmark-circle' : 'checkmark-circle-outline'}
-          size={16}
-          color={isCompleted ? '#fff' : '#16A34A'}
+          size={14}
+          color="#16A34A"
         />
-        <Text style={[s.completeBtnText, isCompleted && s.completeBtnTextDone]}>
+        <Text style={[s.actionText, { color: '#16A34A' }]}>
           {isCompleted ? 'Completed' : 'Mark as Complete'}
         </Text>
       </TouchableOpacity>
     </View>
+
+    {/* Description expanded */}
+    {expanded && (
+      <View style={s.descBox}>
+        <View style={s.descHeader}>
+          <View style={[s.subjectDot, { backgroundColor: hw.subjectColor }]} />
+          <Text style={s.descTitle}>Description</Text>
+        </View>
+        <Text style={s.descText}>{hw.description}</Text>
+      </View>
+    )}
   </View>
 );
 
@@ -236,7 +268,7 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
 export default StudentHomeworkScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
+  root: { flex: 1, backgroundColor: theme.colors.background },
 
   // Date strip
   dateStripWrap: {
@@ -271,52 +303,89 @@ const s = StyleSheet.create({
   hwDotActive: { backgroundColor: '#fff' },
 
   // List
-  scroll: { padding: 16 },
+  scroll: { padding: theme.spacing.lg },
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   listTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
   countBadge: { backgroundColor: theme.colors.primaryLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   countText: { fontSize: 12, fontWeight: '700', color: PRIMARY },
 
-  // HW card
-  hwCard: {
-    flexDirection: 'row', backgroundColor: '#fff', borderRadius: 18, marginBottom: 12, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3,
+  // Card — exam template
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    elevation: 3,
+    marginBottom: 14,
   },
-  hwCardDone: { opacity: 0.85 },
-  hwAccent: { width: 5 },
-  hwBody: { flex: 1, padding: 14 },
-  hwTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  subjectBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  subjectIcon: { fontSize: 13 },
-  subjectName: { fontSize: 12, fontWeight: '800' },
-  teacherRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  teacherName: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '600' },
-  hwTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 10 },
-  hwTitleDone: { textDecorationLine: 'line-through', color: theme.colors.textSecondary },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md, gap: 10 },
 
-  // View Homework dropdown
-  viewToggle: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
-    paddingVertical: 9, borderRadius: 10,
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconEmoji: { fontSize: 20 },
+  hwName: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  hwNameDone: { textDecorationLine: 'line-through', color: theme.colors.textSecondary },
+  hwSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
+  },
+  badgeDot: { width: 6, height: 6, borderRadius: 3 },
+  badgeText: { fontSize: 12, fontWeight: '700' },
+
+  pillsRow: { flexDirection: 'row', gap: 8 },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     backgroundColor: theme.colors.primaryLight,
-    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
   },
-  viewToggleText: { fontSize: 12, fontWeight: '700', color: PRIMARY },
-  descBox: {
-    backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12, marginBottom: 8,
-    borderWidth: 1, borderColor: theme.colors.border,
-  },
-  descText: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19 },
+  pillText: { fontSize: 12, fontWeight: '600', color: theme.colors.primary },
 
-  // Complete button
-  completeBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 9, borderRadius: 10,
-    backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0',
+  // Bottom actions — exam toggle template
+  actionsRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
-  completeBtnDone: { backgroundColor: '#22C55E', borderColor: '#22C55E' },
-  completeBtnText: { fontSize: 12, fontWeight: '700', color: '#16A34A' },
-  completeBtnTextDone: { color: '#fff' },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+  },
+  actionDivider: { width: 1, backgroundColor: theme.colors.border },
+  actionText: { fontSize: 13, fontWeight: '600', color: theme.colors.primary },
+
+  // Description expanded — exam syllabus-box template
+  descBox: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    gap: 6,
+  },
+  descHeader: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  subjectDot: { width: 7, height: 7, borderRadius: 4 },
+  descTitle: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+  descText: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 20, paddingLeft: 14 },
 
   // Completed section
   completedHeader: {
