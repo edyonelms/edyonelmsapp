@@ -120,6 +120,19 @@ const OtpBoxes = ({
   );
 };
 
+// Mirrors the backend change-password validation rules so the checklist
+// and the API accept exactly the same passwords.
+const passwordRules: { label: string; test: (p: string) => boolean }[] = [
+  { label: 'At least 8 characters', test: p => p.length >= 8 },
+  { label: 'One lowercase letter (a-z)', test: p => /[a-z]/.test(p) },
+  { label: 'One uppercase letter (A-Z)', test: p => /[A-Z]/.test(p) },
+  { label: 'One number (0-9)', test: p => /[0-9]/.test(p) },
+  {
+    label: 'One special character (@ $ ! % * # ? &)',
+    test: p => /[@$!%*#?&]/.test(p),
+  },
+];
+
 const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
   const scrollRef = useRef<ScrollView>(null);
@@ -167,6 +180,8 @@ const ForgotPasswordScreen = () => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [confirmFocused, setConfirmFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Error popup: slide up from the bottom, auto-dismiss after a few seconds.
   const errorAnim = useRef(new Animated.Value(0)).current;
@@ -420,51 +435,123 @@ const ForgotPasswordScreen = () => {
             </Text>
 
             <Text style={styles.label}>New Password</Text>
-            <TextInput
-              placeholder="Enter new password"
-              placeholderTextColor={theme.colors.textMuted}
-              style={[
-                styles.input,
-                (passwordFocused || !!password) && styles.inputActive,
-              ]}
-              secureTextEntry
-              value={password}
-              onChangeText={t => {
-                setPassword(t);
-                setError('');
-              }}
-              onFocus={() => {
-                setPasswordFocused(true);
-                scrollFormIntoView();
-              }}
-              onBlur={() => setPasswordFocused(false)}
-            />
+            <View style={styles.passwordWrap}>
+              <TextInput
+                placeholder="Enter new password"
+                placeholderTextColor={theme.colors.textMuted}
+                style={[
+                  styles.input,
+                  styles.inputWithIcon,
+                  (passwordFocused || !!password) && styles.inputActive,
+                ]}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                value={password}
+                onChangeText={t => {
+                  setPassword(t);
+                  setError('');
+                }}
+                onFocus={() => {
+                  setPasswordFocused(true);
+                  scrollFormIntoView();
+                }}
+                onBlur={() => setPasswordFocused(false)}
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword(v => !v)}
+              >
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={theme.colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              placeholder="Confirm new password"
-              placeholderTextColor={theme.colors.textMuted}
-              style={[
-                styles.input,
-                (confirmFocused || !!confirmPassword) && styles.inputActive,
-              ]}
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={t => {
-                setConfirmPassword(t);
-                setError('');
-              }}
-              onFocus={() => {
-                setConfirmFocused(true);
-                scrollFormIntoView();
-              }}
-              onBlur={() => setConfirmFocused(false)}
-            />
+            <View style={styles.passwordWrap}>
+              <TextInput
+                placeholder="Confirm new password"
+                placeholderTextColor={theme.colors.textMuted}
+                style={[
+                  styles.input,
+                  styles.inputWithIcon,
+                  (confirmFocused || !!confirmPassword) && styles.inputActive,
+                ]}
+                secureTextEntry={!showConfirm}
+                autoCapitalize="none"
+                value={confirmPassword}
+                onChangeText={t => {
+                  setConfirmPassword(t);
+                  setError('');
+                }}
+                onFocus={() => {
+                  setConfirmFocused(true);
+                  scrollFormIntoView();
+                }}
+                onBlur={() => setConfirmFocused(false)}
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowConfirm(v => !v)}
+              >
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName={showConfirm ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={theme.colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
 
-            <Text style={styles.passwordHint}>
-              Password should be 8 to 16 characters and include at least one
-              number or symbol.
-            </Text>
+            <View style={styles.ruleList}>
+              {passwordRules.map(rule => {
+                const met = rule.test(password);
+                return (
+                  <View key={rule.label} style={styles.ruleRow}>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName={met ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={15}
+                      color={met ? theme.colors.success : theme.colors.textMuted}
+                    />
+                    <Text style={[styles.ruleText, met && styles.ruleTextMet]}>
+                      {rule.label}
+                    </Text>
+                  </View>
+                );
+              })}
+              {!!confirmPassword && (
+                <View style={styles.ruleRow}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName={
+                      password === confirmPassword
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={15}
+                    color={
+                      password === confirmPassword
+                        ? theme.colors.success
+                        : theme.colors.danger
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.ruleText,
+                      password === confirmPassword
+                        ? styles.ruleTextMet
+                        : styles.ruleTextFail,
+                    ]}
+                  >
+                    Passwords match
+                  </Text>
+                </View>
+              )}
+            </View>
 
             <TouchableOpacity
               style={[
@@ -474,8 +561,9 @@ const ForgotPasswordScreen = () => {
               ]}
               disabled={loading || !password.trim() || !confirmPassword.trim()}
               onPress={async () => {
-                if (password.length < 8) {
-                  setError('Password must be at least 8 characters.');
+                const unmet = passwordRules.find(r => !r.test(password));
+                if (unmet) {
+                  setError(`Password needs: ${unmet.label.toLowerCase()}.`);
                   return;
                 }
                 if (password !== confirmPassword) {
@@ -655,12 +743,41 @@ const styles = StyleSheet.create({
   inputActive: {
     borderColor: '#5B7FFF',
   },
-  passwordHint: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+  passwordWrap: {
+    marginBottom: theme.spacing.md,
+  },
+  inputWithIcon: {
+    marginBottom: 0,
+    paddingRight: 44,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  ruleList: {
     marginTop: theme.spacing.xs,
     marginBottom: theme.spacing.md,
+    gap: 5,
+  },
+  ruleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ruleText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
     lineHeight: 18,
+  },
+  ruleTextMet: {
+    color: theme.colors.success,
+  },
+  ruleTextFail: {
+    color: theme.colors.danger,
   },
   button: {
     backgroundColor: theme.colors.primary,
