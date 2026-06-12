@@ -50,6 +50,7 @@ import markAttendanceScreen from '../screens/markAttendance/markAttendanceScreen
 import TeacherExamsScreen from '../screens/exam/TeacherExamsScreen';
 import PerformanceScreen from '../screens/performance/PerformanceScreen';
 import AnalyticsScreen from '../screens/analytics/AnalyticsScreen';
+import IDCardScreen from '../screens/idCard/IDCardScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -466,8 +467,8 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="IDCard"
-        component={MenuPlaceholderScreen}
-        initialParams={{ title: 'ID Card' }}
+        component={IDCardScreen}
+        initialParams={{ title: 'ID Card', userRole: role }}
       />
       <Drawer.Screen
         name="Chats"
