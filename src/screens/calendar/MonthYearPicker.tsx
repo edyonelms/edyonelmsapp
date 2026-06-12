@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -26,6 +26,18 @@ const MonthYearPicker = ({ visible, current, onClose, onSelect }: Props) => {
   const [pickerMonth, setPickerMonth] = useState(current.month());
   const yearRef = useRef<FlatList>(null);
   const initialIndex = Math.max(0, YEAR_RANGE.indexOf(current.year()) - 2);
+
+  // Re-sync the selection with the calendar every time the sheet opens, and
+  // bring the active year back into view.
+  useEffect(() => {
+    if (!visible) return;
+    setPickerYear(current.year());
+    setPickerMonth(current.month());
+    const idx = Math.max(0, YEAR_RANGE.indexOf(current.year()) - 2);
+    setTimeout(() => {
+      yearRef.current?.scrollToIndex({ index: idx, animated: false });
+    }, 50);
+  }, [visible, current]);
 
   return (
     <Modal
@@ -139,7 +151,7 @@ const s = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 99,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#CBD5E1',
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 20,
@@ -147,7 +159,7 @@ const s = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#000',
+    color: theme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -161,10 +173,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 4,
-    backgroundColor: '#ffffff12',
+    backgroundColor: '#F1F5F9',
   },
   yearChipActive: { backgroundColor: theme.colors.primary },
-  yearText: { fontSize: 14, fontWeight: '600', color: theme.colors.primary },
+  yearText: { fontSize: 14, fontWeight: '600', color: theme.colors.textSecondary },
   yearTextActive: { color: theme.colors.white, fontWeight: '800' },
 
   // Month grid
@@ -181,14 +193,14 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff10',
+    backgroundColor: '#F1F5F9',
   },
   monthCellActive: { backgroundColor: theme.colors.primary },
   monthCellCurrent: {
     borderWidth: 1.5,
-    borderColor: theme.colors.primaryLight,
+    borderColor: theme.colors.primary,
   },
-  monthText: { fontSize: 14, fontWeight: '700', color: theme.colors.primary },
+  monthText: { fontSize: 14, fontWeight: '700', color: theme.colors.textSecondary },
   monthTextActive: { color: theme.colors.white },
   monthDot: {
     width: 4,
@@ -204,10 +216,10 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: theme.radius.lg,
-    backgroundColor: '#ffffff12',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
   },
-  cancelText: { fontSize: 15, fontWeight: '700', color: theme.colors.primary },
+  cancelText: { fontSize: 15, fontWeight: '700', color: theme.colors.textSecondary },
   confirmBtn: {
     flex: 1,
     paddingVertical: 14,

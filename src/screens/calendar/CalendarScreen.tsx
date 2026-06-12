@@ -153,8 +153,6 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FAF9F6' },
   sheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
     marginTop: -20,
     minHeight: 300,
   },
