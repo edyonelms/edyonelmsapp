@@ -166,25 +166,29 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
       const remaining = await removeAccount(acct.user_id);
       setAccounts(remaining);
 
-      if (acct.user_id === activeId) {
-        // Active one was removed — promote another or go to login.
-        const next = remaining[0];
-        if (next) {
-          await activateAccount(next.user_id);
-          setActiveId(next.user_id);
-          onClose();
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'DrawerRoot', params: { userRole: next.user_type } }],
-            }),
-          );
-        } else {
-          onClose();
-          navigation.dispatch(
-            CommonActions.reset({ index: 0, routes: [{ name: 'SelectUser' }] }),
-          );
-        }
+      // After any removal, land on the dashboard of the account that is
+      // (or becomes) active. Only fall back to select-user when nothing
+      // remains.
+      const next =
+        acct.user_id === activeId
+          ? remaining[0]
+          : remaining.find(a => a.user_id === activeId) ?? remaining[0];
+
+      if (next) {
+        await activateAccount(next.user_id);
+        setActiveId(next.user_id);
+        onClose();
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'DrawerRoot', params: { userRole: next.user_type } }],
+          }),
+        );
+      } else {
+        onClose();
+        navigation.dispatch(
+          CommonActions.reset({ index: 0, routes: [{ name: 'SelectUser' }] }),
+        );
       }
     } finally {
       setBusyId(null);
