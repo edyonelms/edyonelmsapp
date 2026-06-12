@@ -343,7 +343,7 @@ const ForgotPasswordScreen = () => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.safeArea}>
         <Header
@@ -357,6 +357,7 @@ const ForgotPasswordScreen = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.card}>{renderStep()}</View>
+          <View style={{ height: 100 }} />
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
