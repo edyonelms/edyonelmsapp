@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
@@ -40,12 +41,13 @@ const InfoRow = ({
 
 // ─── Section Card ─────────────────────────────────────────────────────────────
 const SectionCard = ({
-  title, children,
+  title, accent, children,
 }: {
-  title: string; children: React.ReactNode;
+  title: string; accent: string; children: React.ReactNode;
 }) => (
   <View style={s.sectionBlock}>
     <View style={s.sectionHeader}>
+      <View style={[s.sectionAccent, { backgroundColor: accent }]} />
       <Text style={s.sectionTitle}>{title}</Text>
     </View>
     <View style={s.card}>{children}</View>
@@ -106,10 +108,19 @@ const StudentProfileScreen = () => {
   return (
     <View style={s.root}>
       <Header title="Profile" />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
-        {/* ── Avatar + Name ── */}
-        <View style={s.avatarWrapper}>
+        {/* ── Gradient hero ── */}
+        <LinearGradient
+          colors={['#4F46E5', '#7C3AED']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.hero}
+        >
+          {/* Decorative blobs */}
+          <View style={s.heroBlob1} />
+          <View style={s.heroBlob2} />
+
           <View style={s.avatarRing}>
             {p.image
               ? <Image source={{ uri: p.image }} style={s.avatarImage} />
@@ -124,12 +135,13 @@ const StudentProfileScreen = () => {
           <View style={s.roleBadge}>
             <Text style={s.roleBadgeText}>Student · {ac.standard_name ?? 'N/A'}</Text>
           </View>
-        </View>
+        </LinearGradient>
 
+        {/* ── Sections ── */}
         <View style={s.sectionsContainer}>
 
           {/* ── Personal Info ── */}
-          <SectionCard title="Personal Information">
+          <SectionCard title="Personal Information" accent="#4F46E5">
             <InfoRow label="Full Name"   value={p.full_name} />
             <InfoRow label="Email"       value={p.email} />
             <InfoRow label="Mobile"      value={p.mobile_number} />
@@ -140,13 +152,13 @@ const StudentProfileScreen = () => {
           </SectionCard>
 
           {/* ── Family Info ── */}
-          <SectionCard title="Family Information">
+          <SectionCard title="Family Information" accent="#8B5CF6">
             <InfoRow label="Father Name" value={f.father_name} />
             <InfoRow label="Mother Name" value={f.mother_name} last />
           </SectionCard>
 
           {/* ── Address ── */}
-          <SectionCard title="Address">
+          <SectionCard title="Address" accent="#0EA5E9">
             <InfoRow label="Local Address"     value={a.local_address} />
             <InfoRow label="Permanent Address" value={a.permanent_address} />
             {!!a.city && <InfoRow label="City" value={a.city} />}
@@ -155,7 +167,7 @@ const StudentProfileScreen = () => {
           </SectionCard>
 
           {/* ── Academic Info ── */}
-          <SectionCard title="Academic Information">
+          <SectionCard title="Academic Information" accent="#10B981">
             <InfoRow label="Admission No"      value={ac.admission_no} />
             <InfoRow label="Date of Admission" value={ac.date_of_admission} />
             <InfoRow label="Roll No"           value={ac.roll_no} />
@@ -181,33 +193,58 @@ const s = StyleSheet.create({
   retryBtn: { backgroundColor: theme.colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: theme.radius.full, marginTop: 8 },
   retryText: { color: '#fff', fontWeight: '700' },
 
-  // Avatar
-  avatarWrapper: { alignItems: 'center', marginTop: 24, marginBottom: 16 },
-  avatarRing: {
-    width: 116, height: 116, borderRadius: 58,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2, shadowRadius: 16, elevation: 10,
+  // Hero
+  hero: {
+    alignItems: 'center',
+    paddingTop: 32,
+    paddingBottom: 36,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
   },
-  avatarImage: { width: 108, height: 108, borderRadius: 54, resizeMode: 'cover' },
-  avatarCircle: { width: 108, height: 108, borderRadius: 54, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 42, fontWeight: '800', color: '#fff' },
-  studentName: { fontSize: 22, fontWeight: '800', color: '#1E1B4B', marginTop: 12 },
-  roleBadge: { backgroundColor: '#FEF3C7', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginTop: 8 },
-  roleBadgeText: { fontSize: 12, fontWeight: '700', color: '#92400E' },
+  heroBlob1: {
+    position: 'absolute', width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.08)', top: -60, right: -40,
+  },
+  heroBlob2: {
+    position: 'absolute', width: 120, height: 120, borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.07)', bottom: -30, left: -30,
+  },
+  avatarRing: {
+    width: 118, height: 118, borderRadius: 59,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+  },
+  avatarImage: { width: 104, height: 104, borderRadius: 52, resizeMode: 'cover' },
+  avatarCircle: {
+    width: 104, height: 104, borderRadius: 52,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarInitial: { fontSize: 40, fontWeight: '800', color: '#fff' },
+  studentName: { fontSize: 23, fontWeight: '800', color: '#fff', marginTop: 14, letterSpacing: 0.2 },
+  roleBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, marginTop: 10,
+  },
+  roleBadgeText: { fontSize: 12, fontWeight: '700', color: '#fff' },
 
   // Sections
-  sectionsContainer: { paddingHorizontal: 16, paddingBottom: 40, marginTop: 8 },
-  sectionBlock: { marginBottom: 20 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  sectionsContainer: { paddingHorizontal: 16, marginTop: 22 },
+  sectionBlock: { marginBottom: 22 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, marginLeft: 2 },
+  sectionAccent: { width: 4, height: 16, borderRadius: 2 },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1E1B4B' },
 
   card: {
-    backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3,
+    backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 4,
+    borderWidth: 1, borderColor: '#EEF2F7',
+    shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 3,
   },
-  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
-  infoRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  infoLabel: { flex: 1, fontSize: 13, color: '#64748B', fontWeight: '500' },
-  infoValue: { fontSize: 13, color: '#1E293B', fontWeight: '700', textAlign: 'right', maxWidth: width * 0.45 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 13, gap: 12 },
+  infoRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F6FA' },
+  infoLabel: { flex: 1, fontSize: 13, color: '#7C8AA0', fontWeight: '600' },
+  infoValue: { fontSize: 13.5, color: '#1E293B', fontWeight: '700', textAlign: 'right', maxWidth: width * 0.5 },
 });
