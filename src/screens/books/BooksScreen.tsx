@@ -18,8 +18,18 @@ import BookCard from './BookCard';
 import { subjectMetaFor } from './bookData';
 import { getBooks, type ApiBook } from '../../api/booksApi';
 import { getStoredRole } from '../../api/authApi';
+import constant from '../../utils/constant';
 
 const ALL = 'All';
+
+// Files come from the same host as the API but outside the /api/v1 prefix
+const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+
+const resolveFileUrl = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${FILE_ORIGIN}/${url.replace(/^\/+/, '')}`;
+};
 
 const BooksScreen = ({ navigation, route }: any) => {
   // Prefer role from navigation params, fall back to AsyncStorage. The API
@@ -77,19 +87,18 @@ const BooksScreen = ({ navigation, route }: any) => {
   }, [fetchBooks]);
 
   const openBook = useCallback(async (book: ApiBook) => {
-    const url = book.pdf_url;
+    const url = resolveFileUrl(book.pdf_url);
     if (!url) {
       Alert.alert('No PDF', 'This book does not have a PDF attached yet.');
       return;
     }
+    // Don't gate on canOpenURL — on Android 11+ it reports false for
+    // http(s) links unless the scheme is declared in the manifest, which
+    // made valid PDFs show an error. Just try to open and handle failure.
     try {
-      const can = await Linking.canOpenURL(url);
-      if (!can) {
-        Alert.alert('Cannot open PDF', 'No app is available to open this PDF.');
-        return;
-      }
       await Linking.openURL(url);
     } catch (e) {
+      console.log('[BooksScreen] openURL failed:', url, e);
       Alert.alert('Failed to open', 'Something went wrong while opening the PDF.');
     }
   }, []);
