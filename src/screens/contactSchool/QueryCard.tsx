@@ -63,33 +63,20 @@ const QueryCard = ({ item, onPress }: Props) => {
           {item.message}
         </Text>
 
-        {/* Footer hints: attachment + reply */}
-        {(item.attachmentName || item.admin_reply) && (
+        {/* Footer hint: reply (attachments show on the View Query screen) */}
+        {item.admin_reply && (
           <View style={s.hintRow}>
-            {item.attachmentName && (
-              <View style={s.hintItem}>
-                <VectorIcon
-                  iconSet="Feather"
-                  iconName="paperclip"
-                  size={11}
-                  color={theme.colors.primary}
-                />
-                <Text style={s.hintText}>{item.attachmentName}</Text>
-              </View>
-            )}
-            {item.admin_reply && (
-              <View style={s.hintItem}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="chatbox-ellipses-outline"
-                  size={11}
-                  color="#10B981"
-                />
-                <Text style={[s.hintText, { color: '#10B981' }]}>
-                  School replied
-                </Text>
-              </View>
-            )}
+            <View style={s.hintItem}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="chatbox-ellipses-outline"
+                size={11}
+                color="#10B981"
+              />
+              <Text style={[s.hintText, { color: '#10B981' }]}>
+                School replied
+              </Text>
+            </View>
           </View>
         )}
       </View>
