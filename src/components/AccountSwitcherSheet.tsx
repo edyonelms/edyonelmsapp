@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import VectorIcon from './VectorIcon';
 import { theme } from '../utils/theme';
@@ -266,13 +267,14 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
       transparent
       animationType="slide"
       statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
       <View style={s.backdrop}>
         {/* Tap outside to close */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={s.sheet}>
+          <SafeAreaView edges={['bottom']} style={s.sheet}>
             <View style={s.handle} />
 
               {/* Header */}
@@ -313,7 +315,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
                   onSubmit={onSubmitAdd}
                 />
               )}
-          </View>
+          </SafeAreaView>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -500,14 +502,14 @@ const av = StyleSheet.create({
 const s = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: '#0008',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   sheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
-    paddingBottom: 24,
+    paddingBottom: 8,
     maxHeight: Dimensions.get('window').height * 0.88,
   },
   handle: {
