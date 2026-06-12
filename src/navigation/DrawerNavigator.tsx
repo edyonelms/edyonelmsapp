@@ -65,8 +65,8 @@ const DrawerNavigator = ({ route }: any) => {
   const menuItems: MenuItem[] = useMemo(() => {
     const studentMenuItems: MenuItem[] = [
       { name: 'MainTabs', label: 'Dashboard', icon: 'grid-outline' },
-      { name: 'Analytics', label: 'Analytics', icon: 'bar-chart-outline' },
-      { name: 'Fees', label: 'Fees', icon: 'card-outline' },
+      { name: 'Analytics', label: 'Analytics', icon: 'analytics-outline' },
+      { name: 'Fees', label: 'Fees', icon: 'cash-outline' },
       {
         name: 'Announcement',
         label: 'Announcement',
@@ -74,13 +74,13 @@ const DrawerNavigator = ({ route }: any) => {
       },
       { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
       { name: 'Transport', label: 'Transport', icon: 'bus-outline' },
-      { name: 'Homework', label: 'Homework', icon: 'book-outline' },
+      { name: 'Homework', label: 'Homework', icon: 'pencil-outline' },
       { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
       { name: 'Attendance', label: 'Attendance', icon: 'clipboard-outline' },
       {
         name: 'Subjects',
         label: 'Subjects',
-        icon: 'book-outline',
+        icon: 'albums-outline',
       },
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
       { name: 'Content', label: 'Content', icon: 'folder-outline' },
@@ -88,18 +88,16 @@ const DrawerNavigator = ({ route }: any) => {
       {
         name: 'Book',
         label: 'Book',
-        icon: 'notebook',
-        iconSet: 'SimpleLineIcons',
+        icon: 'library-outline',
       },
       { name: 'Instructor', label: 'Instructor', icon: 'person-outline' },
-      { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
+      { name: 'IDCard', label: 'ID Card', icon: 'id-card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
-      { name: 'Exams', label: 'Exams', icon: 'create-outline' },
+      { name: 'Exams', label: 'Exams', icon: 'school-outline' },
       {
         name: 'Performance',
         label: 'Performance',
-        iconSet: 'Feather',
-        icon: 'bar-chart',
+        icon: 'speedometer-outline',
       },
       { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
       { name: 'Settings', label: 'Settings', icon: 'settings-outline' },
@@ -108,14 +106,14 @@ const DrawerNavigator = ({ route }: any) => {
 
     const teacherMenuItems: MenuItem[] = [
       { name: 'MainTabs', label: 'Dashboard', icon: 'grid-outline' },
-      { name: 'Analytics', label: 'Analytics', icon: 'bar-chart-outline' },
+      { name: 'Analytics', label: 'Analytics', icon: 'analytics-outline' },
       {
         name: 'Announcement',
         label: 'Announcement',
         icon: 'megaphone-outline',
       },
       { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
-      { name: 'Homework', label: 'Homework', icon: 'book-outline' },
+      { name: 'Homework', label: 'Homework', icon: 'pencil-outline' },
       { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
       {
         name: 'MarkAttendance',
@@ -126,7 +124,7 @@ const DrawerNavigator = ({ route }: any) => {
       {
         name: 'Subjects',
         label: 'Subjects',
-        icon: 'book-outline',
+        icon: 'albums-outline',
       },
       { name: 'Syllabus', label: 'Syllabus', icon: 'document-text-outline' },
       { name: 'Content', label: 'Content', icon: 'folder-outline' },
@@ -134,18 +132,21 @@ const DrawerNavigator = ({ route }: any) => {
       {
         name: 'Book',
         label: 'Book',
-        icon: 'notebook',
-        iconSet: 'SimpleLineIcons',
+        icon: 'library-outline',
       },
-      { name: 'IDCard', label: 'ID Card', icon: 'card-outline' },
+      { name: 'IDCard', label: 'ID Card', icon: 'id-card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
-      { name: 'Exams', label: 'Exams', icon: 'create-outline' },
+      { name: 'Exams', label: 'Exams', icon: 'school-outline' },
       {
         name: 'Upload marks',
         label: 'Upload marks',
         icon: 'cloud-upload-outline',
       },
-      { name: 'Upload copy', label: 'Upload copy', icon: 'copy-outline' },
+      {
+        name: 'Upload copy',
+        label: 'Upload copy',
+        icon: 'document-attach-outline',
+      },
       { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
       { name: 'Settings', label: 'Settings', icon: 'settings-outline' },
       { name: 'More', label: 'More', icon: 'ellipsis-horizontal-outline' },
