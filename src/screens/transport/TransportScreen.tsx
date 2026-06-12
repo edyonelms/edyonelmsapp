@@ -11,15 +11,24 @@ import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 
 const FEES = [
-  { period: 'March – May', amount: '₹ 3,000', status: 'Paid' },
-  { period: 'June – August', amount: '–', status: 'Pending' },
-  { period: 'Sept – Nov', amount: '–', status: '–' },
-  { period: 'Dec – Feb', amount: '–', status: '–' },
+  { period: 'March', amount: '₹ 1,000', status: 'Paid' },
+  { period: 'April', amount: '₹ 1,000', status: 'Paid' },
+  { period: 'May', amount: '₹ 1,000', status: 'Paid' },
+  { period: 'June', amount: '–', status: 'No Transport' },
+  { period: 'July', amount: '₹ 1,000', status: 'Pending' },
+  { period: 'August', amount: '–', status: '–' },
+  { period: 'September', amount: '–', status: '–' },
+  { period: 'October', amount: '–', status: '–' },
+  { period: 'November', amount: '–', status: '–' },
+  { period: 'December', amount: '–', status: '–' },
+  { period: 'January', amount: '–', status: '–' },
+  { period: 'February', amount: '–', status: '–' },
 ];
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   Paid: { color: '#16A34A', bg: '#DCFCE7' },
   Pending: { color: '#D97706', bg: '#FEF3C7' },
+  'No Transport': { color: '#6B7280', bg: '#F3F4F6' },
 };
 
 // ─── Label / value row ────────────────────────────────────────────────────────
@@ -154,17 +163,17 @@ const TransportScreen = ({ navigation }: any) => {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardTitle}>Transport Fees</Text>
-                <Text style={s.cardSubtitle}>Quarterly payments</Text>
+                <Text style={s.cardSubtitle}>Monthly payments</Text>
               </View>
             </View>
 
             {/* Table header */}
             <View style={[s.tableRow, s.tableHead]}>
-              <Text style={[s.tableHeadText, { flex: 2 }]}>Period</Text>
-              <Text style={[s.tableHeadText, { flex: 1.2, textAlign: 'center' }]}>
+              <Text style={[s.tableHeadText, { flex: 1.4 }]}>Month</Text>
+              <Text style={[s.tableHeadText, { flex: 1, textAlign: 'center' }]}>
                 Amount
               </Text>
-              <Text style={[s.tableHeadText, { flex: 1, textAlign: 'right' }]}>
+              <Text style={[s.tableHeadText, { flex: 1.6, textAlign: 'right' }]}>
                 Status
               </Text>
             </View>
@@ -176,16 +185,16 @@ const TransportScreen = ({ navigation }: any) => {
                   key={i}
                   style={[s.tableRow, i < FEES.length - 1 && s.tableRowBorder]}
                 >
-                  <Text style={[s.tableCellText, { flex: 2 }]}>{row.period}</Text>
+                  <Text style={[s.tableCellText, { flex: 1.4 }]}>{row.period}</Text>
                   <Text
                     style={[
                       s.tableCellText,
-                      { flex: 1.2, textAlign: 'center' },
+                      { flex: 1, textAlign: 'center' },
                     ]}
                   >
                     {row.amount}
                   </Text>
-                  <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <View style={{ flex: 1.6, alignItems: 'flex-end' }}>
                     {sc ? (
                       <View style={[s.badge, { backgroundColor: sc.bg }]}>
                         <View style={[s.badgeDot, { backgroundColor: sc.color }]} />
@@ -206,14 +215,14 @@ const TransportScreen = ({ navigation }: any) => {
               <View style={s.footerItem}>
                 <Text style={s.footerLabel}>Total Paid</Text>
                 <Text style={[s.footerValue, { color: '#16A34A' }]}>
-                  ₹ 12,000
+                  ₹ 3,000
                 </Text>
               </View>
               <View style={s.footerDivider} />
               <View style={s.footerItem}>
                 <Text style={s.footerLabel}>Total Due</Text>
                 <Text style={[s.footerValue, { color: theme.colors.danger }]}>
-                  ₹ 18,000
+                  ₹ 8,000
                 </Text>
               </View>
             </View>
