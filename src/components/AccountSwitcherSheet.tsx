@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -73,6 +72,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
   const [activeId, setActiveId]   = useState<number | null>(null);
   const [busyId, setBusyId]       = useState<number | null>(null);
   const [bootstrapping, setBoot]  = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<StoredAccount | null>(null);
 
   // Add-account form state
   const [role, setRole]           = useState<AccountType>('student');
@@ -120,6 +120,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
     if (!visible) return;
     setMode('list');
     setAddError('');
+    setRemoveTarget(null);
     bootstrap();
   }, [visible, bootstrap]);
 
@@ -153,49 +154,41 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
   };
 
   // ─── Remove ────────────────────────────────────────────────────────────────
-  const onRemove = (acct: StoredAccount) => {
-    Alert.alert(
-      'Remove account?',
-      `${acct.name} will be signed out on this device.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            setBusyId(acct.user_id);
-            try {
-              await revokeAccountToken(acct.token); // best-effort
-              const remaining = await removeAccount(acct.user_id);
-              setAccounts(remaining);
+  const onRemove = (acct: StoredAccount) => setRemoveTarget(acct);
 
-              if (acct.user_id === activeId) {
-                // Active one was removed — promote another or go to login.
-                const next = remaining[0];
-                if (next) {
-                  await activateAccount(next.user_id);
-                  setActiveId(next.user_id);
-                  onClose();
-                  navigation.dispatch(
-                    CommonActions.reset({
-                      index: 0,
-                      routes: [{ name: 'DrawerRoot', params: { userRole: next.user_type } }],
-                    }),
-                  );
-                } else {
-                  onClose();
-                  navigation.dispatch(
-                    CommonActions.reset({ index: 0, routes: [{ name: 'SelectUser' }] }),
-                  );
-                }
-              }
-            } finally {
-              setBusyId(null);
-            }
-          },
-        },
-      ],
-    );
+  const doRemove = async () => {
+    const acct = removeTarget;
+    if (!acct) return;
+    setRemoveTarget(null);
+    setBusyId(acct.user_id);
+    try {
+      await revokeAccountToken(acct.token); // best-effort
+      const remaining = await removeAccount(acct.user_id);
+      setAccounts(remaining);
+
+      if (acct.user_id === activeId) {
+        // Active one was removed — promote another or go to login.
+        const next = remaining[0];
+        if (next) {
+          await activateAccount(next.user_id);
+          setActiveId(next.user_id);
+          onClose();
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'DrawerRoot', params: { userRole: next.user_type } }],
+            }),
+          );
+        } else {
+          onClose();
+          navigation.dispatch(
+            CommonActions.reset({ index: 0, routes: [{ name: 'SelectUser' }] }),
+          );
+        }
+      }
+    } finally {
+      setBusyId(null);
+    }
   };
 
   // ─── Add account ───────────────────────────────────────────────────────────
@@ -305,6 +298,54 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
           </View>
         </KeyboardAvoidingView>
       </View>
+
+      {/* Remove confirmation, styled like the drawer's logout modal */}
+      <Modal
+        transparent
+        visible={!!removeTarget}
+        animationType="fade"
+        onRequestClose={() => setRemoveTarget(null)}
+      >
+        <View style={s.confirmOverlay}>
+          <View style={s.confirmCard}>
+            <View style={s.confirmIconWrap}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="person-remove-outline"
+                size={28}
+                color={theme.colors.danger}
+              />
+            </View>
+
+            <Text style={s.confirmTitle}>Remove account</Text>
+            <Text style={s.confirmDesc}>
+              {removeTarget?.name} will be signed out on this device.
+            </Text>
+
+            <View style={s.confirmActions}>
+              <TouchableOpacity
+                style={[s.confirmBtn, s.confirmBtnGhost]}
+                activeOpacity={0.85}
+                onPress={() => setRemoveTarget(null)}
+              >
+                <Text style={[s.confirmBtnText, s.confirmBtnGhostText]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[s.confirmBtn, s.confirmBtnDanger]}
+                activeOpacity={0.9}
+                onPress={doRemove}
+              >
+                <Text style={[s.confirmBtnText, s.confirmBtnDangerText]}>
+                  Remove
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 };
@@ -552,6 +593,75 @@ const s = StyleSheet.create({
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#F1F5F9',
+  },
+
+  // ─── Remove confirmation modal (mirrors the drawer logout modal) ──
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  confirmIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.full,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  confirmTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  confirmDesc: {
+    marginTop: theme.spacing.sm,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  confirmBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  confirmBtnGhost: {
+    backgroundColor: '#F1F5F9',
+  },
+  confirmBtnGhostText: {
+    color: theme.colors.textPrimary,
+  },
+  confirmBtnDanger: {
+    backgroundColor: theme.colors.danger,
+  },
+  confirmBtnDangerText: {
+    color: theme.colors.white,
   },
 
   addRow: {
