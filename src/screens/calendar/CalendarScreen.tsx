@@ -95,7 +95,7 @@ const CalendarScreen = ({ navigation }: any) => {
 
   return (
     <View style={s.root}>
-      <Header title="Calendar" />
+      <Header title="Calendar" backgroundColor="#FAF9F6" />
       
       {loading ? (
         <View style={s.loaderContainer}>
@@ -110,7 +110,7 @@ const CalendarScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
           <CalendarHeader
             currentMonth={currentMonth}
             selectedDate={selectedDate}
@@ -152,9 +152,10 @@ export default CalendarScreen;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FAF9F6' },
   sheet: {
+    flex: 1,
     backgroundColor: '#fff',
     marginTop: -20,
-    minHeight: 300,
+    paddingBottom: 24,
   },
   loaderContainer: {
     flex: 1,

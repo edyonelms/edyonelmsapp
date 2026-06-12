@@ -14,9 +14,10 @@ interface HeaderProps {
   title: string;
   onBackPress?: () => void;
   showBack?: boolean;
+  backgroundColor?: string;
 }
 
-const Header = ({ title, onBackPress, showBack = true }: HeaderProps) => {
+const Header = ({ title, onBackPress, showBack = true, backgroundColor = '#fff' }: HeaderProps) => {
   const navigation = useNavigation<any>();
 
   const handleBackPress = () => {
@@ -25,8 +26,8 @@ const Header = ({ title, onBackPress, showBack = true }: HeaderProps) => {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} />
+      <View style={[styles.container, { backgroundColor }]}>
         <View style={styles.side}>
           {showBack ? (
             <TouchableOpacity
@@ -64,7 +65,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.sm,
     paddingBottom: theme.spacing.sm,
-    backgroundColor: '#fff',
     height: 60,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
