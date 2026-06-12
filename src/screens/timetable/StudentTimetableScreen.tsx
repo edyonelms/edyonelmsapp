@@ -12,125 +12,66 @@ import { theme } from '../../utils/theme';
 import { DAYS, STUDENT_TIMETABLE } from './timetableData';
 import type { Day, StudentPeriod } from './timetableData';
 
-const NAVY = '#1B2A4A';
-
-// ─── Day Pill ─────────────────────────────────────────────────────────────────
-const DayPill = ({
-  day,
-  active,
-  onPress,
-}: {
-  day: string;
-  active: boolean;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={[s.dayPill, active && s.dayPillActive]}
-    onPress={onPress}
-    activeOpacity={0.8}
-  >
-    <Text style={[s.dayPillText, active && s.dayPillTextActive]}>
-      {day.slice(0, 3)}
-    </Text>
-  </TouchableOpacity>
-);
-
-// ─── Period Card ──────────────────────────────────────────────────────────────
-const PeriodCard = ({
+// ─── Period Row ───────────────────────────────────────────────────────────────
+const PeriodRow = ({
   period,
-  index,
+  isLast,
 }: {
   period: StudentPeriod;
-  index: number;
+  isLast: boolean;
 }) => {
-  const isBreak = period.type === 'break';
-  const isFree = period.type === 'free';
-
-  if (isBreak) {
+  if (period.type === 'break') {
     return (
-      <View style={s.breakRow}>
-        <View style={s.breakLine} />
-        <View style={s.breakPill}>
-          <Text style={s.breakEmoji}>{period.icon}</Text>
-          <Text style={s.breakText}>{period.subject}</Text>
-          <Text style={s.breakTime}>
-            {period.time} – {period.endTime}
-          </Text>
-        </View>
-        <View style={s.breakLine} />
+      <View style={[s.breakRow, !isLast && s.rowBorder]}>
+        <Text style={s.breakEmoji}>{period.icon}</Text>
+        <Text style={s.breakText}>{period.subject}</Text>
+        <Text style={s.breakTime}>
+          {period.time} – {period.endTime}
+        </Text>
       </View>
     );
   }
 
+  const isFree = period.type === 'free';
+
   return (
-    <View style={s.periodWrap}>
-      {/* Timeline dot & line */}
-      <View style={s.timeline}>
-        <View style={[s.timelineDot, { backgroundColor: period.color }]} />
-        {index <
-          STUDENT_TIMETABLE[Object.keys(STUDENT_TIMETABLE)[0] as Day].length -
-            1 && (
-          <View
-            style={[s.timelineLine, { backgroundColor: period.color + '30' }]}
-          />
+    <View style={[s.periodRow, !isLast && s.rowBorder]}>
+      <View style={[s.periodIcon, { backgroundColor: period.bg }]}>
+        <Text style={s.periodEmoji}>{period.icon}</Text>
+      </View>
+
+      <View style={s.periodInfo}>
+        <Text style={s.periodSubject}>{period.subject}</Text>
+        {isFree ? (
+          <Text style={s.periodMeta}>Free Period</Text>
+        ) : (
+          <View style={s.metaRow}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="person-outline"
+              size={11}
+              color={theme.colors.textMuted}
+            />
+            <Text style={s.periodMeta}>{period.teacher}</Text>
+            <Text style={s.metaDot}>·</Text>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="location-outline"
+              size={11}
+              color={theme.colors.textMuted}
+            />
+            <Text style={s.periodMeta}>{period.room}</Text>
+          </View>
         )}
       </View>
 
-      {/* Card */}
-      <View style={[s.periodCard, { borderLeftColor: period.color }]}>
-        {/* Time badge */}
-        <View style={s.periodTimeRow}>
-          <View style={[s.timeBadge, { backgroundColor: period.color + '18' }]}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="time-outline"
-              size={11}
-              color={period.color}
-            />
-            <Text style={[s.timeBadgeText, { color: period.color }]}>
-              {period.time} – {period.endTime}
-            </Text>
-          </View>
-          {isFree && (
-            <View style={s.freeBadge}>
-              <Text style={s.freeBadgeText}>Free</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={s.periodBody}>
-          {/* Icon */}
-          <View style={[s.periodIconBox, { backgroundColor: period.bg }]}>
-            <Text style={s.periodEmoji}>{period.icon}</Text>
-          </View>
-
-          {/* Info */}
-          <View style={s.periodInfo}>
-            <Text style={s.periodSubject}>{period.subject}</Text>
-            {!isFree && (
-              <>
-                <View style={s.periodMetaRow}>
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName="person-outline"
-                    size={12}
-                    color={theme.colors.textMuted}
-                  />
-                  <Text style={s.periodMeta}>{period.teacher}</Text>
-                </View>
-                <View style={s.periodMetaRow}>
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName="location-outline"
-                    size={12}
-                    color={theme.colors.textMuted}
-                  />
-                  <Text style={s.periodMeta}>{period.room}</Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
+      <View style={[s.timeBadge, { backgroundColor: period.color + '18' }]}>
+        <Text style={[s.timeBadgeText, { color: period.color }]}>
+          {period.time}
+        </Text>
+        <Text style={[s.timeBadgeSub, { color: period.color }]}>
+          {period.endTime}
+        </Text>
       </View>
     </View>
   );
@@ -153,50 +94,67 @@ const StudentTimetableScreen = ({ navigation }: any) => {
     <View style={s.root}>
       <Header title="Timetable" onBackPress={() => navigation.goBack()} />
 
+      {/* ── Day selector ── */}
+      <View style={s.filterWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.filterRow}
+        >
+          {DAYS.map(day => {
+            const active = selectedDay === day;
+            return (
+              <TouchableOpacity
+                key={day}
+                style={[s.filterBtn, active && s.filterBtnActive]}
+                onPress={() => setSelectedDay(day)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.filterText, active && s.filterTextActive]}>
+                  {day.slice(0, 3)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
       >
-        {/* ── Day selector ── */}
-        <View style={s.daySelector}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.daySelectorInner}
-          >
-            {DAYS.map(day => (
-              <DayPill
-                key={day}
-                day={day}
-                active={selectedDay === day}
-                onPress={() => setSelectedDay(day)}
+        {/* ── Single day card ── */}
+        <View style={s.card}>
+          <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View style={s.iconWrap}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="calendar-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>{selectedDay}</Text>
+                <Text style={s.cardSubtitle}>
+                  {classPeriods} class{classPeriods !== 1 ? 'es' : ''} ·{' '}
+                  {periods.length} periods
+                </Text>
+              </View>
+            </View>
+
+            <View style={s.divider} />
+
+            {periods.map((period, i) => (
+              <PeriodRow
+                key={period.id}
+                period={period}
+                isLast={i === periods.length - 1}
               />
             ))}
-          </ScrollView>
-        </View>
-
-        {/* ── Day header ── */}
-        <View style={s.dayHeader}>
-          <View>
-            <Text style={s.dayHeaderTitle}>{selectedDay}</Text>
-            <Text style={s.dayHeaderSub}>{classPeriods} classes today</Text>
           </View>
-          <View style={s.dayHeaderBadge}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="calendar-outline"
-              size={14}
-              color={NAVY}
-            />
-            <Text style={s.dayHeaderBadgeText}>{periods.length} periods</Text>
-          </View>
-        </View>
-
-        {/* ── Periods ── */}
-        <View style={s.periodsWrap}>
-          {periods.map((period, i) => (
-            <PeriodCard key={period.id} period={period} index={i} />
-          ))}
         </View>
       </ScrollView>
     </View>
@@ -206,164 +164,133 @@ const StudentTimetableScreen = ({ navigation }: any) => {
 export default StudentTimetableScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F0F4FF' },
-  scroll: { padding: 16, paddingBottom: 32 },
+  root: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 32 },
 
-  // Day selector
-  daySelector: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+  // Day selector (exam-style filter chips)
+  filterWrapper: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
   },
-  daySelectorInner: { paddingHorizontal: 10, paddingVertical: 10, gap: 8 },
-  dayPill: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#F1F5F9',
+  filterRow: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    gap: 8,
+    alignItems: 'center',
   },
-  dayPillActive: { backgroundColor: NAVY },
-  dayPillText: {
+  filterBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
+  },
+  filterBtnActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  filterText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: theme.colors.textMuted,
-  },
-  dayPillTextActive: { color: '#fff' },
-
-  // Day header
-  dayHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  dayHeaderTitle: { fontSize: 20, fontWeight: '900', color: NAVY },
-  dayHeaderSub: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
     fontWeight: '600',
-    marginTop: 2,
+    color: theme.colors.textSecondary,
   },
-  dayHeaderBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  dayHeaderBadgeText: { fontSize: 12, fontWeight: '700', color: NAVY },
+  filterTextActive: { color: '#fff' },
 
-  // Periods
-  periodsWrap: { gap: 0 },
-
-  // Timeline
-  periodWrap: { flexDirection: 'row', gap: 12, marginBottom: 4 },
-  timeline: { alignItems: 'center', width: 16, paddingTop: 18 },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  timelineLine: {
-    flex: 1,
-    width: 2,
-    marginTop: 4,
-    borderRadius: 1,
-    minHeight: 20,
-  },
-
-  // Period card
-  periodCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    borderLeftWidth: 4,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+  // Card (transport template)
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
     elevation: 2,
   },
-  periodTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  timeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  timeBadgeText: { fontSize: 11, fontWeight: '700' },
-  freeBadge: {
-    backgroundColor: '#EDE9FE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  freeBadgeText: { fontSize: 10, fontWeight: '700', color: '#8B5CF6' },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
 
-  periodBody: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  periodIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  periodEmoji: { fontSize: 22 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginTop: 12,
+  },
+
+  // Period row
+  periodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  periodIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  periodEmoji: { fontSize: 18 },
   periodInfo: { flex: 1, gap: 3 },
-  periodSubject: { fontSize: 15, fontWeight: '800', color: NAVY },
-  periodMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  periodSubject: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaDot: { fontSize: 12, color: theme.colors.textMuted },
   periodMeta: {
     fontSize: 12,
     color: theme.colors.textMuted,
     fontWeight: '500',
   },
+  timeBadge: {
+    alignItems: 'center',
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 76,
+  },
+  timeBadgeText: { fontSize: 11, fontWeight: '800' },
+  timeBadgeSub: { fontSize: 10, fontWeight: '600', opacity: 0.7, marginTop: 1 },
 
-  // Break
+  // Break row
   breakRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginVertical: 6,
-  },
-  breakLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  breakPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
   },
   breakEmoji: { fontSize: 13 },
-  breakText: { fontSize: 11, fontWeight: '700', color: theme.colors.textMuted },
-  breakTime: { fontSize: 10, color: theme.colors.textMuted },
+  breakText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textMuted,
+  },
+  breakTime: { fontSize: 11, color: theme.colors.textMuted },
 });
