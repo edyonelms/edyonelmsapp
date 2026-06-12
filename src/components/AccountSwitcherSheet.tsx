@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import VectorIcon from './VectorIcon';
 import { theme } from '../utils/theme';
@@ -77,6 +78,7 @@ const Avatar = ({ uri, name, size = 44 }: { uri?: string | null; name: string; s
 // ─── Sheet ────────────────────────────────────────────────────────────────────
 const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const [mode, setMode]           = useState<Mode>('list');
   const [accounts, setAccounts]   = useState<StoredAccount[]>([]);
@@ -272,7 +274,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
         {/* Tap outside to close */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView behavior="padding">
-          <View style={s.sheet}>
+          <View style={[s.sheet, { paddingBottom: 16 + insets.bottom }]}>
             <View style={s.handle} />
 
               {/* Header */}
@@ -507,7 +509,6 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: 16,
     maxHeight: Dimensions.get('window').height * 0.85,
   },
   handle: {
