@@ -11,8 +11,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   useWindowDimensions,
+  Animated,
 } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
+import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
@@ -71,6 +73,31 @@ const ForgotPasswordScreen = () => {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
+
+  // Error popup: slide up from the bottom, auto-dismiss after a few seconds.
+  const errorAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!error) {
+      errorAnim.setValue(0);
+      return;
+    }
+    Animated.timing(errorAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+    const popupTimer = setTimeout(() => {
+      Animated.timing(errorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setError(''));
+    }, 4000);
+    return () => clearTimeout(popupTimer);
+  }, [error, errorAnim]);
 
   const handleBackPress = () => {
     if (step === 1) {
@@ -117,25 +144,30 @@ const ForgotPasswordScreen = () => {
             <TextInput
               placeholder="name@school.com"
               placeholderTextColor={theme.colors.textMuted}
-              style={styles.input}
+              style={[
+                styles.input,
+                (emailFocused || !!email) && styles.inputActive,
+              ]}
               value={email}
               onChangeText={t => {
                 setEmail(t);
                 setError('');
               }}
-              onFocus={scrollFormIntoView}
+              onFocus={() => {
+                setEmailFocused(true);
+                scrollFormIntoView();
+              }}
+              onBlur={() => setEmailFocused(false)}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
             <TouchableOpacity
-              style={[styles.button, loading && { opacity: 0.6 }]}
-              disabled={loading}
+              style={[
+                styles.button,
+                (loading || !email.trim()) && styles.buttonDisabled,
+              ]}
+              disabled={loading || !email.trim()}
               onPress={async () => {
-                if (!email.trim()) {
-                  setError('Please enter your email.');
-                  return;
-                }
                 setLoading(true);
                 setError('');
                 try {
@@ -216,6 +248,12 @@ const ForgotPasswordScreen = () => {
                   height: 50,
                   backgroundColor: theme.colors.surface,
                 },
+                focusedPinCodeContainerStyle: {
+                  borderColor: '#5B7FFF',
+                },
+                filledPinCodeContainerStyle: {
+                  borderColor: '#5B7FFF',
+                },
                 pinCodeTextStyle: {
                   color: theme.colors.textPrimary,
                   fontSize: 18,
@@ -233,11 +271,19 @@ const ForgotPasswordScreen = () => {
                       email,
                       user_id: userId,
                     });
-                    const res = await resendOtp(email, userId);
-                    console.log(
-                      '[ResendOTP] ✅ Response:',
-                      JSON.stringify(res, null, 2),
-                    );
+                    // If the user_id was lost (e.g. after a reload), request
+                    // a fresh OTP through forgot-password instead of letting
+                    // resend-otp fail with "user id field is required".
+                    if (!userId) {
+                      const res = await forgotPassword(email.trim());
+                      setUserId(res.user_id);
+                    } else {
+                      const res = await resendOtp(email.trim(), userId);
+                      if (!res.success) {
+                        throw new Error(res.message);
+                      }
+                    }
+                    console.log('[ResendOTP] ✅ OTP resent');
                     setTimer(120);
                     setError('');
                   } catch (e: any) {
@@ -260,15 +306,13 @@ const ForgotPasswordScreen = () => {
                 </Text>
               </TouchableOpacity>
             )}
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
             <TouchableOpacity
-              style={[styles.button, loading && { opacity: 0.6 }]}
-              disabled={loading}
+              style={[
+                styles.button,
+                (loading || otp.length !== 6) && styles.buttonDisabled,
+              ]}
+              disabled={loading || otp.length !== 6}
               onPress={async () => {
-                if (otp.length !== 6) {
-                  setError('Please enter the 6-digit OTP.');
-                  return;
-                }
                 setLoading(true);
                 setError('');
                 try {
@@ -312,28 +356,42 @@ const ForgotPasswordScreen = () => {
             <TextInput
               placeholder="Enter new password"
               placeholderTextColor={theme.colors.textMuted}
-              style={styles.input}
+              style={[
+                styles.input,
+                (passwordFocused || !!password) && styles.inputActive,
+              ]}
               secureTextEntry
               value={password}
               onChangeText={t => {
                 setPassword(t);
                 setError('');
               }}
-              onFocus={scrollFormIntoView}
+              onFocus={() => {
+                setPasswordFocused(true);
+                scrollFormIntoView();
+              }}
+              onBlur={() => setPasswordFocused(false)}
             />
 
             <Text style={styles.label}>Confirm Password</Text>
             <TextInput
               placeholder="Confirm new password"
               placeholderTextColor={theme.colors.textMuted}
-              style={styles.input}
+              style={[
+                styles.input,
+                (confirmFocused || !!confirmPassword) && styles.inputActive,
+              ]}
               secureTextEntry
               value={confirmPassword}
               onChangeText={t => {
                 setConfirmPassword(t);
                 setError('');
               }}
-              onFocus={scrollFormIntoView}
+              onFocus={() => {
+                setConfirmFocused(true);
+                scrollFormIntoView();
+              }}
+              onBlur={() => setConfirmFocused(false)}
             />
 
             <Text style={styles.passwordHint}>
@@ -341,16 +399,14 @@ const ForgotPasswordScreen = () => {
               number or symbol.
             </Text>
 
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
-
             <TouchableOpacity
-              style={[styles.button, loading && { opacity: 0.6 }]}
-              disabled={loading}
+              style={[
+                styles.button,
+                (loading || !password.trim() || !confirmPassword.trim()) &&
+                  styles.buttonDisabled,
+              ]}
+              disabled={loading || !password.trim() || !confirmPassword.trim()}
               onPress={async () => {
-                if (!password.trim()) {
-                  setError('Please enter a new password.');
-                  return;
-                }
                 if (password.length < 8) {
                   setError('Password must be at least 8 characters.');
                   return;
@@ -428,6 +484,34 @@ const ForgotPasswordScreen = () => {
           </View>
           <View style={{ height: 100 }} />
         </ScrollView>
+
+        {/* Error popup pinned to the bottom of the screen */}
+        {!!error && (
+          <Animated.View
+            style={[
+              styles.errorToast,
+              {
+                opacity: errorAnim,
+                transform: [
+                  {
+                    translateY: errorAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [24, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="alert-circle-outline"
+              size={18}
+              color={theme.colors.white}
+            />
+            <Text style={styles.errorToastText}>{error}</Text>
+          </Animated.View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -501,6 +585,9 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     color: theme.colors.textPrimary,
   },
+  inputActive: {
+    borderColor: '#5B7FFF',
+  },
   passwordHint: {
     fontSize: 12,
     color: theme.colors.textSecondary,
@@ -510,14 +597,16 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: theme.colors.primary,
-    paddingVertical: 15,
-    borderRadius: theme.radius.sm,
+    paddingVertical: 12,
+    borderRadius: 99,
     alignItems: 'center',
     marginTop: theme.spacing.sm,
   },
+  buttonDisabled: { backgroundColor: '#B0B0B0' },
   buttonText: {
     color: theme.colors.white,
     fontWeight: '600',
+    fontSize: 16,
   },
 
   otpContainer: {
@@ -546,10 +635,28 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.md,
     color: theme.colors.primary,
   },
-  errorText: {
-    fontSize: 12,
-    color: theme.colors.danger,
-    marginBottom: theme.spacing.sm,
+  errorToast: {
+    position: 'absolute',
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
+    bottom: theme.spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: theme.colors.danger,
+    borderRadius: theme.radius.md,
+    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.md,
+    elevation: 6,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  errorToastText: {
+    flex: 1,
+    fontSize: 13,
+    color: theme.colors.white,
     fontWeight: '500',
   },
 });
