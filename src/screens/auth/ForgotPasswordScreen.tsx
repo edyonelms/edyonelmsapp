@@ -18,13 +18,107 @@ import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
-import { OtpInput } from 'react-native-otp-entry';
 import {
   forgotPassword,
   verifyOtp,
   resendOtp,
   changePassword,
 } from '../../api/authApi';
+
+// Six independent boxes so the user can tap any box and retype just that
+// digit (selectTextOnFocus replaces the old one). Typing auto-advances,
+// backspace on an empty box steps back, and pasting a full code from the
+// keyboard fills the row.
+const OtpBoxes = ({
+  boxWidth,
+  rowWidth,
+  onChange,
+  onBoxFocus,
+}: {
+  boxWidth: number;
+  rowWidth: number;
+  onChange: (code: string) => void;
+  onBoxFocus?: () => void;
+}) => {
+  const refs = useRef<(TextInput | null)[]>([]);
+  const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+
+  const update = (next: string[]) => {
+    setDigits(next);
+    onChange(next.join(''));
+  };
+
+  const handleChange = (index: number, text: string) => {
+    const typed = text.replace(/\D/g, '');
+    const next = [...digits];
+    if (!typed) {
+      next[index] = '';
+      update(next);
+      return;
+    }
+    if (typed.length > 2) {
+      // Pasted code: fill boxes from this one onwards.
+      let i = index;
+      for (const char of typed) {
+        if (i > 5) break;
+        next[i] = char;
+        i += 1;
+      }
+      update(next);
+      refs.current[Math.min(i, 5)]?.focus();
+      return;
+    }
+    // Keep the newest digit so typing on a filled box replaces it.
+    next[index] = typed[typed.length - 1];
+    update(next);
+    if (index < 5) {
+      refs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyPress = (index: number, key: string) => {
+    if (key === 'Backspace' && !digits[index] && index > 0) {
+      const next = [...digits];
+      next[index - 1] = '';
+      update(next);
+      refs.current[index - 1]?.focus();
+    }
+  };
+
+  return (
+    <View
+      style={[styles.otpContainer, { width: rowWidth, alignSelf: 'center' }]}
+    >
+      {digits.map((digit, index) => (
+        <TextInput
+          key={index}
+          ref={r => {
+            refs.current[index] = r;
+          }}
+          style={[
+            styles.otpBox,
+            { width: boxWidth },
+            (focusedIndex === index || !!digit) && styles.otpBoxActive,
+          ]}
+          value={digit}
+          onChangeText={t => handleChange(index, t)}
+          onKeyPress={e => handleKeyPress(index, e.nativeEvent.key)}
+          onFocus={() => {
+            setFocusedIndex(index);
+            onBoxFocus?.();
+          }}
+          onBlur={() => setFocusedIndex(-1)}
+          keyboardType="number-pad"
+          maxLength={6}
+          selectTextOnFocus
+          textContentType="oneTimeCode"
+          autoComplete="sms-otp"
+        />
+      ))}
+    </View>
+  );
+};
 
 const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
@@ -33,10 +127,7 @@ const ForgotPasswordScreen = () => {
   const { width: windowWidth } = useWindowDimensions();
 
   // Size OTP boxes from the screen width (minus screen + card padding and
-  // the gaps) so the row always fits. The row container gets an exact fixed
-  // width and centers itself: with the library's default full-width
-  // container the row drifts left once digits fill in (its cells remount on
-  // every keystroke and Yoga mis-centers the leftover space).
+  // the gaps) so the row always fits, and center the fixed-width row.
   const otpGap = theme.spacing.xs;
   const otpBoxWidth = Math.min(
     48,
@@ -220,45 +311,14 @@ const ForgotPasswordScreen = () => {
             >
               Enter the 6-digit code sent to {email || 'your registered email'}.
             </Text>
-            <OtpInput
-              numberOfDigits={6}
-              onTextChange={text => {
+            <OtpBoxes
+              boxWidth={otpBoxWidth}
+              rowWidth={otpRowWidth}
+              onChange={text => {
                 setOtp(text);
                 setError('');
               }}
-              onFocus={scrollFormIntoView}
-              focusColor={theme.colors.primary}
-              // RN 0.85 removed StyleSheet.absoluteFillObject, which the
-              // library relies on to take its hidden TextInput out of the
-              // layout flow. Without it the invisible input sits in the row
-              // and widens as digits are typed, squeezing the boxes together
-              // and shifting the row left. Re-apply absolute positioning.
-              textInputProps={{ style: StyleSheet.absoluteFill }}
-              theme={{
-                containerStyle: {
-                  width: otpRowWidth,
-                  alignSelf: 'center',
-                  marginBottom: theme.spacing.sm,
-                },
-                pinCodeContainerStyle: {
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  borderRadius: theme.radius.sm,
-                  width: otpBoxWidth,
-                  height: 50,
-                  backgroundColor: theme.colors.surface,
-                },
-                focusedPinCodeContainerStyle: {
-                  borderColor: '#5B7FFF',
-                },
-                filledPinCodeContainerStyle: {
-                  borderColor: '#5B7FFF',
-                },
-                pinCodeTextStyle: {
-                  color: theme.colors.textPrimary,
-                  fontSize: 18,
-                },
-              }}
+              onBoxFocus={scrollFormIntoView}
             />
             <Text style={styles.infoText}>OTP sent to your email address</Text>
             {timer > 0 ? (
@@ -629,8 +689,12 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     textAlign: 'center',
     fontSize: 18,
+    padding: 0,
     backgroundColor: theme.colors.surface,
     color: theme.colors.textPrimary,
+  },
+  otpBoxActive: {
+    borderColor: '#5B7FFF',
   },
 
   infoText: {
