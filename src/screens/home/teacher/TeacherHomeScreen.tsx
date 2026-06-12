@@ -49,7 +49,6 @@ const TeacherHomeScreen = () => {
     <View style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       <TopBar
-        userName="Mr. Arjun Verma"
         onAvatarPress={() => navigation.navigate('TeacherProfile')}
         onBellPress={() => navigation.navigate('Notifications', { role: 'teacher' })}
       />

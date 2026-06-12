@@ -238,6 +238,7 @@ const DrawerNavigator = ({ route }: any) => {
               </View>
               <Text style={styles.appName}>Edyone LMS</Text>
             </View>
+            <View style={styles.headerDivider} />
 
             <View style={styles.menu}>
               {menuItems.map((item, index) => {
@@ -509,8 +510,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
+  },
+  headerDivider: {
+    height: 1,
+    alignSelf: 'stretch',
+    backgroundColor: theme.colors.border,
   },
   brandBadge: {
     width: 60,

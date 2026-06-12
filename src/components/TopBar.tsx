@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,11 +7,17 @@ import {
   TextInput,
   Image,
 } from 'react-native';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+import {
+  DrawerActions,
+  useFocusEffect,
+  useNavigation,
+} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../utils/theme';
 import VectorIcon from './VectorIcon';
 import AccountSwitcherSheet from './AccountSwitcherSheet';
-import { getActiveAccount } from '../utils/accountStore';
+import { getActiveAccount, upsertAccount } from '../utils/accountStore';
+import { fetchCurrentSnapshot } from '../api/switchAccountApi';
 
 interface TopBarProps {
   userName?: string;
@@ -35,13 +41,54 @@ const TopBar = ({
   const [avatarBroken, setAvatarBroken] = useState(false);
 
   const refreshAccount = useCallback(async () => {
-    const a = await getActiveAccount();
-    setDisplayName(userName || a?.name || '');
-    setAvatarUri(a?.image ?? null);
+    // Paint instantly from local data: the switcher's active account, or the
+    // login session blob when the switcher was never used.
+    const acct = await getActiveAccount();
+    let name = acct?.name ?? '';
+    let image = acct?.image ?? null;
+    if (!name) {
+      try {
+        const raw = await AsyncStorage.getItem('user_data');
+        const u = raw ? JSON.parse(raw) : null;
+        name = u?.name ?? '';
+        image = image ?? u?.image ?? null;
+      } catch {}
+    }
+    setDisplayName(name || userName || '');
+    setAvatarUri(image);
     setAvatarBroken(false);
+
+    // Then refresh from the server so profile edits show up immediately.
+    try {
+      const snap = await fetchCurrentSnapshot();
+      if (!snap?.name) return;
+      setDisplayName(snap.name);
+      setAvatarUri(snap.image ?? null);
+      const raw = await AsyncStorage.getItem('user_data');
+      if (raw) {
+        const u = JSON.parse(raw);
+        await AsyncStorage.setItem(
+          'user_data',
+          JSON.stringify({ ...u, name: snap.name, image: snap.image ?? null }),
+        );
+      }
+      if (acct && acct.user_id === snap.user_id) {
+        await upsertAccount({
+          ...acct,
+          name: snap.name,
+          image: snap.image ?? null,
+        });
+      }
+    } catch {}
   }, [userName]);
 
-  useEffect(() => { refreshAccount(); }, [refreshAccount]);
+  // Re-fetch every time the screen regains focus (profile edit, account
+  // switch, tab change) so the name is never stale.
+  useFocusEffect(
+    useCallback(() => {
+      refreshAccount();
+    }, [refreshAccount]),
+  );
 
   // After the switcher closes the active account might have changed.
   const onSwitcherClose = () => {
@@ -90,7 +137,7 @@ const TopBar = ({
           <VectorIcon
             iconSet="Ionicons"
             iconName="notifications-outline"
-            size={20}
+            size={17}
             color="#111"
           />
         </TouchableOpacity>
@@ -106,7 +153,7 @@ const TopBar = ({
             <VectorIcon
               iconSet="Ionicons"
               iconName="person-circle-outline"
-              size={22}
+              size={19}
               color="#111"
             />
           )}
@@ -163,8 +210,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   userName: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '400',
     color: theme.colors.textPrimary,
   },
   searchWrap: {
@@ -185,8 +232,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   iconBtn: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
