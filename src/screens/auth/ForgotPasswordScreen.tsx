@@ -9,10 +9,9 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  Platform,
   KeyboardAvoidingView,
 } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
@@ -26,7 +25,14 @@ import {
 
 const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
+  const scrollRef = useRef<ScrollView>(null);
   const [step, setStep] = useState(1);
+
+  // Edge-to-edge Android ignores adjustResize, so scroll the form above the
+  // keyboard ourselves once the keyboard animation has started.
+  const scrollFormIntoView = () => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+  };
 
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -84,6 +90,7 @@ const ForgotPasswordScreen = () => {
                 setEmail(t);
                 setError('');
               }}
+              onFocus={scrollFormIntoView}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -149,6 +156,7 @@ const ForgotPasswordScreen = () => {
                 setOtp(text);
                 setError('');
               }}
+              onFocus={scrollFormIntoView}
               focusColor={theme.colors.primary}
               theme={{
                 pinCodeContainerStyle: {
@@ -257,6 +265,7 @@ const ForgotPasswordScreen = () => {
                 setPassword(t);
                 setError('');
               }}
+              onFocus={scrollFormIntoView}
             />
 
             <Text style={styles.label}>Confirm Password</Text>
@@ -270,6 +279,7 @@ const ForgotPasswordScreen = () => {
                 setConfirmPassword(t);
                 setError('');
               }}
+              onFocus={scrollFormIntoView}
             />
 
             <Text style={styles.passwordHint}>
@@ -341,10 +351,7 @@ const ForgotPasswordScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <View style={styles.safeArea}>
         <Header
           title="Forgot Password"
@@ -352,6 +359,7 @@ const ForgotPasswordScreen = () => {
           onBackPress={handleBackPress}
         />
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

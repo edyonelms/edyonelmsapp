@@ -8,10 +8,9 @@ import {
   ScrollView,
   Image,
   KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { theme } from '../../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import VectorIcon from '../../../components/VectorIcon';
@@ -19,11 +18,18 @@ import { teacherLogin } from '../../../api/authApi';
 
 const LoginTeacherScreen = () => {
   const navigation = useNavigation<any>();
+  const scrollRef = useRef<ScrollView>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Edge-to-edge Android ignores adjustResize, so scroll the form above the
+  // keyboard ourselves once the keyboard animation has started.
+  const scrollFormIntoView = () => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+  };
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -67,10 +73,7 @@ const LoginTeacherScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <View style={styles.safeArea}>
         <StatusBar
           barStyle="dark-content"
@@ -92,6 +95,7 @@ const LoginTeacherScreen = () => {
         </TouchableOpacity>
 
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -117,6 +121,7 @@ const LoginTeacherScreen = () => {
                 setEmail(t);
                 setError('');
               }}
+              onFocus={scrollFormIntoView}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -134,6 +139,7 @@ const LoginTeacherScreen = () => {
                   setPassword(t);
                   setError('');
                 }}
+                onFocus={scrollFormIntoView}
               />
               <TouchableOpacity
                 onPress={() => setShowPass(v => !v)}
