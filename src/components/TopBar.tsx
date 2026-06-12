@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: '400',
+    fontWeight: '500',
     color: theme.colors.textPrimary,
   },
   searchWrap: {
