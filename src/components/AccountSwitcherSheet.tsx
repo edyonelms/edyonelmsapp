@@ -268,13 +268,14 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
       transparent
       animationType="slide"
       statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
       <View style={s.backdrop}>
         {/* Tap outside to close */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView behavior="padding">
-          <View style={[s.sheet, { paddingBottom: 16 + insets.bottom }]}>
+          <View style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <View style={s.handle} />
 
               {/* Header */}
