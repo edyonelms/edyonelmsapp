@@ -13,10 +13,12 @@ import { theme } from '../../utils/theme';
 import { ATTENDANCE_DATA, STATUS_META, computeStats } from './attendanceTypes';
 import type { AttendanceStatus } from './attendanceTypes';
 import MonthYearPicker from '../calendar/MonthYearPicker';
+import AttendanceAnalyticsModal from './AttendanceAnalytics';
 
 const AttendanceScreen = () => {
   const [currentMonth, setCurrentMonth] = useState(moment());
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [analyticsVisible, setAnalyticsVisible] = useState(false);
 
   const monthKey = currentMonth.format('YYYY-MM');
   const today = moment().format('YYYY-MM-DD');
@@ -90,6 +92,19 @@ const AttendanceScreen = () => {
             iconName="chevron-forward"
             size={18}
             color={theme.colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={s.analyticsBtn}
+          onPress={() => setAnalyticsVisible(true)}
+          activeOpacity={0.8}
+        >
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="stats-chart"
+            size={16}
+            color="#fff"
           />
         </TouchableOpacity>
       </View>
@@ -210,6 +225,11 @@ const AttendanceScreen = () => {
         onClose={() => setPickerVisible(false)}
         onSelect={m => setCurrentMonth(m)}
       />
+
+      <AttendanceAnalyticsModal
+        visible={analyticsVisible}
+        onClose={() => setAnalyticsVisible(false)}
+      />
     </View>
   );
 };
@@ -256,6 +276,14 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: theme.colors.textPrimary,
+  },
+  analyticsBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Card (timetable template)
