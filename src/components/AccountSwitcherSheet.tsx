@@ -45,16 +45,6 @@ interface Props {
 const initialsOf = (name: string) =>
   name.trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() ?? '').join('') || '?';
 
-const subline = (a: StoredAccount): string => {
-  if (a.user_type === 'student') {
-    const cls = a.class_info?.class_display;
-    const org = a.organization?.name;
-    return [cls, org].filter(Boolean).join(' · ') || 'Student';
-  }
-  const org = a.organization?.name;
-  return ['Teacher', org].filter(Boolean).join(' · ');
-};
-
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 const Avatar = ({ uri, name, size = 44 }: { uri?: string | null; name: string; size?: number }) => {
   const [broken, setBroken] = useState(false);
@@ -357,7 +347,11 @@ const ListBody = ({ bootstrapping, accounts, activeId, busyId, onSwitch, onRemov
             <Avatar uri={acct.image} name={acct.name} />
             <View style={s.rowMain}>
               <Text style={s.rowName} numberOfLines={1}>{acct.name}</Text>
-              <Text style={s.rowSub} numberOfLines={1}>{subline(acct)}</Text>
+              <View style={s.typeBadge}>
+                <Text style={s.typeBadgeText}>
+                  {acct.user_type === 'teacher' ? 'Teacher' : 'Student'}
+                </Text>
+              </View>
             </View>
 
             {isBusy ? (
@@ -536,7 +530,14 @@ const s = StyleSheet.create({
   rowActive: { backgroundColor: '#EEF2FF' },
   rowMain: { flex: 1, marginLeft: 12 },
   rowName: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
-  rowSub:  { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
+  typeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EEF2FF',
+    borderRadius: 999,
+    paddingHorizontal: 8, paddingVertical: 2,
+    marginTop: 3,
+  },
+  typeBadgeText: { fontSize: 11, fontWeight: '600', color: theme.colors.primary },
 
   checkBadge: {
     width: 24, height: 24, borderRadius: 12,
