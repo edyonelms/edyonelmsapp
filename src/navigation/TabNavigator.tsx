@@ -8,7 +8,7 @@ import StudentHomeScreen from '../screens/home/student/StudentHomeScreen';
 import TeacherHomeScreen from '../screens/home/teacher/TeacherHomeScreen';
 import TeacherHomeworkScreen from '../screens/homework/TeacherHomeworkScreen';
 import StudentHomeworkScreen from '../screens/homework/StudentHomeworkScreen';
-import AttendanceScreen from '../screens/attendance/AttendanceScreen';
+import markAttendanceScreen from '../screens/markAttendance/markAttendanceScreen';
 import FeesScreen from '../screens/fees/FeesScreen';
 import { SUBJECTS } from '../screens/subjects/subjectsData';
 import SubjectsScreen from '../screens/subjects/SubjectsScreen';
@@ -40,7 +40,7 @@ const TabNavigator = ({ route }: any) => {
   const role: TabRole =
     route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
 
-  const lastTabName = role === 'teacher' ? 'Attendance' : 'Fees';
+  const lastTabName = role === 'teacher' ? 'MarkAttendance' : 'Fees';
   const DashboardComponent =
     role === 'teacher' ? TeacherHomeScreen : StudentHomeScreen;
 
@@ -90,8 +90,8 @@ const TabNavigator = ({ route }: any) => {
             case 'Fees':
               iconName = focused ? 'card' : 'card-outline';
               break;
-            case 'Attendance':
-              iconName = focused ? 'clipboard' : 'clipboard-outline';
+            case 'MarkAttendance':
+              iconName = focused ? 'checkbox' : 'checkbox-outline';
               break;
             default:
               iconName = 'ellipse';
@@ -138,7 +138,13 @@ const TabNavigator = ({ route }: any) => {
       />
       <Tab.Screen
         name={lastTabName}
-        component={role === 'teacher' ? AttendanceScreen : FeesScreen}
+        component={role === 'teacher' ? markAttendanceScreen : FeesScreen}
+        options={{
+          tabBarLabel: role === 'teacher' ? 'Mark Attendance' : 'Fees',
+        }}
+        initialParams={
+          role === 'teacher' ? { title: 'Mark Attendance' } : undefined
+        }
       />
     </Tab.Navigator>
   );
