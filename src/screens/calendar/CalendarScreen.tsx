@@ -1,14 +1,32 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { ScrollView, StatusBar, StyleSheet, View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import {
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import moment from 'moment';
 import { theme } from '../../utils/theme';
-import { FILTERS, chunkWeeks, groupEventsByDate, getEventTypesForDate } from './calendarTypes';
+import {
+  FILTERS,
+  TYPE_META,
+  WEEK_LABELS,
+  chunkWeeks,
+  groupEventsByDate,
+  getEventTypesForDate,
+} from './calendarTypes';
 import type { FilterType, CalEvent } from './calendarTypes';
-import CalendarHeader from './CalendarHeader';
 import MonthYearPicker from './MonthYearPicker';
-import EventTimeline from './EventTimeline';
 import Header from '../../components/Header';
-import { getCalendarEvents, mapApiEventToCalEvent, ApiEvent } from '../../api/calendarApi';
+import VectorIcon from '../../components/VectorIcon';
+import { getCalendarEvents, mapApiEventToCalEvent } from '../../api/calendarApi';
+
+const { width } = Dimensions.get('window');
+// screen - scroll padding (2×20) - card inner padding (2×14) - card border (2×1)
+const CELL_SIZE = Math.floor((width - 70) / 7);
 
 const CalendarScreen = ({ navigation }: any) => {
   const today = moment().format('YYYY-MM-DD');
@@ -16,7 +34,7 @@ const CalendarScreen = ({ navigation }: any) => {
   const [selectedDate, setSelectedDate] = useState(today);
   const [activeFilter, setActiveFilter] = useState<FilterType>('All');
   const [pickerVisible, setPickerVisible] = useState(false);
-  
+
   // API states
   const [allEvents, setAllEvents] = useState<CalEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,20 +44,13 @@ const CalendarScreen = ({ navigation }: any) => {
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     const startDate = currentMonth.clone().startOf('month').format('YYYY-MM-DD');
     const endDate = currentMonth.clone().endOf('month').format('YYYY-MM-DD');
-    
-    console.log('[CalendarScreen] Fetching events for month:', startDate, 'to', endDate);
-    
+
     try {
       const apiEvents = await getCalendarEvents(startDate, endDate, undefined, 100);
-      console.log('[CalendarScreen] Received events count:', apiEvents.length);
-      
-      const mappedEvents = apiEvents.map(mapApiEventToCalEvent);
-      console.log('[CalendarScreen] Mapped events count:', mappedEvents.length);
-      
-      setAllEvents(mappedEvents);
+      setAllEvents(apiEvents.map(mapApiEventToCalEvent));
     } catch (err: any) {
       console.error('[CalendarScreen] Error fetching events:', err?.message);
       setError('Failed to load calendar events');
@@ -52,12 +63,8 @@ const CalendarScreen = ({ navigation }: any) => {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Group events by date for quick lookup in calendar
-  const eventsByDate = useMemo(() => {
-    return groupEventsByDate(allEvents);
-  }, [allEvents]);
+  const eventsByDate = useMemo(() => groupEventsByDate(allEvents), [allEvents]);
 
-  // Get event types for each date (for calendar dots)
   const eventDates = useMemo(() => {
     const map: Record<string, Exclude<FilterType, 'All'>[]> = {};
     Object.keys(eventsByDate).forEach(date => {
@@ -66,22 +73,17 @@ const CalendarScreen = ({ navigation }: any) => {
     return map;
   }, [eventsByDate]);
 
-  // Filter events for selected date
   const filteredEvents = useMemo(() => {
     const dayEvents = eventsByDate[selectedDate] || [];
-    if (activeFilter === 'All') {
-      return dayEvents;
-    }
+    if (activeFilter === 'All') return dayEvents;
     return dayEvents.filter(e => e.type === activeFilter);
   }, [selectedDate, activeFilter, eventsByDate]);
 
-  // Calculate total events count for current month (for header badge)
   const totalEvents = useMemo(() => {
     const monthStr = currentMonth.format('YYYY-MM');
     return allEvents.filter(e => e.date.startsWith(monthStr)).length;
   }, [allEvents, currentMonth]);
 
-  // Generate calendar weeks
   const weeks = useMemo(() => {
     const start = currentMonth.clone().startOf('month');
     const end = currentMonth.clone().endOf('month');
@@ -96,43 +98,315 @@ const CalendarScreen = ({ navigation }: any) => {
   return (
     <View style={s.root}>
       <Header title="Calendar" />
-      
+
+      {/* ── Month selector ── */}
+      <View style={s.monthBar}>
+        <TouchableOpacity
+          style={s.monthArrow}
+          onPress={() => setCurrentMonth(m => m.clone().subtract(1, 'month'))}
+          activeOpacity={0.7}
+        >
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="chevron-back"
+            size={18}
+            color={theme.colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={s.monthLabelBtn}
+          onPress={() => setPickerVisible(true)}
+          activeOpacity={0.8}
+        >
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="calendar-outline"
+            size={15}
+            color={theme.colors.primary}
+          />
+          <Text style={s.monthLabelText}>
+            {currentMonth.format('MMMM YYYY')}
+          </Text>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="chevron-down"
+            size={14}
+            color={theme.colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={s.monthArrow}
+          onPress={() => setCurrentMonth(m => m.clone().add(1, 'month'))}
+          activeOpacity={0.7}
+        >
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="chevron-forward"
+            size={18}
+            color={theme.colors.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
+
       {loading ? (
-        <View style={s.loaderContainer}>
+        <View style={s.centeredBox}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={s.loaderText}>Loading events...</Text>
         </View>
       ) : error ? (
-        <View style={s.loaderContainer}>
+        <View style={s.centeredBox}>
           <Text style={s.errorText}>{error}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={fetchEvents}>
             <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-          <CalendarHeader
-            currentMonth={currentMonth}
-            selectedDate={selectedDate}
-            today={today}
-            weeks={weeks}
-            eventDates={eventDates}
-            totalEvents={totalEvents}
-            onPrevMonth={() => setCurrentMonth(m => m.clone().subtract(1, 'month'))}
-            onNextMonth={() => setCurrentMonth(m => m.clone().add(1, 'month'))}
-            onPickerOpen={() => setPickerVisible(true)}
-            onDayPress={setSelectedDate}
-          />
-
-          {/* Events sheet */}
-          <View style={s.sheet}>
-            <EventTimeline
-              events={filteredEvents}
-              selectedDate={moment(selectedDate).format('dddd, MMMM D, YYYY')}
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              eventCount={filteredEvents.length}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+        >
+          {/* ── Calendar grid card ── */}
+          <View style={s.card}>
+            <View
+              style={[s.accentBar, { backgroundColor: theme.colors.primary }]}
             />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={s.iconWrap}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="calendar-outline"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>
+                    {currentMonth.format('MMMM YYYY')}
+                  </Text>
+                  <Text style={s.cardSubtitle}>
+                    {totalEvents} event{totalEvents !== 1 ? 's' : ''} this month
+                  </Text>
+                </View>
+              </View>
+
+              <View style={s.divider} />
+
+              {/* Week labels */}
+              <View style={s.weekRow}>
+                {WEEK_LABELS.map((l, i) => (
+                  <View key={i} style={s.cell}>
+                    <Text
+                      style={[
+                        s.weekLabel,
+                        i === 5 && s.satLabel,
+                        i === 6 && s.sunLabel,
+                      ]}
+                    >
+                      {l}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Day grid */}
+              {weeks.map((week, wi) => (
+                <View key={wi} style={s.weekRow}>
+                  {week.map((day, di) => {
+                    if (!day) return <View key={`e${wi}${di}`} style={s.cell} />;
+                    const isSelected = day === selectedDate;
+                    const isToday = day === today;
+                    const dots = eventDates[day] ?? [];
+                    const dow = moment(day).day();
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        activeOpacity={0.75}
+                        onPress={() => setSelectedDate(day)}
+                        style={s.cell}
+                      >
+                        <View
+                          style={[
+                            s.dayInner,
+                            isSelected && s.daySelected,
+                            isToday && !isSelected && s.dayToday,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.dayNum,
+                              isSelected && s.dayNumSelected,
+                              isToday && !isSelected && s.dayNumToday,
+                              dow === 0 && !isSelected && s.sunNum,
+                              dow === 6 && !isSelected && s.satNum,
+                            ]}
+                          >
+                            {moment(day).date()}
+                          </Text>
+                        </View>
+                        <View style={s.dotsRow}>
+                          {dots.slice(0, 3).map((t, ti) => (
+                            <View
+                              key={ti}
+                              style={[
+                                s.dot,
+                                { backgroundColor: TYPE_META[t].color },
+                              ]}
+                            />
+                          ))}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* ── Events card ── */}
+          <View style={s.card}>
+            <View
+              style={[s.accentBar, { backgroundColor: theme.colors.secondary }]}
+            />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={s.iconWrap}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="list-outline"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>
+                    {moment(selectedDate).format('dddd, D MMMM')}
+                  </Text>
+                  <Text style={s.cardSubtitle}>
+                    {filteredEvents.length} event
+                    {filteredEvents.length !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+                <View style={s.countBadge}>
+                  <Text style={s.countBadgeText}>{filteredEvents.length}</Text>
+                </View>
+              </View>
+
+              {/* Filter chips */}
+              <View style={s.filtersRow}>
+                {FILTERS.map(f => {
+                  const active = activeFilter === f;
+                  const meta = f !== 'All' ? TYPE_META[f] : null;
+                  const activeColor = meta?.color ?? theme.colors.primary;
+                  return (
+                    <TouchableOpacity
+                      key={f}
+                      activeOpacity={0.8}
+                      onPress={() => setActiveFilter(f)}
+                      style={[
+                        s.chip,
+                        active && {
+                          backgroundColor: activeColor,
+                          borderColor: activeColor,
+                        },
+                      ]}
+                    >
+                      {meta && (
+                        <VectorIcon
+                          iconSet={meta.iconSet as any}
+                          iconName={meta.icon}
+                          size={11}
+                          color={active ? '#fff' : meta.color}
+                        />
+                      )}
+                      <Text
+                        style={[
+                          s.chipText,
+                          active && s.chipTextActive,
+                          !active && meta && { color: meta.color },
+                        ]}
+                      >
+                        {f}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={s.divider} />
+
+              {/* Event rows or empty */}
+              {filteredEvents.length === 0 ? (
+                <View style={s.emptyBox}>
+                  <View style={s.emptyIconRing}>
+                    <VectorIcon
+                      iconSet="FontAwesome6"
+                      iconName="calendar-xmark"
+                      size={28}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <Text style={s.emptyTitle}>Nothing here</Text>
+                  <Text style={s.emptySubtitle}>
+                    No events scheduled for this date
+                  </Text>
+                </View>
+              ) : (
+                filteredEvents.map((event, idx) => {
+                  const meta = TYPE_META[event.type];
+                  const isLast = idx === filteredEvents.length - 1;
+                  return (
+                    <View
+                      key={event.id}
+                      style={[s.eventRow, !isLast && s.rowBorder]}
+                    >
+                      <View style={[s.eventIcon, { backgroundColor: meta.bg }]}>
+                        <VectorIcon
+                          iconSet={meta.iconSet as any}
+                          iconName={meta.icon}
+                          size={15}
+                          color={meta.color}
+                        />
+                      </View>
+                      <View style={s.eventInfo}>
+                        <View style={s.eventTitleRow}>
+                          <Text style={s.eventTitle} numberOfLines={1}>
+                            {event.title}
+                          </Text>
+                          <View
+                            style={[s.typeBadge, { backgroundColor: meta.bg }]}
+                          >
+                            <Text
+                              style={[s.typeBadgeText, { color: meta.color }]}
+                            >
+                              {event.type}
+                            </Text>
+                          </View>
+                        </View>
+                        {!!event.description && (
+                          <Text style={s.eventDescription} numberOfLines={2}>
+                            {event.description}
+                          </Text>
+                        )}
+                        {!!event.time && (
+                          <View style={s.timeRow}>
+                            <VectorIcon
+                              iconSet="Feather"
+                              iconName="clock"
+                              size={11}
+                              color={theme.colors.textMuted}
+                            />
+                            <Text style={s.timeText}>{event.time}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
           </View>
         </ScrollView>
       )}
@@ -150,29 +424,59 @@ const CalendarScreen = ({ navigation }: any) => {
 export default CalendarScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAF9F6' },
-  sheet: {
-    flex: 1,
-    backgroundColor: '#fff',
-    marginTop: -20,
-    paddingBottom: 24,
+  root: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
+
+  // Month selector bar (same as attendance)
+  monthBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
-  loaderContainer: {
+  monthArrow: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.card,
+  },
+  monthLabelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
+  },
+  monthLabelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+
+  // Loader / error
+  centeredBox: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FAF9F6',
+    gap: 12,
   },
-  loaderText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-  },
+  loaderText: { fontSize: 14, color: theme.colors.textSecondary },
   errorText: {
     fontSize: 14,
     color: theme.colors.danger,
     textAlign: 'center',
-    marginBottom: 12,
   },
   retryBtn: {
     paddingHorizontal: 24,
@@ -180,9 +484,184 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.primary,
   },
-  retryText: {
+  retryText: { fontSize: 14, fontWeight: '700', color: theme.colors.white },
+
+  // Card (shared template)
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+    elevation: 2,
+  },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
+
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  countBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.colors.primary,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: 12,
+  },
+
+  // Calendar grid
+  weekRow: { flexDirection: 'row', marginBottom: 2 },
+  cell: { width: CELL_SIZE, alignItems: 'center', paddingVertical: 2 },
+  weekLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textMuted,
+    paddingVertical: 4,
+  },
+  satLabel: { color: '#D97706' },
+  sunLabel: { color: '#DC2626' },
+
+  dayInner: {
+    width: CELL_SIZE - 8,
+    height: CELL_SIZE - 8,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  daySelected: { backgroundColor: theme.colors.primary },
+  dayToday: { borderWidth: 1.5, borderColor: theme.colors.primary },
+  dayNum: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
+  dayNumSelected: { color: theme.colors.white, fontWeight: '800' },
+  dayNumToday: { color: theme.colors.primary, fontWeight: '800' },
+  satNum: { color: '#D97706' },
+  sunNum: { color: '#DC2626' },
+
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 3,
+    height: 6,
+    alignItems: 'center',
+  },
+  dot: { width: 5, height: 5, borderRadius: 99 },
+
+  // Filter chips (exam style)
+  filtersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  chipTextActive: { color: '#fff' },
+
+  // Event rows
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  eventIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eventInfo: { flex: 1, gap: 4 },
+  eventTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  eventTitle: {
+    flex: 1,
     fontSize: 14,
     fontWeight: '700',
-    color: theme.colors.white,
+    color: theme.colors.textPrimary,
+  },
+  typeBadge: {
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  typeBadgeText: { fontSize: 10, fontWeight: '700' },
+  eventDescription: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.colors.textMuted,
+    lineHeight: 18,
+  },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  timeText: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '500' },
+
+  // Empty state
+  emptyBox: { alignItems: 'center', paddingVertical: 24, gap: 4 },
+  emptyIconRing: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+    fontWeight: '500',
   },
 });
