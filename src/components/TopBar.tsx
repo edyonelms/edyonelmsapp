@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,6 +13,7 @@ import {
   useFocusEffect,
   useNavigation,
 } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../utils/theme';
 import VectorIcon from './VectorIcon';
@@ -27,6 +29,9 @@ interface TopBarProps {
   onAvatarPress?: () => void;
 }
 
+// Soft indigo-tinted white shared by the bar and the status bar area above it.
+const BAR_BG = '#EEF2FF';
+
 const TopBar = ({
   userName,
   searchValue,
@@ -35,6 +40,7 @@ const TopBar = ({
   onAvatarPress,
 }: TopBarProps) => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [displayName, setDisplayName]   = useState<string>(userName ?? '');
   const [avatarUri, setAvatarUri]       = useState<string | null>(null);
@@ -103,6 +109,12 @@ const TopBar = ({
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={BAR_BG} />
+      {/* Tints the status-bar inset (time/battery area), which the root
+          SafeAreaView otherwise paints white. */}
+      <View
+        style={[styles.statusBackdrop, { top: -insets.top, height: insets.top }]}
+      />
       <View style={styles.wrap}>
         <TouchableOpacity
           onPress={openDrawer}
@@ -189,11 +201,17 @@ const TopBar = ({
 export default TopBar;
 
 const styles = StyleSheet.create({
+  statusBackdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: BAR_BG,
+  },
   container: {
-    backgroundColor: '#FAF9F6',
+    backgroundColor: BAR_BG,
     paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEECE6',
+    borderBottomColor: '#E0E7FF',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
@@ -213,7 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E0E7FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -247,7 +265,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E0E7FF',
     borderRadius: theme.radius.full,
     paddingHorizontal: 16,
     height: 42,
@@ -264,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.full,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E0E7FF',
     alignItems: 'center',
     justifyContent: 'center',
   },

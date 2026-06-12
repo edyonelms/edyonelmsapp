@@ -46,6 +46,9 @@ const TabNavigator = ({ route }: any) => {
 
   return (
     <Tab.Navigator
+      // The root SafeAreaView already pads the bottom inset; without this the
+      // tab bar adds it again and doubles the gap.
+      safeAreaInsets={{ bottom: 0 }}
       screenOptions={({ route }) => ({
         headerShown: false,
 

@@ -95,7 +95,7 @@ const CalendarScreen = ({ navigation }: any) => {
 
   return (
     <View style={s.root}>
-      <Header title="Calendar" backgroundColor="#FAF9F6" />
+      <Header title="Calendar" />
       
       {loading ? (
         <View style={s.loaderContainer}>
