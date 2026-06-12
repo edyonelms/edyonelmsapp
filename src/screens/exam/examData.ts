@@ -46,6 +46,228 @@ export const FILTERS: (ExamStatus | 'All')[] = [
   'Completed',
 ];
 
+// ─── Student (demo) ──────────────────────────────────────────────────────────
+export const STUDENT_INFO = {
+  name: 'Arjun Patel',
+  photo: 'https://randomuser.me/api/portraits/men/11.jpg',
+  className: '10th — A',
+  rollNo: '23',
+  admissionNo: 'STU-2026-0231',
+  dob: '14 Aug 2011',
+};
+
+// ─── Seating / schedule per exam ─────────────────────────────────────────────
+export interface SubjectSeat {
+  subject: string;
+  subjectCode: string;
+  date: string;
+  time: string;
+  roomNo: string;
+  seatNo: string;
+}
+
+export const SEATING_DATA: Record<string, SubjectSeat[]> = {
+  '1': [
+    {
+      subject: 'Mathematics',
+      subjectCode: 'MTH301',
+      date: '03/02/2026',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'A101',
+      seatNo: '24',
+    },
+    {
+      subject: 'Science',
+      subjectCode: 'SCI302',
+      date: '05/02/2026',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'B002',
+      seatNo: '49',
+    },
+    {
+      subject: 'English',
+      subjectCode: 'ENG303',
+      date: '07/02/2026',
+      time: '11:40AM - 1:10PM',
+      roomNo: 'A103',
+      seatNo: '12',
+    },
+  ],
+  '2': [
+    {
+      subject: 'Mathematics',
+      subjectCode: 'MTH301',
+      date: '10/03/2026',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'C201',
+      seatNo: '31',
+    },
+    {
+      subject: 'Science',
+      subjectCode: 'SCI302',
+      date: '12/03/2026',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'C202',
+      seatNo: '08',
+    },
+    {
+      subject: 'Social Science',
+      subjectCode: 'SST304',
+      date: '14/03/2026',
+      time: '11:40AM - 1:10PM',
+      roomNo: 'B005',
+      seatNo: '17',
+    },
+  ],
+  '3': [
+    {
+      subject: 'Mathematics',
+      subjectCode: 'MTH301',
+      date: '05/11/2025',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'A101',
+      seatNo: '24',
+    },
+    {
+      subject: 'Science',
+      subjectCode: 'SCI302',
+      date: '07/11/2025',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'A102',
+      seatNo: '36',
+    },
+  ],
+  '4': [
+    {
+      subject: 'Mathematics',
+      subjectCode: 'MTH301',
+      date: '01/03/2026',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'D301',
+      seatNo: '55',
+    },
+    {
+      subject: 'Science',
+      subjectCode: 'SCI302',
+      date: '03/03/2026',
+      time: '10:00AM - 12:00PM',
+      roomNo: 'D302',
+      seatNo: '22',
+    },
+    {
+      subject: 'English',
+      subjectCode: 'ENG303',
+      date: '05/03/2026',
+      time: '11:40AM - 1:10PM',
+      roomNo: 'D303',
+      seatNo: '41',
+    },
+    {
+      subject: 'Social Science',
+      subjectCode: 'SST304',
+      date: '07/03/2026',
+      time: '11:40AM - 1:10PM',
+      roomNo: 'D304',
+      seatNo: '09',
+    },
+  ],
+};
+
+// ─── Marks / results per exam (evaluated copies) ─────────────────────────────
+export interface SubjectResult {
+  subject: string;
+  code: string;
+  obtained: number;
+  total: number;
+  grade: string;
+}
+
+export const EXAM_RESULTS: Record<string, SubjectResult[]> = {
+  '1': [
+    { subject: 'Mathematics', code: 'MTH301', obtained: 78, total: 100, grade: 'B+' },
+    { subject: 'Science', code: 'SCI302', obtained: 84, total: 100, grade: 'A' },
+    { subject: 'English', code: 'ENG303', obtained: 91, total: 100, grade: 'A+' },
+  ],
+  '3': [
+    { subject: 'Mathematics', code: 'MTH301', obtained: 72, total: 100, grade: 'B' },
+    { subject: 'Science', code: 'SCI302', obtained: 80, total: 100, grade: 'A' },
+  ],
+  '4': [
+    { subject: 'Mathematics', code: 'MTH301', obtained: 88, total: 100, grade: 'A' },
+    { subject: 'Science', code: 'SCI302', obtained: 76, total: 100, grade: 'B+' },
+    { subject: 'English', code: 'ENG303', obtained: 90, total: 100, grade: 'A+' },
+    { subject: 'Social Science', code: 'SST304', obtained: 69, total: 100, grade: 'B' },
+  ],
+};
+
+export const GRADE_META: Record<string, { color: string; bg: string }> = {
+  'A+': { color: '#16A34A', bg: '#DCFCE7' },
+  A: { color: '#16A34A', bg: '#DCFCE7' },
+  'B+': { color: '#0EA5E9', bg: '#E0F2FE' },
+  B: { color: '#0EA5E9', bg: '#E0F2FE' },
+  C: { color: '#D97706', bg: '#FEF3C7' },
+  D: { color: '#D97706', bg: '#FEF3C7' },
+  F: { color: '#EF4444', bg: '#FEE2E2' },
+};
+
+export const gradeFor = (pct: number): string =>
+  pct >= 90
+    ? 'A+'
+    : pct >= 80
+    ? 'A'
+    : pct >= 70
+    ? 'B+'
+    : pct >= 60
+    ? 'B'
+    : pct >= 50
+    ? 'C'
+    : pct >= 35
+    ? 'D'
+    : 'F';
+
+// ─── Report cards per academic year ──────────────────────────────────────────
+export interface ReportCardData {
+  year: string;
+  term: string;
+  subjects: SubjectResult[];
+  attendance: string;
+  rank: string;
+  remarks: string;
+}
+
+export const REPORT_CARDS: Record<string, ReportCardData> = {
+  '2026-2027': {
+    year: '2026-2027',
+    term: 'Term I',
+    subjects: [
+      { subject: 'Mathematics', code: 'MTH301', obtained: 78, total: 100, grade: 'B+' },
+      { subject: 'Science', code: 'SCI302', obtained: 84, total: 100, grade: 'A' },
+      { subject: 'English', code: 'ENG303', obtained: 91, total: 100, grade: 'A+' },
+      { subject: 'Social Science', code: 'SST304', obtained: 74, total: 100, grade: 'B+' },
+      { subject: 'Hindi', code: 'HIN305', obtained: 82, total: 100, grade: 'A' },
+    ],
+    attendance: '92% (184/200 days)',
+    rank: '4th of 42',
+    remarks:
+      'Arjun has shown consistent improvement this term. Excellent grasp of English and Science. Needs more practice in Social Science map work.',
+  },
+  '2025-2026': {
+    year: '2025-2026',
+    term: 'Final Term',
+    subjects: [
+      { subject: 'Mathematics', code: 'MTH301', obtained: 88, total: 100, grade: 'A' },
+      { subject: 'Science', code: 'SCI302', obtained: 76, total: 100, grade: 'B+' },
+      { subject: 'English', code: 'ENG303', obtained: 90, total: 100, grade: 'A+' },
+      { subject: 'Social Science', code: 'SST304', obtained: 69, total: 100, grade: 'B' },
+      { subject: 'Hindi', code: 'HIN305', obtained: 79, total: 100, grade: 'B+' },
+    ],
+    attendance: '89% (178/200 days)',
+    rank: '6th of 40',
+    remarks:
+      'A sincere and disciplined student. Performed very well in languages. Should focus on time management during exams.',
+  },
+};
+
 export const EXAMS: Exam[] = [
   {
     id: '1',
