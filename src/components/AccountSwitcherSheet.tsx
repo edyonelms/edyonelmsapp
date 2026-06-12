@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -267,11 +268,12 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <Pressable style={s.backdrop} onPress={onClose}>
-        <Pressable style={s.sheetWrap} onPress={() => { /* swallow */ }}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <View style={s.sheet}>
-              <View style={s.handle} />
+      <View style={s.backdrop}>
+        {/* Tap outside to close */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={s.sheet}>
+            <View style={s.handle} />
 
               {/* Header */}
               <View style={s.header}>
@@ -311,10 +313,9 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
                   onSubmit={onSubmitAdd}
                 />
               )}
-            </View>
-          </KeyboardAvoidingView>
-        </Pressable>
-      </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
@@ -502,13 +503,12 @@ const s = StyleSheet.create({
     backgroundColor: '#0008',
     justifyContent: 'flex-end',
   },
-  sheetWrap: { width: '100%' },
   sheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     paddingBottom: 24,
-    maxHeight: '88%',
+    maxHeight: Dimensions.get('window').height * 0.88,
   },
   handle: {
     alignSelf: 'center',
