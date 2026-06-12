@@ -10,9 +10,6 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 
-const NAVY = '#1B2A4A';
-const GOLD = '#8B7536';
-
 const FEES = [
   { period: 'March – May', amount: '₹ 3,000', status: 'Paid' },
   { period: 'June – August', amount: '–', status: 'Pending' },
@@ -20,44 +17,16 @@ const FEES = [
   { period: 'Dec – Feb', amount: '–', status: '–' },
 ];
 
-// ─── Section Header ───────────────────────────────────────────────────────────
-const SectionHeader = ({
-  icon,
-  label,
-  color = NAVY,
-}: {
-  icon: string;
-  label: string;
-  color?: string;
-}) => (
-  <View style={[s.sectionHeader, { backgroundColor: color }]}>
-    <VectorIcon iconSet="Ionicons" iconName={icon} size={16} color="#fff" />
-    <Text style={s.sectionHeaderText}>{label}</Text>
-  </View>
-);
+const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
+  Paid: { color: '#16A34A', bg: '#DCFCE7' },
+  Pending: { color: '#D97706', bg: '#FEF3C7' },
+};
 
-// ─── Info Row ─────────────────────────────────────────────────────────────────
+// ─── Label / value row ────────────────────────────────────────────────────────
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
   <View style={s.infoRow}>
     <Text style={s.infoLabel}>{label}</Text>
-    <View style={s.infoArrow}>
-      <View style={s.arrowLine} />
-      <VectorIcon
-        iconSet="Ionicons"
-        iconName="arrow-forward"
-        size={12}
-        color={NAVY}
-      />
-    </View>
     <Text style={s.infoValue}>{value}</Text>
-  </View>
-);
-
-// ─── Plain Row (no arrow) ─────────────────────────────────────────────────────
-const PlainRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={s.plainRow}>
-    <Text style={s.plainLabel}>{label}</Text>
-    <Text style={s.plainValue}>{value}</Text>
   </View>
 );
 
@@ -74,30 +43,41 @@ const TransportScreen = ({ navigation }: any) => {
       >
         {/* ── School Card ── */}
         <View style={s.card}>
-          <SectionHeader icon="school-outline" label="School" color={GOLD} />
-
-          <View style={s.cardBody}>
-            {/* School name title */}
-            <View style={s.cardTitleRow}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="business-outline"
-                size={22}
-                color={NAVY}
-              />
-              <Text style={s.cardTitle}>Jafari</Text>
+          <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View style={s.iconWrap}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="school-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Jafari</Text>
+                <Text style={s.cardSubtitle}>School</Text>
+              </View>
             </View>
 
-            <InfoRow label="School Name" value="Jafari" />
-
-            <View style={s.timeRow}>
-              <View style={s.timeItem}>
-                <Text style={s.timeLabel}>Arrival Time:</Text>
-                <Text style={s.timeValue}>08:00 AM</Text>
+            <View style={s.pillsRow}>
+              <View style={s.pill}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="log-in-outline"
+                  size={12}
+                  color={theme.colors.primary}
+                />
+                <Text style={s.pillText}>Arrival 08:00 AM</Text>
               </View>
-              <View style={s.timeItem}>
-                <Text style={s.timeLabel}>Departure Time:</Text>
-                <Text style={s.timeValue}>02:00 PM</Text>
+              <View style={s.pill}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="log-out-outline"
+                  size={12}
+                  color={theme.colors.primary}
+                />
+                <Text style={s.pillText}>Departure 02:00 PM</Text>
               </View>
             </View>
 
@@ -107,42 +87,40 @@ const TransportScreen = ({ navigation }: any) => {
               onPress={() => setDriverExpanded(v => !v)}
               activeOpacity={0.8}
             >
-              <Text style={s.driverHeaderText}>Driver Details</Text>
+              <View style={s.driverHeaderLeft}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="person-outline"
+                  size={14}
+                  color={theme.colors.primary}
+                />
+                <Text style={s.driverHeaderText}>Driver Details</Text>
+              </View>
               <VectorIcon
                 iconSet="Ionicons"
                 iconName={driverExpanded ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={NAVY}
+                size={16}
+                color={theme.colors.textSecondary}
               />
             </TouchableOpacity>
 
             {driverExpanded && (
               <View style={s.driverBody}>
-                <View style={s.driverAvatarWrap}>
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName="person-circle-outline"
-                    size={40}
-                    color={NAVY}
-                  />
-                </View>
-                <View style={s.driverInfo}>
-                  <View style={s.driverCol}>
-                    <Text style={s.driverColTitle}>Name</Text>
-                    <Text style={s.driverColValue}>Ramesh Kumar</Text>
+                <View style={s.driverTop}>
+                  <View style={s.driverAvatar}>
+                    <Text style={s.driverInitial}>R</Text>
                   </View>
-                  <View style={s.driverDivider} />
-                  <View style={s.driverCol}>
-                    <Text style={s.driverColTitle}>Email</Text>
-                    <Text style={s.driverColValue}>driver@school.com</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.driverName}>Ramesh Kumar</Text>
+                    <Text style={s.driverEmail}>driver@school.com</Text>
                   </View>
                 </View>
-                <View style={s.driverRow}>
+                <View style={s.driverPhoneRow}>
                   <VectorIcon
                     iconSet="Ionicons"
                     iconName="call-outline"
-                    size={14}
-                    color={NAVY}
+                    size={13}
+                    color={theme.colors.primary}
                   />
                   <Text style={s.driverPhone}>+91 98765 43210</Text>
                 </View>
@@ -153,113 +131,109 @@ const TransportScreen = ({ navigation }: any) => {
 
         {/* ── Bus Card ── */}
         <View style={s.card}>
-          <View style={s.cardBody}>
-            <View style={s.cardTitleRow}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="bus-outline"
-                size={24}
-                color={NAVY}
-              />
-              <Text style={s.cardTitle}>Bus</Text>
+          <View style={[s.accentBar, { backgroundColor: theme.colors.secondary }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View style={s.iconWrap}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="bus-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Bus</Text>
+                <Text style={s.cardSubtitle}>UP81 XX XXXX</Text>
+              </View>
+              <View style={s.fareBadge}>
+                <Text style={s.fareBadgeText}>₹ 1000/pm</Text>
+              </View>
             </View>
 
-            <PlainRow label="Vehicle Number" value="UP81 XX XXXX" />
-            <PlainRow label="Capacity" value="40 Seats" />
-            <PlainRow label="Arrival Time" value="08:00 AM" />
-            <PlainRow label="Departure Time" value="02:00 PM" />
+            <View style={s.divider} />
 
-            <View style={s.fareDivider} />
-
-            <View style={s.fareRow}>
-              <Text style={s.fareLabel}>Fair:</Text>
-              <Text style={s.fareSymbol}>₹</Text>
-              <Text style={s.fareAmount}>1000</Text>
-              <Text style={s.fareUnit}>pm</Text>
-            </View>
+            <InfoRow label="Vehicle Number" value="UP81 XX XXXX" />
+            <InfoRow label="Capacity" value="40 Seats" />
+            <InfoRow label="Arrival Time" value="08:00 AM" />
+            <InfoRow label="Departure Time" value="02:00 PM" />
           </View>
         </View>
 
         {/* ── Transport Fees Card ── */}
         <View style={s.card}>
-          <View style={s.cardBody}>
-            <Text style={s.feesTitle}>Transport Fees</Text>
+          <View style={[s.accentBar, { backgroundColor: '#16A34A' }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View style={s.iconWrap}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="wallet-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Transport Fees</Text>
+                <Text style={s.cardSubtitle}>Quarterly payments</Text>
+              </View>
+            </View>
 
             {/* Table header */}
             <View style={[s.tableRow, s.tableHead]}>
-              <Text style={[s.tableCell, s.tableHeadText, { flex: 2 }]}>
-                Period
-              </Text>
-              <Text
-                style={[
-                  s.tableCell,
-                  s.tableHeadText,
-                  { flex: 1.2, textAlign: 'center' },
-                ]}
-              >
+              <Text style={[s.tableHeadText, { flex: 2 }]}>Period</Text>
+              <Text style={[s.tableHeadText, { flex: 1.2, textAlign: 'center' }]}>
                 Amount
               </Text>
-              <Text
-                style={[
-                  s.tableCell,
-                  s.tableHeadText,
-                  { flex: 1, textAlign: 'right' },
-                ]}
-              >
+              <Text style={[s.tableHeadText, { flex: 1, textAlign: 'right' }]}>
                 Status
               </Text>
             </View>
 
-            {FEES.map((row, i) => (
-              <View key={i} style={[s.tableRow, i % 2 === 0 && s.tableRowAlt]}>
-                <Text style={[s.tableCell, s.tableCellText, { flex: 2 }]}>
-                  {row.period}
-                </Text>
-                <Text
-                  style={[
-                    s.tableCell,
-                    s.tableCellText,
-                    { flex: 1.2, textAlign: 'center' },
-                  ]}
-                >
-                  {row.amount}
-                </Text>
+            {FEES.map((row, i) => {
+              const sc = STATUS_CONFIG[row.status];
+              return (
                 <View
-                  style={[s.tableCell, { flex: 1, alignItems: 'flex-end' }]}
+                  key={i}
+                  style={[s.tableRow, i < FEES.length - 1 && s.tableRowBorder]}
                 >
-                  {row.status === 'Paid' ? (
-                    <View style={s.paidBadge}>
-                      <VectorIcon
-                        iconSet="Ionicons"
-                        iconName="checkmark-circle"
-                        size={12}
-                        color="#16A34A"
-                      />
-                      <Text style={s.paidText}>Paid</Text>
-                    </View>
-                  ) : row.status === 'Pending' ? (
-                    <View style={s.pendingBadge}>
-                      <Text style={s.pendingText}>Pending</Text>
-                    </View>
-                  ) : (
-                    <Text style={s.tableCellText}>–</Text>
-                  )}
+                  <Text style={[s.tableCellText, { flex: 2 }]}>{row.period}</Text>
+                  <Text
+                    style={[
+                      s.tableCellText,
+                      { flex: 1.2, textAlign: 'center' },
+                    ]}
+                  >
+                    {row.amount}
+                  </Text>
+                  <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                    {sc ? (
+                      <View style={[s.badge, { backgroundColor: sc.bg }]}>
+                        <View style={[s.badgeDot, { backgroundColor: sc.color }]} />
+                        <Text style={[s.badgeText, { color: sc.color }]}>
+                          {row.status}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={s.tableCellText}>–</Text>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
 
             {/* Footer totals */}
             <View style={s.tableFooter}>
               <View style={s.footerItem}>
-                <Text style={s.footerLabel}>Total Paid:</Text>
+                <Text style={s.footerLabel}>Total Paid</Text>
                 <Text style={[s.footerValue, { color: '#16A34A' }]}>
                   ₹ 12,000
                 </Text>
               </View>
               <View style={s.footerDivider} />
               <View style={s.footerItem}>
-                <Text style={s.footerLabel}>Total Due:</Text>
-                <Text style={[s.footerValue, { color: '#EF4444' }]}>
+                <Text style={s.footerLabel}>Total Due</Text>
+                <Text style={[s.footerValue, { color: theme.colors.danger }]}>
                   ₹ 18,000
                 </Text>
               </View>
@@ -274,181 +248,197 @@ const TransportScreen = ({ navigation }: any) => {
 export default TransportScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#EEF2F7' },
-  scroll: { padding: 16, paddingBottom: 36 },
+  root: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 36, gap: 14 },
 
-  // Card
+  // Card (exam style)
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    marginBottom: 16,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    elevation: 2,
   },
-  cardBody: { padding: 16 },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md, gap: 10 },
 
-  // Section header bar
-  sectionHeader: {
-    flexDirection: 'row',
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    justifyContent: 'center',
   },
-  sectionHeaderText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: 0.5,
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
   },
-
-  // Card title row
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-  },
-  cardTitle: { fontSize: 20, fontWeight: '900', color: NAVY },
-
-  // Info row with arrow
-  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  infoLabel: {
-    fontSize: 13,
+  cardSubtitle: {
+    fontSize: 12,
     color: theme.colors.textSecondary,
-    fontWeight: '500',
-    width: 110,
+    marginTop: 2,
   },
-  infoArrow: { flexDirection: 'row', alignItems: 'center', marginRight: 6 },
-  arrowLine: { width: 20, height: 1, backgroundColor: NAVY, marginRight: 2 },
-  infoValue: { fontSize: 13, fontWeight: '700', color: NAVY },
 
-  // Time row
-  timeRow: { flexDirection: 'column', gap: 4, marginBottom: 14 },
-  timeItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  timeLabel: { fontSize: 13, color: theme.colors.textSecondary, width: 120 },
-  timeValue: { fontSize: 13, fontWeight: '700', color: NAVY },
+  // Pills (exam style)
+  pillsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: theme.colors.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
+  },
+  pillText: { fontSize: 12, fontWeight: '600', color: theme.colors.primary },
 
   // Driver accordion
   driverHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  driverHeaderText: { fontSize: 13, fontWeight: '800', color: NAVY },
+  driverHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  driverHeaderText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
   driverBody: {
-    marginTop: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.sm,
     padding: 12,
-    gap: 8,
+    gap: 10,
   },
-  driverAvatarWrap: { alignSelf: 'flex-start' },
-  driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  driverCol: { flex: 1 },
-  driverColTitle: {
-    fontSize: 11,
+  driverTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  driverAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverInitial: {
+    fontSize: 15,
     fontWeight: '800',
-    color: NAVY,
-    marginBottom: 2,
+    color: theme.colors.primary,
   },
-  driverColValue: { fontSize: 12, color: theme.colors.textSecondary },
-  driverDivider: { width: 1, height: 32, backgroundColor: theme.colors.border },
-  driverRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  driverPhone: { fontSize: 13, fontWeight: '600', color: NAVY },
+  driverName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  driverEmail: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+  },
+  driverPhoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  driverPhone: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+  },
 
-  // Plain row
-  plainRow: {
+  // Info rows
+  divider: { height: 1, backgroundColor: theme.colors.border },
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
   },
-  plainLabel: {
+  infoLabel: {
     fontSize: 13,
     color: theme.colors.textSecondary,
     fontWeight: '500',
   },
-  plainValue: { fontSize: 13, fontWeight: '700', color: NAVY },
-
-  // Fare
-  fareDivider: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-    marginVertical: 12,
-  },
-  fareRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  fareLabel: { fontSize: 16, fontWeight: '700', color: NAVY },
-  fareSymbol: { fontSize: 18, fontWeight: '800', color: NAVY },
-  fareAmount: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: NAVY,
-    letterSpacing: -1,
-  },
-  fareUnit: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
+  infoValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
   },
 
-  // Fees title
-  feesTitle: { fontSize: 17, fontWeight: '900', color: NAVY, marginBottom: 14 },
+  // Fare badge
+  fareBadge: {
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  fareBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.colors.primary,
+  },
 
   // Table
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 9,
+    paddingVertical: 10,
     paddingHorizontal: 4,
   },
-  tableRowAlt: { backgroundColor: '#F8FAFC', borderRadius: 8 },
-  tableHead: { backgroundColor: '#EEF2F7', borderRadius: 8, marginBottom: 4 },
-  tableCell: { paddingHorizontal: 4 },
-  tableHeadText: { fontSize: 12, fontWeight: '800', color: NAVY },
+  tableRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  tableHead: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.sm,
+    paddingVertical: 8,
+    marginBottom: 2,
+  },
+  tableHeadText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    paddingHorizontal: 4,
+  },
   tableCellText: {
     fontSize: 12,
     color: theme.colors.textSecondary,
     fontWeight: '500',
+    paddingHorizontal: 4,
   },
 
-  // Status badges
-  paidBadge: {
+  // Status badge (exam style)
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
   },
-  paidText: { fontSize: 11, fontWeight: '700', color: '#16A34A' },
-  pendingBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  pendingText: { fontSize: 11, fontWeight: '700', color: '#D97706' },
+  badgeDot: { width: 6, height: 6, borderRadius: 3 },
+  badgeText: { fontSize: 12, fontWeight: '700' },
 
   // Footer
   tableFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    paddingTop: 10,
+    marginTop: 4,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   footerItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  footerLabel: { fontSize: 12, fontWeight: '700', color: NAVY },
+  footerLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
   footerValue: { fontSize: 14, fontWeight: '900' },
   footerDivider: {
     width: 1,
