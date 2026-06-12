@@ -127,8 +127,8 @@ const TopBar = ({
           </Text>
           <VectorIcon
             iconSet="Ionicons"
-            iconName="caret-down"
-            size={20}
+            iconName="chevron-down-circle-outline"
+            size={18}
             color="#111"
           />
         </TouchableOpacity>
@@ -137,7 +137,7 @@ const TopBar = ({
           <VectorIcon
             iconSet="Ionicons"
             iconName="notifications-outline"
-            size={17}
+            size={19}
             color="#111"
           />
         </TouchableOpacity>
@@ -153,7 +153,7 @@ const TopBar = ({
             <VectorIcon
               iconSet="Ionicons"
               iconName="person-circle-outline"
-              size={19}
+              size={21}
               color="#111"
             />
           )}
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '400',
     color: theme.colors.textPrimary,
   },
@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   iconBtn: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
