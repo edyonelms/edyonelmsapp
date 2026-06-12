@@ -88,7 +88,7 @@ const AppNavigator = () => {
       {/* Study Content */}
       <Stack.Screen name="ViewContent" component={ViewContentScreen} />
 
-      {/* ChangePasswordScreen */}
+      {/* Settings */}
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
 
       {/* Exam */}

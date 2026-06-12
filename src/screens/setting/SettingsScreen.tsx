@@ -1,29 +1,76 @@
 import {
+  Alert,
   StyleSheet,
+  Switch,
   Text,
   View,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { theme } from '../../utils/theme';
 import VectorIcon from '../../components/VectorIcon';
 import Header from '../../components/Header';
 import { useNavigation } from '@react-navigation/native';
+import { Biometrics } from '../../utils/biometrics';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<any>();
+
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(true);
+  const [bioBusy, setBioBusy] = useState(false);
+
+  useEffect(() => {
+    Promise.all([Biometrics.isEnabled(), Biometrics.check()]).then(
+      ([on, sensor]) => {
+        setBioEnabled(on);
+        setBioAvailable(sensor.available);
+      },
+    );
+  }, []);
+
+  const onBioToggle = async (next: boolean) => {
+    if (bioBusy) return;
+    setBioBusy(true);
+    try {
+      if (next) {
+        const { available } = await Biometrics.check();
+        if (!available) {
+          setBioAvailable(false);
+          Alert.alert(
+            'Biometric unavailable',
+            'No fingerprint, face or screen lock is set up on this device. Add one in your phone settings first.',
+          );
+          return;
+        }
+        // Confirm with the sensor before turning it on, like WhatsApp
+        const success = await Biometrics.authenticate(
+          'Confirm to enable biometric unlock',
+        );
+        if (success) {
+          await Biometrics.setEnabled(true);
+          setBioEnabled(true);
+        }
+      } else {
+        const success = await Biometrics.authenticate(
+          'Confirm to disable biometric unlock',
+        );
+        if (success) {
+          await Biometrics.setEnabled(false);
+          setBioEnabled(false);
+        }
+      }
+    } finally {
+      setBioBusy(false);
+    }
+  };
 
   const items = [
     {
       title: 'Notification',
       icon: 'notifications-outline',
       route: 'NotificationSettings',
-    },
-    {
-      title: 'Biometric',
-      icon: 'finger-print-outline',
-      route: 'BiometricSettings',
     },
     {
       title: 'Change Password',
@@ -37,6 +84,38 @@ const SettingsScreen = () => {
       <Header title="Settings" onBackPress={() => navigation.goBack()} />
       <ScrollView>
         <View style={styles.card}>
+          {/* Biometric unlock — inline toggle */}
+          <View style={styles.row}>
+            <View style={styles.left}>
+              <View style={styles.iconBadge}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="finger-print-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={styles.textWrap}>
+                <Text style={styles.rowText}>Biometric Unlock</Text>
+                <Text style={styles.rowSub}>
+                  {bioAvailable
+                    ? 'Unlock the app with fingerprint, face or PIN'
+                    : 'No fingerprint, face or screen lock set up'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={bioEnabled}
+              onValueChange={onBioToggle}
+              disabled={bioBusy || (!bioAvailable && !bioEnabled)}
+              trackColor={{
+                false: theme.colors.border,
+                true: theme.colors.primaryLight,
+              }}
+              thumbColor={bioEnabled ? theme.colors.primary : '#f4f3f4'}
+            />
+          </View>
+
           {items.map(item => (
             <TouchableOpacity
               key={item.title}
@@ -89,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: theme.spacing.md,
-    marginHorizontal:20,
+    marginHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
@@ -97,6 +176,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
+    flex: 1,
   },
   iconBadge: {
     width: 32,
@@ -106,9 +186,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  textWrap: { flex: 1, paddingRight: 8 },
   rowText: {
     fontSize: 15,
     color: theme.colors.textPrimary,
     fontWeight: '500',
+  },
+  rowSub: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    marginTop: 1,
   },
 });

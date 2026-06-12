@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/navigation/AppNavigator';
-import { theme } from './src/utils/theme';
+import AppLock from './src/components/AppLock';
 
 const App = () => {
   return (
@@ -14,9 +14,11 @@ const App = () => {
       <SafeAreaProvider>
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
           <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
+          <AppLock>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+          </AppLock>
         </SafeAreaView>
       </SafeAreaProvider>
     </GestureHandlerRootView>
