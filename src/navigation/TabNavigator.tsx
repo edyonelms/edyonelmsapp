@@ -79,13 +79,13 @@ const TabNavigator = ({ route }: any) => {
               iconName = focused ? 'grid' : 'grid-outline';
               break;
             case 'Subjects':
-              iconName = focused ? 'book' : 'book-outline';
+              iconName = focused ? 'albums' : 'albums-outline';
               break;
             case 'QuickLinks':
               iconName = focused ? 'flash' : 'flash-outline';
               break;
             case 'Homework':
-              iconName = focused ? 'clipboard' : 'clipboard-outline';
+              iconName = focused ? 'create' : 'create-outline';
               break;
             case 'Fees':
               iconName = focused ? 'card' : 'card-outline';

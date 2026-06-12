@@ -74,7 +74,7 @@ const DrawerNavigator = ({ route }: any) => {
       },
       { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
       { name: 'Transport', label: 'Transport', icon: 'bus-outline' },
-      { name: 'Homework', label: 'Homework', icon: 'pencil-outline' },
+      { name: 'Homework', label: 'Homework', icon: 'create-outline' },
       { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
       { name: 'Attendance', label: 'Attendance', icon: 'clipboard-outline' },
       {
@@ -88,7 +88,7 @@ const DrawerNavigator = ({ route }: any) => {
       {
         name: 'Book',
         label: 'Book',
-        icon: 'library-outline',
+        icon: 'book-outline',
       },
       { name: 'Instructor', label: 'Instructor', icon: 'person-outline' },
       { name: 'IDCard', label: 'ID Card', icon: 'id-card-outline' },
@@ -113,7 +113,7 @@ const DrawerNavigator = ({ route }: any) => {
         icon: 'megaphone-outline',
       },
       { name: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
-      { name: 'Homework', label: 'Homework', icon: 'pencil-outline' },
+      { name: 'Homework', label: 'Homework', icon: 'create-outline' },
       { name: 'Timetable', label: 'Timetable', icon: 'time-outline' },
       {
         name: 'MarkAttendance',
@@ -132,7 +132,7 @@ const DrawerNavigator = ({ route }: any) => {
       {
         name: 'Book',
         label: 'Book',
-        icon: 'library-outline',
+        icon: 'book-outline',
       },
       { name: 'IDCard', label: 'ID Card', icon: 'id-card-outline' },
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
