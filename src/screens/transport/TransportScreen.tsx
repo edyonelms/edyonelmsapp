@@ -41,7 +41,7 @@ const TransportScreen = ({ navigation }: any) => {
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── School Card ── */}
+        {/* ── School & Bus Card ── */}
         <View style={s.card}>
           <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
           <View style={s.cardInner}>
@@ -49,14 +49,17 @@ const TransportScreen = ({ navigation }: any) => {
               <View style={s.iconWrap}>
                 <VectorIcon
                   iconSet="Ionicons"
-                  iconName="school-outline"
+                  iconName="bus-outline"
                   size={20}
                   color={theme.colors.primary}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardTitle}>Jafari</Text>
-                <Text style={s.cardSubtitle}>School</Text>
+                <Text style={s.cardSubtitle}>School Transport</Text>
+              </View>
+              <View style={s.fareBadge}>
+                <Text style={s.fareBadgeText}>₹ 1000/pm</Text>
               </View>
             </View>
 
@@ -80,6 +83,13 @@ const TransportScreen = ({ navigation }: any) => {
                 <Text style={s.pillText}>Departure 02:00 PM</Text>
               </View>
             </View>
+
+            <View style={s.divider} />
+
+            <InfoRow label="Vehicle Number" value="UP81 XX XXXX" />
+            <InfoRow label="Capacity" value="40 Seats" />
+            <InfoRow label="Arrival Time" value="08:00 AM" />
+            <InfoRow label="Departure Time" value="02:00 PM" />
 
             {/* Driver Details accordion */}
             <TouchableOpacity
@@ -126,37 +136,6 @@ const TransportScreen = ({ navigation }: any) => {
                 </View>
               </View>
             )}
-          </View>
-        </View>
-
-        {/* ── Bus Card ── */}
-        <View style={s.card}>
-          <View style={[s.accentBar, { backgroundColor: theme.colors.secondary }]} />
-          <View style={s.cardInner}>
-            <View style={s.cardTop}>
-              <View style={s.iconWrap}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="bus-outline"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.cardTitle}>Bus</Text>
-                <Text style={s.cardSubtitle}>UP81 XX XXXX</Text>
-              </View>
-              <View style={s.fareBadge}>
-                <Text style={s.fareBadgeText}>₹ 1000/pm</Text>
-              </View>
-            </View>
-
-            <View style={s.divider} />
-
-            <InfoRow label="Vehicle Number" value="UP81 XX XXXX" />
-            <InfoRow label="Capacity" value="40 Seats" />
-            <InfoRow label="Arrival Time" value="08:00 AM" />
-            <InfoRow label="Departure Time" value="02:00 PM" />
           </View>
         </View>
 
