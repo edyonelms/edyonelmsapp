@@ -9,195 +9,191 @@ import {
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { SUBJECTS } from './subjectsData';
-import type { Chapter } from './subjectsData';
 import Header from '../../components/Header';
 
-// ─── Chapter Card ─────────────────────────────────────────────────────────────
-const ChapterCard = ({
-  chapter,
-  index,
-  color,
-  bg,
-}: {
-  chapter: Chapter;
-  index: number;
-  color: string;
-  bg: string;
-}) => {
-  const [expanded, setExpanded] = useState(index === 0);
-
-  return (
-    <View
-      style={[
-        s.chapterCard,
-        expanded && { borderColor: color + '40', borderWidth: 1.5 },
-      ]}
-    >
-      <TouchableOpacity
-        style={s.chapterHeader}
-        onPress={() => setExpanded(v => !v)}
-        activeOpacity={0.8}
-      >
-        <View style={s.chapterLeft}>
-          {/* Index badge */}
-          <View style={[s.chapterBadge, { backgroundColor: color }]}>
-            <Text style={s.chapterBadgeText}>{index + 1}</Text>
-          </View>
-          <View style={s.chapterInfo}>
-            <Text style={s.chapterName}>{chapter.name}</Text>
-            <Text style={s.chapterMeta}>
-              {chapter.topics.length} topic
-              {chapter.topics.length !== 1 ? 's' : ''}
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[s.expandBtn, expanded && { backgroundColor: color + '18' }]}
-        >
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName={expanded ? 'chevron-up' : 'chevron-down'}
-            size={16}
-            color={expanded ? color : theme.colors.textMuted}
-          />
-        </View>
-      </TouchableOpacity>
-
-      {expanded && (
-        <View style={s.topicsWrap}>
-          {chapter.topics.length === 0 ? (
-            <View style={s.noTopics}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="document-outline"
-                size={16}
-                color={theme.colors.textMuted}
-              />
-              <Text style={s.noTopicsText}>No topics added yet</Text>
-            </View>
-          ) : (
-            chapter.topics.map((topic, ti) => (
-              <View
-                key={topic.id}
-                style={[
-                  s.topicRow,
-                  ti === chapter.topics.length - 1 && { borderBottomWidth: 0 },
-                ]}
-              >
-                <View style={[s.topicDot, { backgroundColor: color }]} />
-                <View
-                  style={[s.topicIndexBadge, { backgroundColor: color + '18' }]}
-                >
-                  <Text style={[s.topicIndexText, { color }]}>{ti + 1}</Text>
-                </View>
-                <Text style={s.topicName}>{topic.name}</Text>
-              </View>
-            ))
-          )}
-        </View>
-      )}
-    </View>
-  );
-};
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
-const SubjectDetailsScreen = ({ navigation, route }: any) => {
+const SubjectDetailsScreen = ({ route }: any) => {
   const subjectId = route?.params?.subjectId ?? '1';
-  const subject = SUBJECTS.find(s => s.id === subjectId) ?? SUBJECTS[0];
+  const subject = SUBJECTS.find(x => x.id === subjectId) ?? SUBJECTS[0];
 
-  const totalTopics = subject.chapters.reduce((s, c) => s + c.topics.length, 0);
+  const totalTopics = subject.chapters.reduce((sum, c) => sum + c.topics.length, 0);
+  const activeChapters = subject.chapters.filter(c => c.topics.length > 0).length;
+
+  const [expandedId, setExpandedId] = useState<string | null>(
+    subject.chapters[0]?.id ?? null,
+  );
 
   return (
     <View style={s.root}>
-      {/* ── Custom Header ── */}
       <Header title={subject.name} showBack={true} />
-      <View style={[s.header, { backgroundColor: subject.color }]}>
-        {/* <View style={s.headerBlob1} /> */}
-        {/* <View style={s.headerBlob2} /> */}
 
-        {/* <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={s.backBtn}
-          activeOpacity={0.8}
-        >
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="chevron-back"
-            size={22}
-            color="#fff"
-          />
-        </TouchableOpacity> */}
-
-        <View style={s.headerBody}>
-          <Text style={s.headerEmoji}>{subject.icon}</Text>
-          <Text style={s.headerTitle}>{subject.name}</Text>
-          <Text style={s.headerTeacher}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="person-outline"
-              size={12}
-              color="rgba(255,255,255,0.8)"
-            />
-            {'  '}
-            {subject.teacher}
-          </Text>
-        </View>
-
-        {/* Stats strip */}
-        <View style={s.headerStats}>
-          <View style={s.headerStat}>
-            <Text style={s.headerStatVal}>{subject.chapters.length}</Text>
-            <Text style={s.headerStatLbl}>Chapters</Text>
-          </View>
-          <View style={s.headerStatDivider} />
-          <View style={s.headerStat}>
-            <Text style={s.headerStatVal}>{totalTopics}</Text>
-            <Text style={s.headerStatLbl}>Topics</Text>
-          </View>
-          <View style={s.headerStatDivider} />
-          <View style={s.headerStat}>
-            <Text style={s.headerStatVal}>
-              {subject.chapters.filter(c => c.topics.length > 0).length}
-            </Text>
-            <Text style={s.headerStatLbl}>Active</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ── Content ── */}
       <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <View style={s.sectionRow}>
-          <Text style={s.sectionTitle}>Chapters</Text>
-          <View style={[s.sectionBadge, { backgroundColor: subject.color }]}>
-            <Text style={s.sectionBadgeText}>{subject.chapters.length}</Text>
+        {/* ── Subject overview card ── */}
+        <View style={s.card}>
+          <View style={[s.accentBar, { backgroundColor: subject.color }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View style={[s.iconWrap, { backgroundColor: subject.color + '20' }]}>
+                <Text style={s.iconEmoji}>{subject.icon}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>{subject.name}</Text>
+                <Text style={s.cardSubtitle} numberOfLines={1}>
+                  {subject.teacher}
+                </Text>
+              </View>
+              <View style={[s.countBadge, { backgroundColor: subject.color + '15' }]}>
+                <Text style={[s.countBadgeText, { color: subject.color }]}>
+                  {subject.chapters.length} ch
+                </Text>
+              </View>
+            </View>
+
+            {/* Stats footer */}
+            <View style={s.tableFooter}>
+              <View style={s.footerItem}>
+                <View style={[s.footerDot, { backgroundColor: subject.color }]} />
+                <Text style={s.footerLabel}>Chapters</Text>
+                <Text style={s.footerValue}>{subject.chapters.length}</Text>
+              </View>
+              <View style={s.footerDivider} />
+              <View style={s.footerItem}>
+                <View style={[s.footerDot, { backgroundColor: '#0EA5E9' }]} />
+                <Text style={s.footerLabel}>Topics</Text>
+                <Text style={s.footerValue}>{totalTopics}</Text>
+              </View>
+              <View style={s.footerDivider} />
+              <View style={s.footerItem}>
+                <View style={[s.footerDot, { backgroundColor: '#16A34A' }]} />
+                <Text style={s.footerLabel}>Active</Text>
+                <Text style={s.footerValue}>{activeChapters}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        {subject.chapters.length === 0 ? (
-          <View style={s.empty}>
-            <Text style={s.emptyEmoji}>{subject.icon}</Text>
-            <Text style={s.emptyTitle}>No Chapters Yet</Text>
-            <Text style={s.emptySubText}>
-              Your teacher hasn't added any chapters for {subject.name} yet.
-            </Text>
-          </View>
-        ) : (
-          subject.chapters.map((chapter, i) => (
-            <ChapterCard
-              key={chapter.id}
-              chapter={chapter}
-              index={i}
-              color={subject.color}
-              bg={subject.bg}
-            />
-          ))
-        )}
+        {/* ── Chapters card ── */}
+        <View style={s.card}>
+          <View style={[s.accentBar, { backgroundColor: subject.color }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View style={[s.iconWrap, { backgroundColor: subject.color + '20' }]}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="book-outline"
+                  size={20}
+                  color={subject.color}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Chapters</Text>
+                <Text style={s.cardSubtitle}>
+                  {subject.chapters.length} chapters · {totalTopics} topics
+                </Text>
+              </View>
+            </View>
 
-        <View style={{ height: 32 }} />
+            {subject.chapters.length === 0 ? (
+              <View style={s.empty}>
+                <Text style={s.emptyEmoji}>{subject.icon}</Text>
+                <Text style={s.emptyTitle}>No Chapters Yet</Text>
+                <Text style={s.emptySubText}>
+                  Your teacher hasn't added any chapters for {subject.name} yet.
+                </Text>
+              </View>
+            ) : (
+              subject.chapters.map((chapter, i) => {
+                const expanded = expandedId === chapter.id;
+                return (
+                  <View key={chapter.id}>
+                    <TouchableOpacity
+                      style={[
+                        s.chapterRow,
+                        !expanded && i < subject.chapters.length - 1 && s.rowBorder,
+                      ]}
+                      onPress={() => setExpandedId(expanded ? null : chapter.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[s.chapterBadge, { backgroundColor: subject.color }]}>
+                        <Text style={s.chapterBadgeText}>{i + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.chapterName}>{chapter.name}</Text>
+                        <Text style={s.chapterMeta}>
+                          {chapter.topics.length} topic
+                          {chapter.topics.length !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          s.expandBtn,
+                          expanded && { backgroundColor: subject.color + '18' },
+                        ]}
+                      >
+                        <VectorIcon
+                          iconSet="Ionicons"
+                          iconName={expanded ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color={expanded ? subject.color : theme.colors.textMuted}
+                        />
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* Expanded topics */}
+                    {expanded && (
+                      <View
+                        style={[
+                          s.topicsBox,
+                          i < subject.chapters.length - 1 && s.rowBorder,
+                        ]}
+                      >
+                        {chapter.topics.length === 0 ? (
+                          <View style={s.noTopics}>
+                            <VectorIcon
+                              iconSet="Ionicons"
+                              iconName="document-outline"
+                              size={16}
+                              color={theme.colors.textMuted}
+                            />
+                            <Text style={s.noTopicsText}>No topics added yet</Text>
+                          </View>
+                        ) : (
+                          chapter.topics.map((topic, ti) => (
+                            <View
+                              key={topic.id}
+                              style={[
+                                s.topicRow,
+                                ti === chapter.topics.length - 1 && {
+                                  borderBottomWidth: 0,
+                                },
+                              ]}
+                            >
+                              <View
+                                style={[
+                                  s.topicIndexBadge,
+                                  { backgroundColor: subject.color + '18' },
+                                ]}
+                              >
+                                <Text
+                                  style={[s.topicIndexText, { color: subject.color }]}
+                                >
+                                  {ti + 1}
+                                </Text>
+                              </View>
+                              <Text style={s.topicName}>{topic.name}</Text>
+                            </View>
+                          ))
+                        )}
+                      </View>
+                    )}
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -206,132 +202,104 @@ const SubjectDetailsScreen = ({ navigation, route }: any) => {
 export default SubjectDetailsScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
+  root: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
 
-  // Header
-  header: {
-    paddingTop: 52,
-    paddingBottom: 24,
-    paddingHorizontal: 16,
+  // Card (shared template)
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
+    elevation: 2,
   },
-  headerBlob1: {
-    position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    top: -50,
-    right: -40,
-  },
-  headerBlob2: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    bottom: 0,
-    left: -20,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  headerBody: { alignItems: 'center', marginBottom: 20 },
-  headerEmoji: { fontSize: 44, marginBottom: 8 },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: -0.5,
-  },
-  headerTeacher: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '600',
-    marginTop: 4,
-  },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
 
-  // Stats strip
-  headerStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 16,
-    paddingVertical: 12,
-  },
-  headerStat: { flex: 1, alignItems: 'center' },
-  headerStatVal: { fontSize: 20, fontWeight: '900', color: '#fff' },
-  headerStatLbl: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.75)',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  headerStatDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-
-  // Scroll
-  scroll: { flex: 1 },
-  scrollContent: { padding: 16 },
-
-  // Section
-  sectionRow: {
+  cardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 17,
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconEmoji: { fontSize: 20 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  countBadge: {
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  countBadgeText: { fontSize: 13, fontWeight: '800' },
+
+  // Stats footer (shared template)
+  tableFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  footerItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  footerDot: { width: 7, height: 7, borderRadius: 4 },
+  footerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  footerValue: {
+    fontSize: 13,
     fontWeight: '900',
     color: theme.colors.textPrimary,
   },
-  sectionBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
+  footerDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: theme.colors.border,
   },
-  sectionBadgeText: { fontSize: 12, fontWeight: '800', color: '#fff' },
 
-  // Chapter card
-  chapterCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  chapterHeader: {
+  // Chapter rows
+  chapterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
   },
-  chapterLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
   chapterBadge: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chapterBadgeText: { fontSize: 14, fontWeight: '900', color: '#fff' },
-  chapterInfo: { flex: 1 },
   chapterName: {
     fontSize: 14,
     fontWeight: '800',
@@ -346,18 +314,19 @@ const s = StyleSheet.create({
   expandBtn: {
     width: 30,
     height: 30,
-    borderRadius: 8,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.background,
   },
 
-  // Topics
-  topicsWrap: {
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+  // Topics (expanded)
+  topicsBox: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 6,
   },
   topicRow: {
     flexDirection: 'row',
@@ -365,9 +334,8 @@ const s = StyleSheet.create({
     gap: 10,
     paddingVertical: 9,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: theme.colors.border,
   },
-  topicDot: { width: 6, height: 6, borderRadius: 3 },
   topicIndexBadge: {
     width: 22,
     height: 22,
@@ -397,8 +365,8 @@ const s = StyleSheet.create({
   },
 
   // Empty
-  empty: { alignItems: 'center', paddingTop: 48, gap: 10 },
-  emptyEmoji: { fontSize: 52 },
+  empty: { alignItems: 'center', paddingVertical: 36, gap: 8 },
+  emptyEmoji: { fontSize: 44 },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '800',

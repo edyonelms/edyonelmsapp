@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Dimensions,
   FlatList,
   StyleSheet,
   Text,
@@ -13,31 +12,61 @@ import { theme } from '../../utils/theme';
 import { SUBJECTS } from './subjectsData';
 import type { Subject } from './subjectsData';
 
-const { width } = Dimensions.get('window');
-const COLS     = 3;
-const GAP      = 10;
-const CARD_W   = (width - 32 - GAP * (COLS - 1)) / COLS;
+// ─── Subject card (shared card template) ─────────────────────────────────────
+const SubjectCard = ({ item, onPress }: { item: Subject; onPress: () => void }) => {
+  const totalTopics = item.chapters.reduce((sum, c) => sum + c.topics.length, 0);
+  return (
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.85}>
+      <View style={[s.accentBar, { backgroundColor: item.color }]} />
+      <View style={s.cardInner}>
+        <View style={s.cardTop}>
+          <View style={[s.iconWrap, { backgroundColor: item.color + '20' }]}>
+            <Text style={s.iconEmoji}>{item.icon}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.cardTitle}>{item.name}</Text>
+            <Text style={s.cardSubtitle} numberOfLines={1}>
+              {item.teacher}
+            </Text>
+          </View>
+          <View style={s.chevronWrap}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="chevron-forward"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+          </View>
+        </View>
 
-const SubjectCard = ({ item, onPress }: { item: Subject; onPress: () => void }) => (
-  <TouchableOpacity style={[s.card, { backgroundColor: item.bg }]} onPress={onPress} activeOpacity={0.8}>
-    {/* Top accent line */}
-    <View style={[s.cardAccent, { backgroundColor: item.color }]} />
-
-    {/* Icon */}
-    <View style={[s.iconWrap, { backgroundColor: item.color + '22' }]}>
-      <Text style={s.iconEmoji}>{item.icon}</Text>
-    </View>
-
-    {/* Name */}
-    <Text style={[s.cardName, { color: item.color }]} numberOfLines={2}>{item.name}</Text>
-
-    {/* Stats */}
-    <View style={s.cardStats}>
-      <VectorIcon iconSet="Ionicons" iconName="book-outline" size={10} color={item.color} />
-      <Text style={[s.cardStatText, { color: item.color }]}>{item.chapters.length} ch</Text>
-    </View>
-  </TouchableOpacity>
-);
+        <View style={s.pillsRow}>
+          <View style={[s.pill, { backgroundColor: item.color + '15' }]}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="book-outline"
+              size={12}
+              color={item.color}
+            />
+            <Text style={[s.pillText, { color: item.color }]}>
+              {item.chapters.length} Chapter{item.chapters.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <View style={s.pill}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="document-text-outline"
+              size={12}
+              color={theme.colors.primary}
+            />
+            <Text style={s.pillText}>
+              {totalTopics} Topic{totalTopics !== 1 ? 's' : ''}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const SubjectsScreen = ({ navigation }: any) => {
   return (
@@ -47,7 +76,6 @@ const SubjectsScreen = ({ navigation }: any) => {
       <FlatList
         data={SUBJECTS}
         keyExtractor={i => i.id}
-        numColumns={COLS}
         contentContainerStyle={s.list}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
@@ -58,7 +86,6 @@ const SubjectsScreen = ({ navigation }: any) => {
             </Text>
           </>
         }
-        columnWrapperStyle={s.row}
         renderItem={({ item }) => (
           <SubjectCard
             item={item}
@@ -74,28 +101,63 @@ export default SubjectsScreen;
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  list: { padding: 16, paddingBottom: 32 },
-  row:  { gap: GAP, marginBottom: GAP },
+  list: { padding: theme.spacing.lg, paddingBottom: 32 },
 
   // Section title
   sectionTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
-  sectionDesc:  { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 24 },
+  sectionDesc:  { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 16 },
 
-  // Card
+  // Card (shared template)
   card: {
-    width: CARD_W,
-    borderRadius: 16, overflow: 'hidden',
-    alignItems: 'center', paddingBottom: 12,
-    shadowColor: '#000', shadowOpacity: 0.06,
-    shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+    elevation: 2,
+    marginBottom: 14,
   },
-  cardAccent: { width: '100%', height: 4, marginBottom: 12 },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md, gap: 10 },
+
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconWrap: {
-    width: 48, height: 48, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  iconEmoji: { fontSize: 24 },
-  cardName:  { fontSize: 12, fontWeight: '800', textAlign: 'center', paddingHorizontal: 6, marginBottom: 6, lineHeight: 16 },
-  cardStats: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  cardStatText: { fontSize: 10, fontWeight: '700' },
+  iconEmoji: { fontSize: 20 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  chevronWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Pills (shared template)
+  pillsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: theme.colors.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
+  },
+  pillText: { fontSize: 12, fontWeight: '600', color: theme.colors.primary },
 });
