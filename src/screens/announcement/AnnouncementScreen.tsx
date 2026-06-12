@@ -124,6 +124,7 @@ const AnnouncementScreen = ({ navigation, route }: any) => {
             );
           })}
         </ScrollView>
+        <View style={s.filtersDivider} />
       </View>
 
       {/* Body */}
@@ -182,8 +183,13 @@ export default AnnouncementScreen;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
 
-  filtersWrapper: { paddingVertical: 12 },
+  filtersWrapper: { paddingTop: 12 },
   filtersRow: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
+  filtersDivider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginTop: 12,
+  },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,7 +215,7 @@ const s = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 40,
-    paddingTop: 4,
+    paddingTop: 14,
     gap: 14,
   },
 

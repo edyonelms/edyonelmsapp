@@ -74,7 +74,7 @@ const AnnouncementCard = ({ item, onPress }: Props) => {
 
         {/* Body preview */}
         {!!item.content && (
-          <Text style={s.body} numberOfLines={2}>
+          <Text style={s.body} numberOfLines={1}>
             {item.content}
           </Text>
         )}
