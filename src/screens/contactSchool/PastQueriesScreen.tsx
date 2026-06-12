@@ -17,6 +17,7 @@ import {
   getTeacherContactList,
 } from '../../api/contactApi';
 import QueryCard from './QueryCard';
+import { STATUS_META } from './queryTypes';
 import type { Query } from './queryTypes';
 
 const PastQueriesScreen = () => {
@@ -151,31 +152,54 @@ const PastQueriesScreen = () => {
       <Header title="Past Queries" onBackPress={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        {/* Page header row */}
-        <View style={s.pageHeader}>
-          <View style={s.pageHeaderLeft}>
-            <View style={s.pageIconBox}>
-              <VectorIcon iconSet="Ionicons" iconName="chatbubbles" size={26} color={theme.colors.primary} />
+        {/* ── Overview card ── */}
+        <View style={s.card}>
+          <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
+          <View style={s.cardInner}>
+            <View style={s.cardTop}>
+              <View style={s.iconWrap}>
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="chatbubbles-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Past Queries</Text>
+                <Text style={s.cardSubtitle}>
+                  {queries.length} quer{queries.length !== 1 ? 'ies' : 'y'} raised
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleNewQuery}
+                style={s.addBtn}
+              >
+                <VectorIcon iconSet="Ionicons" iconName="add" size={18} color="#fff" />
+              </TouchableOpacity>
             </View>
-            <View>
-              <Text style={s.pageTitle}>Past Queries</Text>
-              <Text style={s.pageSubtitle}>View your previous conversations</Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleNewQuery}
-            style={s.newQueryBtn}
-          >
-            <VectorIcon iconSet="Ionicons" iconName="add" size={16} color="#fff" />
-            <Text style={s.newQueryText}>New Query</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Filter chip */}
-        <View style={s.filterRow}>
-          <View style={s.filterChip}>
-            <Text style={s.filterChipText}>All Queries</Text>
+            {/* Stats footer */}
+            {!loading && !error && queries.length > 0 && (
+              <View style={s.tableFooter}>
+                {(['Pending', 'In Progress', 'Resolved'] as const).map((status, i, arr) => {
+                  const count = queries.filter(q => q.status === status).length;
+                  return (
+                    <React.Fragment key={status}>
+                      <View style={s.footerItem}>
+                        <View
+                          style={[s.footerDot, { backgroundColor: STATUS_META[status].color }]}
+                        />
+                        <Text style={s.footerLabel}>{status}</Text>
+                        <Text style={s.footerValue}>{count}</Text>
+                      </View>
+                      {i < arr.length - 1 && <View style={s.footerDivider} />}
+                    </React.Fragment>
+                  );
+                })}
+              </View>
+            )}
           </View>
         </View>
 
@@ -192,44 +216,20 @@ const PastQueriesScreen = () => {
               <Text style={s.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
+        ) : queries.length === 0 ? (
+          <View style={s.emptyBox}>
+            <View style={s.emptyIconRing}>
+              <VectorIcon iconSet="Ionicons" iconName="chatbubbles-outline" size={40} color={theme.colors.primary} />
+            </View>
+            <Text style={s.emptyTitle}>No queries found</Text>
+            <Text style={s.emptySubtitle}>Tap "+" to raise a concern</Text>
+          </View>
         ) : (
-          <>
-            {/* Stats row */}
-            {queries.length > 0 && (
-              <View style={s.statsRow}>
-                {(['Pending', 'In Progress', 'Resolved'] as const).map((status, i, arr) => {
-                  const count = queries.filter(q => q.status === status).length;
-                  const colors = ['#F59E0B', '#0EA5E9', '#10B981'];
-                  return (
-                    <React.Fragment key={status}>
-                      <View style={s.statBox}>
-                        <Text style={[s.statNum, { color: colors[i] }]}>{count}</Text>
-                        <Text style={s.statLabel}>{status}</Text>
-                      </View>
-                      {i < arr.length - 1 && <View style={s.statDivider} />}
-                    </React.Fragment>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* List or empty */}
-            {queries.length === 0 ? (
-              <View style={s.emptyBox}>
-                <View style={s.emptyIconRing}>
-                  <VectorIcon iconSet="Ionicons" iconName="chatbubbles-outline" size={40} color={theme.colors.primary} />
-                </View>
-                <Text style={s.emptyTitle}>No queries found</Text>
-                <Text style={s.emptySubtitle}>Tap "New Query" to raise a concern</Text>
-              </View>
-            ) : (
-              <View style={s.list}>
-                {queries.map(item => (
-                  <QueryCard key={String(item.id)} item={item} />
-                ))}
-              </View>
-            )}
-          </>
+          <View style={s.list}>
+            {queries.map(item => (
+              <QueryCard key={String(item.id)} item={item} />
+            ))}
+          </View>
         )}
       </ScrollView>
     </View>
@@ -240,38 +240,61 @@ export default PastQueriesScreen;
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { padding: 16, paddingBottom: 40 },
-  pageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  pageHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  pageIconBox: {
-    width: 52, height: 52, borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center',
+  scroll: { padding: theme.spacing.lg, paddingBottom: 40, gap: 14 },
+
+  // Card (shared template)
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+    elevation: 2,
   },
-  pageTitle: { fontSize: 20, fontWeight: '800', color: theme.colors.textPrimary },
-  pageSubtitle: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
-  newQueryBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: theme.colors.primary, borderRadius: theme.radius.full,
-    paddingHorizontal: 16, paddingVertical: 10,
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  newQueryText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  filterRow: { marginBottom: 16 },
-  filterChip: {
-    alignSelf: 'flex-start', backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.full, paddingHorizontal: 16, paddingVertical: 8,
+  cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  addBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  filterChipText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  statsRow: {
-    flexDirection: 'row', backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.lg, paddingVertical: 14, marginBottom: 16,
-    shadowColor: theme.colors.shadow, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 8, elevation: 3,
+
+  // Stats footer (shared template)
+  tableFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
-  statBox: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500', marginTop: 2 },
-  statDivider: { width: 1, backgroundColor: theme.colors.border },
-  list: { gap: 12 },
+  footerItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  footerDot: { width: 7, height: 7, borderRadius: 4 },
+  footerLabel: { fontSize: 11, fontWeight: '600', color: theme.colors.textSecondary },
+  footerValue: { fontSize: 13, fontWeight: '900', color: theme.colors.textPrimary },
+  footerDivider: { width: 1, height: 24, backgroundColor: theme.colors.border },
+
+  list: { gap: 14 },
   centeredBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
   errorText: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center' },
   retryBtn: {

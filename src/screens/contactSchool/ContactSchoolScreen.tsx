@@ -23,8 +23,6 @@ const ContactSchoolScreen = ({ navigation }: any) => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [attachment, setAttachment] = useState<{ name: string; uri: string; type?: string } | null>(null);
-  const [subjectFocused, setSubjectFocused] = useState(false);
-  const [messageFocused, setMessageFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<string>('student');
 
@@ -106,7 +104,7 @@ const ContactSchoolScreen = ({ navigation }: any) => {
     setLoading(true);
     try {
       console.log('[ContactSchoolScreen] Submitting as role:', role);
-      
+
       let response;
       if (role === 'student') {
         response = await studentContactAdmin({
@@ -123,7 +121,7 @@ const ContactSchoolScreen = ({ navigation }: any) => {
       }
 
       console.log('[ContactSchoolScreen] Submit success:', response);
-      
+
       Alert.alert(
         'Query Submitted',
         'Your query has been submitted successfully. We will get back to you shortly.',
@@ -131,14 +129,14 @@ const ContactSchoolScreen = ({ navigation }: any) => {
       );
     } catch (err: any) {
       console.error('[ContactSchoolScreen] Submit error:', err?.response?.data || err.message);
-      
+
       let errorMessage = 'Failed to submit query. Please try again.';
       if (err?.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err?.message) {
         errorMessage = err.message;
       }
-      
+
       Alert.alert('Submission Failed', errorMessage);
     } finally {
       setLoading(false);
@@ -158,92 +156,114 @@ const ContactSchoolScreen = ({ navigation }: any) => {
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ── Page intro ── */}
-          <View style={s.introRow}>
-            <View style={s.introIconBox}>
-              <VectorIcon iconSet="Ionicons" iconName="school" size={22} color={theme.colors.primary} />
-            </View>
-            <View>
-              <Text style={s.introTitle}>Raise a Query</Text>
-              <Text style={s.introSub}>We'll get back to you shortly</Text>
-            </View>
-          </View>
-
-          {/* ── Subject ── */}
-          <View style={[s.inputBox, subjectFocused && s.inputBoxFocused]}>
-            <TextInput
-              style={s.input}
-              placeholder="Write your subject here..."
-              placeholderTextColor={theme.colors.textMuted}
-              value={subject}
-              onChangeText={setSubject}
-              onFocus={() => setSubjectFocused(true)}
-              onBlur={() => setSubjectFocused(false)}
-              returnKeyType="next"
-            />
-          </View>
-
-          {/* ── Message ── */}
-          <View style={[s.inputBox, s.messageBox, messageFocused && s.inputBoxFocused]}>
-            <TextInput
-              style={[s.input, s.messageInput]}
-              placeholder="Enter your query here..."
-              placeholderTextColor={theme.colors.textMuted}
-              value={message}
-              onChangeText={setMessage}
-              onFocus={() => setMessageFocused(true)}
-              onBlur={() => setMessageFocused(false)}
-              multiline
-              textAlignVertical="top"
-            />
-            <TouchableOpacity
-              onPress={handlePickAttachment}
-              style={s.attachBtn}
-              activeOpacity={0.7}
-            >
-              <VectorIcon iconSet="Ionicons" iconName="attach" size={22} color={theme.colors.primary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* ── Attachment preview ── */}
-          {attachment && (
-            <View style={s.attachPreview}>
-              <View style={s.attachPreviewLeft}>
-                <View style={s.attachFileIcon}>
-                  <VectorIcon iconSet="Feather" iconName="paperclip" size={14} color={theme.colors.primary} />
+          {/* ── Query form card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={s.iconWrap}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="school-outline"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
                 </View>
-                <View>
-                  <Text style={s.attachLabel}>Attachment:</Text>
-                  <Text style={s.attachName} numberOfLines={1}>{attachment.name}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>Raise a Query</Text>
+                  <Text style={s.cardSubtitle}>We'll get back to you shortly</Text>
                 </View>
               </View>
+
+              <Text style={s.label}>Subject</Text>
+              <TextInput
+                style={s.input}
+                placeholder="Write your subject here..."
+                placeholderTextColor={theme.colors.textMuted}
+                value={subject}
+                onChangeText={setSubject}
+                returnKeyType="next"
+              />
+
+              <Text style={s.label}>Message</Text>
+              <TextInput
+                style={[s.input, s.inputMulti]}
+                placeholder="Enter your query here..."
+                placeholderTextColor={theme.colors.textMuted}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                textAlignVertical="top"
+              />
+
+              {/* Attachment */}
+              {attachment ? (
+                <View style={s.attachPreview}>
+                  <View style={s.attachIconBox}>
+                    <VectorIcon
+                      iconSet="Feather"
+                      iconName="paperclip"
+                      size={14}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.attachLabel}>Attachment</Text>
+                    <Text style={s.attachName} numberOfLines={1}>
+                      {attachment.name}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setAttachment(null)}
+                    activeOpacity={0.8}
+                  >
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="close-circle"
+                      size={22}
+                      color={theme.colors.danger}
+                    />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={s.attachBtn}
+                  onPress={handlePickAttachment}
+                  activeOpacity={0.8}
+                >
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="attach"
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                  <Text style={s.attachBtnText}>Attach a file (optional)</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Submit */}
               <TouchableOpacity
-                onPress={() => setAttachment(null)}
-                style={s.removeBtn}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
+                onPress={handleSubmit}
+                style={s.submitBtn}
+                disabled={loading}
               >
-                <VectorIcon iconSet="Ionicons" iconName="close-circle" size={22} color={theme.colors.danger} />
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="send"
+                      size={15}
+                      color="#fff"
+                    />
+                    <Text style={s.submitText}>Submit Query</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
-          )}
-
-          {/* ── Submit ── */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleSubmit}
-            style={s.submitBtn}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <>
-                <VectorIcon iconSet="Ionicons" iconName="send" size={16} color="#fff" />
-                <Text style={s.submitText}>Submit Query</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -254,76 +274,126 @@ export default ContactSchoolScreen;
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { padding: 16, paddingBottom: 40, gap: 14 },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 40 },
 
-  // Intro
-  introRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.lg, padding: 14,
-    shadowColor: theme.colors.shadow, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 8, elevation: 3,
-    marginBottom: 4,
+  // Card (shared template)
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+    elevation: 2,
   },
-  introIconBox: {
-    width: 44, height: 44, borderRadius: theme.radius.md,
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
+
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
     backgroundColor: theme.colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  introTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
-  introSub: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
 
-  // Inputs
-  inputBox: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1.5, borderColor: theme.colors.border,
-    paddingHorizontal: 16, paddingVertical: 4,
-    shadowColor: theme.colors.shadow, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
-  },
-  inputBoxFocused: {
-    borderColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.12,
-  },
-  messageBox: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    paddingVertical: 8,
+  // Form (shared template)
+  label: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+    marginBottom: 6,
+    marginTop: 4,
   },
   input: {
-    flex: 1, fontSize: 14, color: theme.colors.textPrimary,
-    paddingVertical: 12, fontWeight: '500',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 8,
   },
-  messageInput: { minHeight: 120 },
-  attachBtn: { paddingTop: 10, paddingLeft: 8 },
+  inputMulti: { minHeight: 120 },
 
-  // Attachment preview
+  // Attachment
+  attachBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderStyle: 'dashed',
+    borderRadius: theme.radius.sm,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  attachBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
   attachPreview: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: theme.colors.primaryLight,
-    borderRadius: theme.radius.lg, padding: 14,
-    borderWidth: 1, borderColor: `${theme.colors.primary}30`,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}30`,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
   },
-  attachPreviewLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  attachFileIcon: {
-    width: 34, height: 34, borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.white,
-    alignItems: 'center', justifyContent: 'center',
+  attachIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  attachLabel: { fontSize: 11, fontWeight: '700', color: theme.colors.primary },
-  attachName: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary, maxWidth: 220 },
-  removeBtn: { paddingLeft: 8 },
+  attachLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+  attachName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+  },
 
   // Submit
   submitBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.full,
-    paddingVertical: 16, marginTop: 6,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    borderRadius: theme.radius.sm,
+    paddingVertical: 13,
+    marginTop: 4,
   },
-  submitText: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  submitText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
