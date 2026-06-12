@@ -51,6 +51,13 @@ const PastQueriesScreen = () => {
 
     const daysAgo = calculateDaysAgo(apiItem.created_at);
 
+    // The API stores the uploaded file in image_url — it may be an image or a PDF
+    const fileUrl: string | null = apiItem.image_url ?? null;
+    const isPdf = !!fileUrl && /\.pdf(\?|$)/i.test(fileUrl);
+    const fileName = fileUrl
+      ? decodeURIComponent(fileUrl.split('/').pop() ?? '') || 'Attachment'
+      : null;
+
     return {
       id: apiItem.id,
       subject: apiItem.topic,
@@ -58,9 +65,9 @@ const PastQueriesScreen = () => {
       status: status,
       created_at: apiItem.created_at,
       daysAgo: daysAgo,
-      attachmentName: apiItem.image_url ? 'Image attached' : null,
-      attachmentUrl: apiItem.image_url ?? null,
-      pdfUrl: apiItem.pdf_url ?? apiItem.pdf ?? null,
+      attachmentName: fileName,
+      attachmentUrl: isPdf ? null : fileUrl,
+      pdfUrl: apiItem.pdf_url ?? apiItem.pdf ?? (isPdf ? fileUrl : null),
       admin_reply: apiItem.admin_text,
       replied_at: apiItem.updated_at,
     };

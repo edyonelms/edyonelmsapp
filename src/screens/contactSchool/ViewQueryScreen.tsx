@@ -130,7 +130,9 @@ const ViewQueryScreen = ({ navigation, route }: any) => {
                         />
                       </View>
                       <View style={s.attachTextBox}>
-                        <Text style={s.attachTitle}>Image</Text>
+                        <Text style={s.attachTitle} numberOfLines={1}>
+                          {item.attachmentName || 'Image'}
+                        </Text>
                         <Text style={s.attachSub}>Tap to view full image</Text>
                       </View>
                       <VectorIcon
@@ -159,7 +161,9 @@ const ViewQueryScreen = ({ navigation, route }: any) => {
                         />
                       </View>
                       <View style={s.attachTextBox}>
-                        <Text style={s.attachTitle}>PDF Document</Text>
+                        <Text style={s.attachTitle} numberOfLines={1}>
+                          {item.attachmentName || 'PDF Document'}
+                        </Text>
                         <Text style={s.attachSub}>Tap to open PDF</Text>
                       </View>
                       <VectorIcon

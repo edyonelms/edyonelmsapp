@@ -25,19 +25,36 @@ export interface ContactListResponse {
 //  STUDENT APIs
 // ════════════════════════════════════════════════════════════════════════════
 
-// POST /user/admin/contact - Send as JSON with correct field names
-export const studentContactAdmin = async (payload: ContactPayload) => {
-  const requestData = {
-    topic: payload.subject,
-    student_query: payload.message,
-  };
-  
-  console.log('[studentContactAdmin] Sending JSON:', JSON.stringify(requestData, null, 2));
-  
-  const { data } = await apiClient.post('/user/admin/contact', requestData, {
+// Build the request body: multipart when a file is attached, JSON otherwise
+const buildContactRequest = (payload: ContactPayload) => {
+  if (payload.attachment?.uri) {
+    const formData = new FormData();
+    formData.append('topic', payload.subject);
+    formData.append('student_query', payload.message);
+    formData.append('image', {
+      uri: payload.attachment.uri,
+      name: payload.attachment.name,
+      type: payload.attachment.type ?? 'image/jpeg',
+    } as any);
+    return {
+      body: formData as any,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    };
+  }
+  return {
+    body: { topic: payload.subject, student_query: payload.message },
     headers: { 'Content-Type': 'application/json' },
-  });
-  
+  };
+};
+
+// POST /user/admin/contact - multipart when an attachment is present
+export const studentContactAdmin = async (payload: ContactPayload) => {
+  const { body, headers } = buildContactRequest(payload);
+
+  console.log('[studentContactAdmin] Sending, hasAttachment:', !!payload.attachment);
+
+  const { data } = await apiClient.post('/user/admin/contact', body, { headers });
+
   console.log('[studentContactAdmin] Response:', JSON.stringify(data, null, 2));
   return data;
 };
@@ -67,19 +84,14 @@ export const getStudentContactReply = async (contact_id: string | number) => {
 //  TEACHER APIs
 // ════════════════════════════════════════════════════════════════════════════
 
-// POST /teacher/admin/contact
+// POST /teacher/admin/contact - multipart when an attachment is present
 export const teacherContactAdmin = async (payload: ContactPayload) => {
-  const requestData = {
-    topic: payload.subject,
-    student_query: payload.message,
-  };
-  
-  console.log('[teacherContactAdmin] Sending JSON:', JSON.stringify(requestData, null, 2));
-  
-  const { data } = await apiClient.post('/teacher/admin/contact', requestData, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  
+  const { body, headers } = buildContactRequest(payload);
+
+  console.log('[teacherContactAdmin] Sending, hasAttachment:', !!payload.attachment);
+
+  const { data } = await apiClient.post('/teacher/admin/contact', body, { headers });
+
   console.log('[teacherContactAdmin] Response:', JSON.stringify(data, null, 2));
   return data;
 };
