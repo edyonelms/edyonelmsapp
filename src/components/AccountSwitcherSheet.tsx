@@ -346,11 +346,13 @@ const ListBody = ({ bootstrapping, accounts, activeId, busyId, onSwitch, onRemov
           >
             <Avatar uri={acct.image} name={acct.name} />
             <View style={s.rowMain}>
-              <Text style={s.rowName} numberOfLines={1}>{acct.name}</Text>
-              <View style={s.typeBadge}>
-                <Text style={s.typeBadgeText}>
-                  {acct.user_type === 'teacher' ? 'Teacher' : 'Student'}
-                </Text>
+              <View style={s.rowNameLine}>
+                <Text style={s.rowName} numberOfLines={1}>{acct.name}</Text>
+                <View style={s.typeBadge}>
+                  <Text style={s.typeBadgeText}>
+                    {acct.user_type === 'teacher' ? 'Teacher' : 'Student'}
+                  </Text>
+                </View>
               </View>
             </View>
 
@@ -529,13 +531,15 @@ const s = StyleSheet.create({
   },
   rowActive: { backgroundColor: '#EEF2FF' },
   rowMain: { flex: 1, marginLeft: 12 },
-  rowName: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
+  rowNameLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rowName: {
+    fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary,
+    flexShrink: 1,
+  },
   typeBadge: {
-    alignSelf: 'flex-start',
     backgroundColor: '#EEF2FF',
     borderRadius: 999,
     paddingHorizontal: 8, paddingVertical: 2,
-    marginTop: 3,
   },
   typeBadgeText: { fontSize: 11, fontWeight: '600', color: theme.colors.primary },
 
