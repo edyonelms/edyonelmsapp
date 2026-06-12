@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
-  ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView,
+  Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView,
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
@@ -103,17 +103,27 @@ const HWCard = ({
         />
       </TouchableOpacity>
       <View style={s.actionDivider} />
-      <TouchableOpacity style={s.actionBtn} onPress={onToggleComplete} activeOpacity={0.7}>
-        <VectorIcon
-          iconSet="Ionicons"
-          iconName={isCompleted ? 'checkmark-circle' : 'checkmark-circle-outline'}
-          size={14}
-          color="#16A34A"
-        />
-        <Text style={[s.actionText, { color: '#16A34A' }]}>
-          {isCompleted ? 'Completed' : 'Mark as Complete'}
-        </Text>
-      </TouchableOpacity>
+      {isCompleted ? (
+        <View style={s.actionBtn}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="checkmark-circle"
+            size={14}
+            color="#16A34A"
+          />
+          <Text style={[s.actionText, { color: '#16A34A' }]}>Completed</Text>
+        </View>
+      ) : (
+        <TouchableOpacity style={s.actionBtn} onPress={onToggleComplete} activeOpacity={0.7}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="checkmark-circle-outline"
+            size={14}
+            color="#16A34A"
+          />
+          <Text style={[s.actionText, { color: '#16A34A' }]}>Mark as Complete</Text>
+        </TouchableOpacity>
+      )}
     </View>
 
     {/* Description expanded */}
@@ -137,15 +147,17 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
   const [selectedKey, setSelectedKey] = useState(todayKey);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmHw, setConfirmHw] = useState<Homework | null>(null);
 
   const homeworks: Homework[] = HOMEWORK_STORE.filter(h => h.dueDate === selectedKey);
   const pending   = homeworks.filter(h => !completedIds.includes(h.id));
   const completed = homeworks.filter(h => completedIds.includes(h.id));
 
-  const toggleComplete = (id: string) =>
-    setCompletedIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
-    );
+  // One-way: once confirmed complete, it cannot be reversed.
+  const confirmComplete = () => {
+    if (confirmHw) setCompletedIds(prev => [...prev, confirmHw.id]);
+    setConfirmHw(null);
+  };
 
   const selectedDate = new Date(selectedKey + 'T00:00:00');
   const listTitle =
@@ -224,7 +236,7 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
                 isCompleted={false}
                 expanded={expandedId === hw.id}
                 onToggleExpand={() => setExpandedId(expandedId === hw.id ? null : hw.id)}
-                onToggleComplete={() => toggleComplete(hw.id)}
+                onToggleComplete={() => setConfirmHw(hw)}
               />
             ))}
 
@@ -251,7 +263,7 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
                     isCompleted
                     expanded={expandedId === hw.id}
                     onToggleExpand={() => setExpandedId(expandedId === hw.id ? null : hw.id)}
-                    onToggleComplete={() => toggleComplete(hw.id)}
+                    onToggleComplete={() => {}}
                   />
                 ))}
               </>
@@ -261,6 +273,53 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ── Mark-as-complete confirmation ── */}
+      <Modal
+        transparent
+        visible={!!confirmHw}
+        animationType="fade"
+        onRequestClose={() => setConfirmHw(null)}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <View style={s.modalIconWrap}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="checkmark-circle-outline"
+                size={28}
+                color="#16A34A"
+              />
+            </View>
+
+            <Text style={s.modalTitle}>Mark as Complete?</Text>
+            <Text style={s.modalDesc}>
+              "{confirmHw?.title}" will be moved to Completed. This cannot be
+              undone.
+            </Text>
+
+            <View style={s.modalActions}>
+              <TouchableOpacity
+                style={[s.modalBtn, s.modalBtnGhost]}
+                activeOpacity={0.85}
+                onPress={() => setConfirmHw(null)}
+              >
+                <Text style={[s.modalBtnText, s.modalBtnGhostText]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[s.modalBtn, s.modalBtnConfirm]}
+                activeOpacity={0.9}
+                onPress={confirmComplete}
+              >
+                <Text style={[s.modalBtnText, s.modalBtnConfirmText]}>
+                  Yes, Complete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -405,4 +464,73 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '900', color: theme.colors.textPrimary },
   emptySubtitle: { fontSize: 13, color: theme.colors.textMuted },
+
+  // Confirmation modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  modalIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.full,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalDesc: {
+    marginTop: theme.spacing.sm,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  modalBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalBtnGhost: {
+    backgroundColor: '#F1F5F9',
+  },
+  modalBtnGhostText: {
+    color: theme.colors.textPrimary,
+  },
+  modalBtnConfirm: {
+    backgroundColor: '#16A34A',
+  },
+  modalBtnConfirmText: {
+    color: theme.colors.white,
+  },
 });
