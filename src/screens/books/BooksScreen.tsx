@@ -1,10 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import {
-  ActivityIndicator,
-  Alert,
   FlatList,
-  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -87,22 +84,13 @@ const BooksScreen = ({ navigation, route }: any) => {
     fetchBooks({ silent: true });
   }, [fetchBooks]);
 
-  const openBook = useCallback(async (book: ApiBook) => {
-    const url = resolveFileUrl(book.pdf_url);
-    if (!url) {
-      Alert.alert('No PDF', 'This book does not have a PDF attached yet.');
-      return;
-    }
-    // Don't gate on canOpenURL — on Android 11+ it reports false for
-    // http(s) links unless the scheme is declared in the manifest, which
-    // made valid PDFs show an error. Just try to open and handle failure.
-    try {
-      await Linking.openURL(url);
-    } catch (e) {
-      console.log('[BooksScreen] openURL failed:', url, e);
-      Alert.alert('Failed to open', 'Something went wrong while opening the PDF.');
-    }
-  }, []);
+  // Open the book in the in-app PDF reader (with go-to-page support).
+  const openBook = useCallback((book: ApiBook) => {
+    navigation.navigate('BookReader', {
+      url: resolveFileUrl(book.pdf_url),
+      title: book.title,
+    });
+  }, [navigation]);
 
   // ─── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -166,16 +154,22 @@ const BooksScreen = ({ navigation, route }: any) => {
         </View>
       )}
 
-      {/* Book grid */}
+      {/* Book list (subjects-style cards) */}
       <FlatList
         data={filtered}
         keyExtractor={item => String(item.id)}
-        numColumns={2}
         showsVerticalScrollIndicator={false}
-        columnWrapperStyle={s.row}
-        contentContainerStyle={s.listContent}
+        contentContainerStyle={[s.listContent, filtered.length === 0 && s.listEmpty]}
         refreshControl={
           <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListHeaderComponent={
+          filtered.length > 0 ? (
+            <>
+              <Text style={s.sectionTitle}>All Books</Text>
+              <Text style={s.sectionDesc}>Tap a book to read it in the app.</Text>
+            </>
+          ) : null
         }
         renderItem={({ item }) => (
           <BookCard item={item} showClass={role === 'teacher'} onViewPress={openBook} />
@@ -221,7 +215,10 @@ const s = StyleSheet.create({
   chipTextActive: { color: '#fff' },
 
   listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 40 },
-  row: { justifyContent: 'space-between', marginBottom: 16 },
+  listEmpty: { flexGrow: 1 },
+
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
+  sectionDesc: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 16 },
 
   emptyBox: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 },
   emptyIconRing: {

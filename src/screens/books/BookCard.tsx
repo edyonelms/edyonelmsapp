@@ -1,27 +1,17 @@
 import React from 'react';
-import {
-  Dimensions,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { subjectMetaFor } from './bookData';
 import type { ApiBook } from '../../api/booksApi';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 16 padding each side + 16 gap
-const IMAGE_HEIGHT = 150;
-
 interface Props {
   item: ApiBook;
-  showClass?: boolean;       // teacher cards include class · section
+  showClass?: boolean; // teacher cards include class · section
   onViewPress: (book: ApiBook) => void;
 }
 
+// Subjects-screen style card (accent bar + icon + title + pills + chevron).
 const BookCard = ({ item, showClass, onViewPress }: Props) => {
   const subjectName = item.subject?.name ?? '—';
   const meta = subjectMetaFor(subjectName);
@@ -29,60 +19,58 @@ const BookCard = ({ item, showClass, onViewPress }: Props) => {
   const classLine = item.standard?.name
     ? `${item.standard.name}${item.section?.name ? ' · ' + item.section.name : ''}`
     : null;
+  const subtitle =
+    showClass && classLine ? `${subjectName} · ${classLine}` : subjectName;
 
   return (
-    <View style={[s.card, { width: CARD_WIDTH }]}>
-      {/* Fixed height image */}
-      <View style={s.imageWrap}>
-        {cover ? (
-          <Image source={{ uri: cover }} style={s.image} resizeMode="cover" />
-        ) : (
-          <View style={[s.image, s.imagePlaceholder, { backgroundColor: meta.bg }]}>
-            <VectorIcon iconSet="Ionicons" iconName="book-outline" size={42} color={meta.color} />
+    <TouchableOpacity style={s.card} onPress={() => onViewPress(item)} activeOpacity={0.85}>
+      <View style={[s.accentBar, { backgroundColor: meta.color }]} />
+      <View style={s.cardInner}>
+        <View style={s.cardTop}>
+          <View style={[s.iconWrap, { backgroundColor: meta.bg }]}>
+            {cover ? (
+              <Image source={{ uri: cover }} style={s.coverImg} resizeMode="cover" />
+            ) : (
+              <VectorIcon iconSet="Ionicons" iconName="book" size={20} color={meta.color} />
+            )}
           </View>
-        )}
-        <View style={s.imageOverlay} />
-
-        {/* Subject badge */}
-        <View style={[s.subjectBadge, { backgroundColor: meta.color }]}>
-          <Text style={s.subjectBadgeText} numberOfLines={1}>{subjectName}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
+            <Text style={s.cardSubtitle} numberOfLines={1}>{subtitle}</Text>
+          </View>
+          <View style={s.chevronWrap}>
+            <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textSecondary} />
+          </View>
         </View>
 
-        {/* PDF badge */}
-        {!!item.pdf_url && (
-          <View style={s.pdfBadge}>
-            <VectorIcon iconSet="Feather" iconName="file-text" size={9} color="#fff" />
-            <Text style={s.pdfBadgeText}>PDF</Text>
+        <View style={s.pillsRow}>
+          <View style={[s.pill, { backgroundColor: meta.color + '15' }]}>
+            <VectorIcon iconSet="Ionicons" iconName="book-outline" size={12} color={meta.color} />
+            <Text style={[s.pillText, { color: meta.color }]} numberOfLines={1}>{subjectName}</Text>
           </View>
-        )}
-      </View>
-
-      {/* Fixed height body */}
-      <View style={s.cardBody}>
-        <Text style={s.bookTitle} numberOfLines={2}>{item.title}</Text>
-
-        {showClass && classLine ? (
-          <View style={s.metaRow}>
-            <VectorIcon iconSet="Feather" iconName="users" size={11} color={theme.colors.textMuted} />
-            <Text style={s.metaText} numberOfLines={1}>{classLine}</Text>
-          </View>
-        ) : (
-          <View style={s.metaRow}>
-            <VectorIcon iconSet="Feather" iconName="book-open" size={11} color={theme.colors.textMuted} />
-            <Text style={s.metaText} numberOfLines={1}>{subjectName}</Text>
-          </View>
-        )}
+          {!!item.pdf_url && (
+            <View style={s.pill}>
+              <VectorIcon iconSet="Feather" iconName="file-text" size={12} color={theme.colors.primary} />
+              <Text style={s.pillText}>PDF</Text>
+            </View>
+          )}
+        </View>
 
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => onViewPress(item)}
-          style={[s.viewBtn, { backgroundColor: meta.color }]}
+          style={[s.openBtn, { backgroundColor: meta.color }]}
         >
-          <VectorIcon iconSet="Ionicons" iconName="book-outline" size={13} color="#fff" />
-          <Text style={s.viewBtnText}>{item.pdf_url ? 'Open PDF' : 'View Book'}</Text>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName={item.pdf_url ? 'reader-outline' : 'book-outline'}
+            size={14}
+            color="#fff"
+          />
+          <Text style={s.openBtnText}>{item.pdf_url ? 'Open PDF' : 'View Book'}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -90,63 +78,59 @@ export default BookCard;
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    elevation: 2,
+    marginBottom: 14,
   },
-  imageWrap: { width: '100%', height: IMAGE_HEIGHT },
-  image: { width: '100%', height: '100%' },
-  imagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  imageOverlay: {
-    // @ts-ignore
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#00000028',
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md, gap: 10 },
+
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  subjectBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    maxWidth: '80%',
+  coverImg: { width: '100%', height: '100%' },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary, lineHeight: 20 },
+  cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  chevronWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  subjectBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  pdfBadge: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
+
+  pillsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#EF4444',
+    gap: 5,
+    backgroundColor: theme.colors.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: theme.radius.full,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    maxWidth: '70%',
   },
-  pdfBadgeText: { fontSize: 9, color: '#fff', fontWeight: '700' },
+  pillText: { fontSize: 12, fontWeight: '600', color: theme.colors.primary },
 
-  cardBody: { padding: 10, height: 110, justifyContent: 'space-between' },
-  bookTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    lineHeight: 18,
-  },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500', flex: 1 },
-  viewBtn: {
+  openBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 6,
     borderRadius: theme.radius.md,
-    paddingVertical: 9,
+    paddingVertical: 10,
+    marginTop: 2,
   },
-  viewBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  openBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 });

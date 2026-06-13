@@ -36,6 +36,7 @@ import UploadMarksScreen from '../screens/teacherUpload/UploadMarksScreen';
 import ManageEntriesScreen from '../screens/teacherUpload/ManageEntriesScreen';
 import AddHomeworkScreen from '../screens/homework/AddHomeworkScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
+import BookReaderScreen from '../screens/books/BookReaderScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -114,6 +115,9 @@ const AppNavigator = () => {
 
       {/* Notifications */}
       <Stack.Screen name="Notifications" component={NotificationScreen} />
+
+      {/* In-app PDF reader (books) */}
+      <Stack.Screen name="BookReader" component={BookReaderScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
