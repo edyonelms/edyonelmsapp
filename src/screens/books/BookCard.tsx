@@ -1,9 +1,18 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import constant from '../../utils/constant';
 import { subjectMetaFor } from './bookData';
 import type { ApiBook } from '../../api/booksApi';
+
+// Subject icon comes from the same host as the API but outside /api/v1.
+const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+const resolveFileUrl = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${FILE_ORIGIN}/${url.replace(/^\/+/, '')}`;
+};
 
 interface Props {
   item: ApiBook;
@@ -15,6 +24,9 @@ interface Props {
 const BookCard = ({ item, showClass, onViewPress }: Props) => {
   const subjectName = item.subject?.name ?? '—';
   const meta = subjectMetaFor(subjectName);
+  const subjectImage = resolveFileUrl(item.subject?.image);
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = !!subjectImage && !imgFailed;
   const classLine = item.standard?.name
     ? `${item.standard.name}${item.section?.name ? ' · ' + item.section.name : ''}`
     : null;
@@ -27,7 +39,16 @@ const BookCard = ({ item, showClass, onViewPress }: Props) => {
       <View style={s.cardInner}>
         <View style={s.cardTop}>
           <View style={[s.iconWrap, { backgroundColor: meta.bg }]}>
-            <VectorIcon iconSet="Ionicons" iconName="book" size={22} color={meta.color} />
+            {showImage ? (
+              <Image
+                source={{ uri: subjectImage }}
+                style={s.iconImage}
+                resizeMode="contain"
+                onError={() => setImgFailed(true)}
+              />
+            ) : (
+              <VectorIcon iconSet="Ionicons" iconName="book" size={22} color={meta.color} />
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
@@ -91,7 +112,9 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
+  iconImage: { width: 30, height: 30 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary, lineHeight: 20 },
   cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
   chevronWrap: {

@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -5,86 +6,110 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React from 'react';
-import Header from '../../components/Header';
 import { useNavigation } from '@react-navigation/native';
+import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
 
-const ExamMainScreen = () => {
-  const navigation = useNavigation<any>();
+/**
+ * Student "Exams" hub — entry points for all exam-related screens.
+ * Uses the same announcement-card visual language as MoreScreen.
+ */
 
-  // TODO: wire to an API loader if this screen gains server data.
-  const { refreshing, onRefresh } = useRefresh(() => {});
+type IconSet = 'Ionicons' | 'Feather' | 'MaterialCommunityIcons';
 
-  const items = [
-    {
+interface ExamItem {
+  title: string;
+  subtitle: string;
+  icon: string;
+  iconSet: IconSet;
+  accent: string;
+  route: string;
+}
+
+const ITEMS: ExamItem[] = [
+  {
     title: 'Exams',
-    icon: 'calendar-outline',
+    subtitle: 'Upcoming, ongoing & completed exams',
+    icon: 'calendar',
+    iconSet: 'Ionicons',
+    accent: theme.colors.primary,
     route: 'ExamsScreen',
   },
   {
     title: 'Admit Card',
-    icon: 'card-outline',
+    subtitle: 'Download your exam admit card',
+    icon: 'card',
+    iconSet: 'Ionicons',
+    accent: '#10B981',
     route: 'AdmitCardScreen',
   },
   {
     title: 'Seating Plan',
-    icon: 'grid-outline',
+    subtitle: 'Find your room and seat number',
+    icon: 'grid',
+    iconSet: 'Ionicons',
+    accent: '#F59E0B',
     route: 'SeatingPlanScreen',
   },
   {
     title: 'Exam Copy',
-    icon: 'document-outline',
+    subtitle: 'View your evaluated answer copies',
+    icon: 'document-text',
+    iconSet: 'Ionicons',
+    accent: '#8B5CF6',
     route: 'ExamCopyScreen',
   },
   {
     title: 'Report Card',
-    icon: 'stats-chart-outline',
+    subtitle: 'Your results and performance report',
+    icon: 'stats-chart',
+    iconSet: 'Ionicons',
+    accent: '#EC4899',
     route: 'ReportCardScreen',
   },
-  ];
+];
+
+const ExamItemCard = ({ item, onPress }: { item: ExamItem; onPress: () => void }) => (
+  <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={s.card}>
+    <View style={[s.accentStrip, { backgroundColor: item.accent }]} />
+    <View style={s.cardInner}>
+      <View style={[s.iconWrap, { backgroundColor: item.accent + '18' }]}>
+        <VectorIcon iconSet={item.iconSet as any} iconName={item.icon} size={22} color={item.accent} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={s.title}>{item.title}</Text>
+        <Text style={s.subtitle} numberOfLines={1}>{item.subtitle}</Text>
+      </View>
+      <View style={s.chevron}>
+        <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textSecondary} />
+      </View>
+    </View>
+  </TouchableOpacity>
+);
+
+const ExamMainScreen = () => {
+  const navigation = useNavigation<any>();
 
   return (
-    <View style={styles.safeArea}>
-      <Header title="More" onBackPress={() => navigation.goBack()} />
+    <View style={s.root}>
+      <Header title="Exams" onBackPress={() => navigation.goBack()} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.container}
-        refreshControl={
-          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        contentContainerStyle={s.scroll}
       >
-        <View style={styles.card}>
-          {items.map((item, index) => (
-            <TouchableOpacity
-              key={item.title}
-              style={[styles.row, index === items.length - 1 && styles.lastRow]}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate(item.route)}
-            >
-              <View style={styles.left}>
-                <View style={styles.iconBadge}>
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName={item.icon}
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <Text style={styles.rowText}>{item.title}</Text>
-              </View>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="chevron-forward"
-                size={18}
-                color={theme.colors.textMuted}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={s.sectionTitle}>Exams</Text>
+        <Text style={s.sectionDesc}>
+          Everything you need before, during and after an exam.
+        </Text>
+
+        {ITEMS.map(item => (
+          <ExamItemCard
+            key={item.route}
+            item={item}
+            onPress={() => navigation.navigate(item.route)}
+          />
+        ))}
       </ScrollView>
     </View>
   );
@@ -92,52 +117,41 @@ const ExamMainScreen = () => {
 
 export default ExamMainScreen;
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.white,
-  },
-  container: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.lg,
-  },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { padding: 16, paddingBottom: 32 },
+
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
+  sectionDesc: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 16 },
+
   card: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.radius.lg,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  lastRow: {
-    borderBottomWidth: 0,
-  },
-  left: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    flex: 1,
-  },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.primaryLight,
+  accentStrip: { height: 4, width: '100%' },
+  cardInner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  iconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowText: {
-    fontSize: 15,
-    color: theme.colors.textPrimary,
-    fontWeight: '500',
-    flexShrink: 1,
+  title: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 2 },
+  subtitle: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '500' },
+  chevron: {
+    width: 30,
+    height: 30,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

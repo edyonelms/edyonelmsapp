@@ -80,7 +80,7 @@ const BookReaderScreen = ({ navigation, route }: any) => {
             value={pageInput}
             onChangeText={t => setPageInput(t.replace(/[^0-9]/g, ''))}
             keyboardType="number-pad"
-            placeholder={String(currentPage)}
+            placeholder="Page no"
             placeholderTextColor={theme.colors.textMuted}
             style={s.gotoInput}
             returnKeyType="go"
@@ -118,7 +118,12 @@ const BookReaderScreen = ({ navigation, route }: any) => {
                 setLoading(false);
               }}
               // Display-only: never feed this back into the page prop.
-              onPageChanged={(p: number) => setCurrentPage(p)}
+              // Guard against transient 0/undefined values the native view
+              // can emit during very fast scrolling, which would otherwise
+              // make the badge / placeholder flicker to nothing.
+              onPageChanged={(p: number) => {
+                if (Number.isFinite(p) && p > 0) setCurrentPage(p);
+              }}
               onError={(e: any) => {
                 console.log('[BookReader] PDF error:', e);
                 setError('Failed to open this PDF. Please try again.');
@@ -169,7 +174,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   gotoInput: {
-    width: 64,
+    width: 80,
     height: 36,
     borderRadius: theme.radius.sm,
     borderWidth: 1,

@@ -11,6 +11,11 @@ export interface ApiBookRef {
   name: string;
 }
 
+// Subject ref additionally carries the subject icon image (full S3 URL).
+export interface ApiBookSubjectRef extends ApiBookRef {
+  image?: string | null;
+}
+
 export interface ApiBook {
   id: number;
   title: string;
@@ -19,7 +24,7 @@ export interface ApiBook {
   pdf_url:   string | null;
   standard:  ApiBookRef | null;
   section:   ApiBookRef | null;
-  subject:   ApiBookRef | null;
+  subject:   ApiBookSubjectRef | null;
 }
 
 export interface BooksPageMeta {
