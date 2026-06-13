@@ -1,14 +1,41 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
-  Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView,
+  ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { Homework, HOMEWORK_STORE } from './homeworkData';
+import { Homework } from './homeworkData';
 import AttachmentPreviewModal from '../announcement/AttachmentPreviewModal';
+import {
+  getStudentHomework,
+  homeworkSubjectVisual,
+  homeworkErrorMessage,
+  type HomeworkItem,
+} from '../../api/homeworkApi';
 
 const PRIMARY = theme.colors.primary;
+
+// Map an API homework row into the screen's Homework shape.
+const mapHomework = (h: HomeworkItem): Homework => {
+  const v = homeworkSubjectVisual(h.subject?.name ?? '');
+  return {
+    id: String(h.id),
+    subjectId: String(h.subject?.id ?? '0'),
+    subjectName: h.subject?.name ?? 'Subject',
+    subjectIcon: v.icon,
+    subjectColor: v.color,
+    teacherName: h.assigned_by ?? 'Teacher',
+    title: h.title,
+    description: h.description ?? '',
+    dueDate: h.assigned_date ?? '',
+    createdAt: h.assigned_time ?? '',
+    attachments: h.file_url
+      ? [{ type: h.file_type === 'image' ? 'image' : 'pdf', name: 'Attachment', url: h.file_url }]
+      : undefined,
+  };
+};
 
 // Last 15 days ending today — today sits at the far right of the strip
 const buildDays = (): Date[] => {
@@ -160,8 +187,11 @@ const SubjectCard = ({
                   <TouchableOpacity
                     key={ai}
                     style={s.attachChip}
-                    activeOpacity={att.type === 'image' ? 0.7 : 1}
-                    onPress={() => att.type === 'image' && onPreviewImage(att.url)}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (att.type === 'image') onPreviewImage(att.url);
+                      else if (att.url) Linking.openURL(att.url).catch(() => {});
+                    }}
                   >
                     <View
                       style={[
@@ -207,7 +237,32 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
   const [confirmGroup, setConfirmGroup] = useState<SubjectGroup | null>(null);
   const [preview, setPreview] = useState<{ url?: string; color: string } | null>(null);
 
-  const homeworks: Homework[] = HOMEWORK_STORE.filter(h => h.dueDate === selectedKey);
+  const [allHomeworks, setAllHomeworks] = useState<Homework[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getStudentHomework(15);
+      setAllHomeworks((res?.homeworks ?? []).map(mapHomework));
+    } catch (e: any) {
+      console.log('[getStudentHomework] Error:', e?.response?.status, e?.message);
+      setError(homeworkErrorMessage(e));
+      setAllHomeworks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const homeworks: Homework[] = allHomeworks.filter(h => h.dueDate === selectedKey);
   const groups = groupBySubject(homeworks);
   const isGroupDone = (g: SubjectGroup) => g.items.every(h => completedIds.includes(h.id));
   const pending   = groups.filter(g => !isGroupDone(g));
@@ -251,7 +306,7 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
             const key     = toKey(d);
             const active  = key === selectedKey;
             const isToday = key === todayKey;
-            const hasHW   = HOMEWORK_STORE.some(h => h.dueDate === key);
+            const hasHW   = allHomeworks.some(h => h.dueDate === key);
             return (
               <TouchableOpacity
                 key={key}
@@ -286,7 +341,20 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
           </View>
         </View>
 
-        {groups.length === 0 ? (
+        {loading ? (
+          <View style={s.empty}>
+            <ActivityIndicator size="large" color={PRIMARY} />
+          </View>
+        ) : error ? (
+          <View style={s.empty}>
+            <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={48} color={theme.colors.danger} />
+            <Text style={s.emptyTitle}>Couldn’t load homework</Text>
+            <Text style={s.emptySubtitle}>{error}</Text>
+            <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
+              <Text style={s.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : groups.length === 0 ? (
           <View style={s.empty}>
             <VectorIcon iconSet="Ionicons" iconName="checkmark-circle-outline" size={52} color={theme.colors.textMuted} />
             <Text style={s.emptyTitle}>No homework!</Text>
@@ -554,7 +622,9 @@ const s = StyleSheet.create({
   // Empty
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '900', color: theme.colors.textPrimary },
-  emptySubtitle: { fontSize: 13, color: theme.colors.textMuted },
+  emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', paddingHorizontal: 24 },
+  retryBtn: { marginTop: 6, paddingHorizontal: 24, paddingVertical: 10, borderRadius: theme.radius.full, backgroundColor: PRIMARY },
+  retryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 
   // Confirmation modal
   modalOverlay: {

@@ -33,6 +33,7 @@ import ReportCardScreen from '../screens/exam/ReportCardScreen';
 import UploadCopyScreen from '../screens/teacherUpload/UploadCopyScreen';
 import UploadMarksScreen from '../screens/teacherUpload/UploadMarksScreen';
 import ManageEntriesScreen from '../screens/teacherUpload/ManageEntriesScreen';
+import AddHomeworkScreen from '../screens/homework/AddHomeworkScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 
 const Stack = createNativeStackNavigator();
@@ -105,6 +106,7 @@ const AppNavigator = () => {
       <Stack.Screen name="UploadCopyScreen" component={UploadCopyScreen} />
       <Stack.Screen name="UploadMarksScreen" component={UploadMarksScreen} />
       <Stack.Screen name="ManageEntries" component={ManageEntriesScreen} />
+      <Stack.Screen name="AddHomework" component={AddHomeworkScreen} />
 
       {/* Notifications */}
       <Stack.Screen name="Notifications" component={NotificationScreen} />

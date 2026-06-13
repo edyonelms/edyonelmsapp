@@ -1,277 +1,376 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet,
-  Text, TextInput, TouchableOpacity, View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import {
-  addHomework, Homework, HOMEWORK_STORE, HW_SUBJECTS, HWSubject,
-} from './homeworkData';
+  getTeacherHomework,
+  deleteHomework,
+  homeworkSubjectVisual,
+  homeworkErrorMessage,
+  type HomeworkItem,
+} from '../../api/homeworkApi';
 
 const PRIMARY = theme.colors.primary;
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const toKey = (d: Date) => d.toISOString().slice(0, 10);
+const buildDays = (): Date[] => {
+  const days: Date[] = [];
+  const today = new Date();
+  for (let i = -14; i <= 0; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    days.push(d);
+  }
+  return days;
+};
+
+const HomeworkCard = ({ hw, onOpenFile, onDelete }: {
+  hw: HomeworkItem;
+  onOpenFile: (hw: HomeworkItem) => void;
+  onDelete: (hw: HomeworkItem) => void;
+}) => {
+  const v = homeworkSubjectVisual(hw.subject?.name ?? '');
+  return (
+    <View style={s.hwCard}>
+      <View style={[s.hwAccent, { backgroundColor: v.color }]} />
+      <View style={s.hwBody}>
+        <View style={s.hwTop}>
+          <View style={[s.hwIcon, { backgroundColor: v.bg }]}>
+            <Text style={{ fontSize: 18 }}>{v.icon}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.hwTitle} numberOfLines={2}>{hw.title}</Text>
+            <Text style={s.hwSubject} numberOfLines={1}>
+              {hw.subject?.name ?? 'Subject'} · {hw.standard ?? ''} {hw.section ?? ''}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => onDelete(hw)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <VectorIcon iconSet="Ionicons" iconName="trash-outline" size={18} color={theme.colors.danger} />
+          </TouchableOpacity>
+        </View>
+
+        {!!hw.description && <Text style={s.hwDesc} numberOfLines={3}>{hw.description}</Text>}
+
+        <View style={s.hwFooter}>
+          <View style={s.hwMeta}>
+            <VectorIcon iconSet="Ionicons" iconName="time-outline" size={12} color={theme.colors.textMuted} />
+            <Text style={s.hwMetaText}>{hw.assigned_time ?? ''}</Text>
+          </View>
+          {!!hw.file_url && (
+            <TouchableOpacity style={s.fileChip} onPress={() => onOpenFile(hw)} activeOpacity={0.8}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName={hw.file_type === 'image' ? 'image-outline' : 'document-text-outline'}
+                size={13}
+                color={PRIMARY}
+              />
+              <Text style={s.fileChipText}>Attachment</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+};
 
 const TeacherHomeworkScreen = ({ navigation }: any) => {
-  const [selectedSub, setSelectedSub] = useState<HWSubject>(HW_SUBJECTS[0]);
-  const [dropOpen, setDropOpen]       = useState(false);
-  const [formOpen, setFormOpen]       = useState(false);
-  const [title, setTitle]             = useState('');
-  const [desc, setDesc]               = useState('');
-  const [dueDate, setDueDate]         = useState('');
-  const [error, setError]             = useState('');
-  const [, forceUpdate]               = useState(0);
+  const days = buildDays();
+  const todayKey = toKey(new Date());
+  const stripRef = useRef<ScrollView>(null);
 
-  const homeworks: Homework[] = HOMEWORK_STORE.filter(h => h.subjectId === selectedSub.id);
+  const [selectedKey, setSelectedKey] = useState(todayKey);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<HomeworkItem[]>([]);
 
-  const handleSave = () => {
-    if (!title.trim())   { setError('Enter a title.'); return; }
-    if (!desc.trim())    { setError('Enter a description.'); return; }
-    if (!dueDate.trim()) { setError('Enter a due date (YYYY-MM-DD).'); return; }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) { setError('Use format YYYY-MM-DD.'); return; }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getTeacherHomework(15);
+      setItems(res?.homeworks ?? []);
+    } catch (e: any) {
+      console.log('[getTeacherHomework] Error:', e?.response?.status, e?.message);
+      setError(homeworkErrorMessage(e));
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    addHomework({
-      subjectId:    selectedSub.id,
-      subjectName:  selectedSub.name,
-      subjectIcon:  selectedSub.icon,
-      subjectColor: selectedSub.color,
-      teacherName:  'Mr. Teacher',
-      title:        title.trim(),
-      description:  desc.trim(),
-      dueDate,
-    });
-    setTitle(''); setDesc(''); setDueDate(''); setError('');
-    setFormOpen(false);
-    forceUpdate(n => n + 1);
+  // Refetch whenever the screen gains focus (e.g. returning from Add).
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const datesWithHw = useMemo(() => new Set(items.map(h => h.assigned_date)), [items]);
+  const dayItems = useMemo(
+    () => items.filter(h => h.assigned_date === selectedKey),
+    [items, selectedKey],
+  );
+
+  const selectedDate = new Date(selectedKey + 'T00:00:00');
+  const listTitle =
+    selectedKey === todayKey
+      ? "Today's Homework"
+      : `Homework · ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`;
+
+  const openFile = async (hw: HomeworkItem) => {
+    if (!hw.file_url) return;
+    try {
+      await Linking.openURL(hw.file_url);
+    } catch {
+      Alert.alert('Error', 'Unable to open this attachment.');
+    }
+  };
+
+  const confirmDelete = (hw: HomeworkItem) => {
+    Alert.alert('Delete homework', `Remove "${hw.title}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteHomework(hw.id);
+            setItems(prev => prev.filter(h => h.id !== hw.id));
+          } catch (e: any) {
+            Alert.alert('Error', homeworkErrorMessage(e));
+          }
+        },
+      },
+    ]);
   };
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View style={s.root}>
       <Header title="Homework" onBackPress={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      {/* Date strip */}
+      <View style={s.dateStripWrap}>
+        <View style={s.stripHeader}>
+          <Text style={s.monthLabel}>
+            {MONTH_NAMES[selectedDate.getMonth()]} {selectedDate.getFullYear()}
+          </Text>
+          <Text style={s.stripHint}>Last 15 days</Text>
+        </View>
+        <ScrollView
+          ref={stripRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.dateStrip}
+          onContentSizeChange={() => stripRef.current?.scrollToEnd({ animated: false })}
+        >
+          {days.map(d => {
+            const key = toKey(d);
+            const active = key === selectedKey;
+            const isToday = key === todayKey;
+            const hasHW = datesWithHw.has(key);
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[s.dateCell, active && s.dateCellActive]}
+                onPress={() => setSelectedKey(key)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.dateDayName, active && s.dateTextActive]}>
+                  {isToday ? 'Today' : DAY_NAMES[d.getDay()]}
+                </Text>
+                <Text style={[s.dateNum, active && s.dateNumActive]}>{d.getDate()}</Text>
+                <Text style={[s.dateMonth, active && s.dateTextActive]}>{MONTH_NAMES[d.getMonth()]}</Text>
+                {hasHW && <View style={[s.hwDot, active && s.hwDotActive]} />}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-        {/* ── Subject Dropdown ── */}
-        <View style={[s.dropWrap, dropOpen && { zIndex: 99 }]}>
-          <TouchableOpacity style={s.dropBtn} onPress={() => setDropOpen(o => !o)} activeOpacity={0.8}>
-            <View style={s.dropLeft}>
-              <Text style={s.dropIcon}>{selectedSub.icon}</Text>
-              <Text style={s.dropSelected}>{selectedSub.name}</Text>
-            </View>
-            <VectorIcon iconSet="Ionicons" iconName={dropOpen ? 'chevron-up' : 'chevron-down'} size={18} color={PRIMARY} />
+      {loading ? (
+        <View style={s.center}>
+          <ActivityIndicator size="large" color={PRIMARY} />
+        </View>
+      ) : error ? (
+        <View style={s.center}>
+          <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={40} color={theme.colors.danger} />
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
+            <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
-          {dropOpen && (
-            <View style={s.dropList}>
-              {HW_SUBJECTS.map(sub => (
-                <TouchableOpacity
-                  key={sub.id}
-                  style={[s.dropItem, sub.id === selectedSub.id && s.dropItemActive]}
-                  onPress={() => { setSelectedSub(sub); setDropOpen(false); setFormOpen(false); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.dropIcon}>{sub.icon}</Text>
-                  <Text style={[s.dropItemText, sub.id === selectedSub.id && s.dropItemTextActive]}>{sub.name}</Text>
-                  {sub.id === selectedSub.id && (
-                    <VectorIcon iconSet="Ionicons" iconName="checkmark" size={16} color={PRIMARY} />
-                  )}
-                </TouchableOpacity>
-              ))}
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          <View style={s.listHeader}>
+            <Text style={s.listTitle}>{listTitle}</Text>
+            <View style={s.countBadge}>
+              <Text style={s.countText}>
+                {dayItems.length} task{dayItems.length !== 1 ? 's' : ''}
+              </Text>
             </View>
+          </View>
+
+          {dayItems.length === 0 ? (
+            <View style={s.empty}>
+              <VectorIcon iconSet="Ionicons" iconName="document-text-outline" size={48} color={theme.colors.textMuted} />
+              <Text style={s.emptyTitle}>No homework</Text>
+              <Text style={s.emptySubtitle}>
+                {selectedKey === todayKey
+                  ? 'Tap + to add today’s homework.'
+                  : 'Nothing was assigned on this day.'}
+              </Text>
+            </View>
+          ) : (
+            dayItems.map(hw => (
+              <HomeworkCard key={hw.id} hw={hw} onOpenFile={openFile} onDelete={confirmDelete} />
+            ))
           )}
-        </View>
 
-        {/* ── Section header + Add button ── */}
-        <View style={s.rowBetween}>
-          <Text style={s.sectionTitle}>Homework</Text>
-          <TouchableOpacity
-            style={[s.addBtn, formOpen && s.addBtnActive]}
-            onPress={() => { setFormOpen(o => !o); setError(''); }}
-            activeOpacity={0.85}
-          >
-            <VectorIcon iconSet="Ionicons" iconName={formOpen ? 'close' : 'add'} size={16} color={formOpen ? theme.colors.danger : '#fff'} />
-            <Text style={[s.addBtnText, formOpen && { color: theme.colors.danger }]}>
-              {formOpen ? 'Cancel' : 'Add Homework'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <View style={{ height: 90 }} />
+        </ScrollView>
+      )}
 
-        {/* ── Add Homework Form ── */}
-        {formOpen && (
-          <View style={s.formCard}>
-            <View style={s.formTitleRow}>
-              <View style={[s.formIconBox, { backgroundColor: selectedSub.bg }]}>
-                <Text style={{ fontSize: 18 }}>{selectedSub.icon}</Text>
-              </View>
-              <View>
-                <Text style={s.formTitle}>New Homework</Text>
-                <Text style={s.formSub}>{selectedSub.name}</Text>
-              </View>
-            </View>
-
-            {!!error && (
-              <View style={s.errorBox}>
-                <VectorIcon iconSet="Ionicons" iconName="alert-circle-outline" size={14} color={theme.colors.danger} />
-                <Text style={s.errorText}>{error}</Text>
-              </View>
-            )}
-
-            <Text style={s.label}>Title</Text>
-            <TextInput
-              style={s.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="e.g. Chapter 3 Exercise"
-              placeholderTextColor={theme.colors.textMuted}
-            />
-
-            <Text style={s.label}>Description</Text>
-            <TextInput
-              style={[s.input, s.inputMulti]}
-              value={desc}
-              onChangeText={setDesc}
-              placeholder="Describe the homework task..."
-              placeholderTextColor={theme.colors.textMuted}
-              multiline
-              textAlignVertical="top"
-            />
-
-            <Text style={s.label}>Due Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={s.input}
-              value={dueDate}
-              onChangeText={setDueDate}
-              placeholder={new Date().toISOString().slice(0, 10)}
-              placeholderTextColor={theme.colors.textMuted}
-              keyboardType="numbers-and-punctuation"
-            />
-
-            <TouchableOpacity style={s.saveBtn} onPress={handleSave} activeOpacity={0.85}>
-              <VectorIcon iconSet="Ionicons" iconName="save-outline" size={16} color="#fff" />
-              <Text style={s.saveBtnText}>Save Homework</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ── Homework List ── */}
-        {homeworks.length === 0 ? (
-          <View style={s.empty}>
-            <VectorIcon iconSet="Ionicons" iconName="document-text-outline" size={48} color={theme.colors.textMuted} />
-            <Text style={s.emptyText}>No homework for {selectedSub.name}</Text>
-          </View>
-        ) : (
-          homeworks.map(hw => (
-            <View key={hw.id} style={s.hwCard}>
-              <View style={[s.hwAccent, { backgroundColor: hw.subjectColor }]} />
-              <View style={s.hwBody}>
-                <View style={s.hwTop}>
-                  <Text style={s.hwTitle}>{hw.title}</Text>
-                  <View style={[s.dueBadge, { backgroundColor: selectedSub.bg }]}>
-                    <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={11} color={hw.subjectColor} />
-                    <Text style={[s.dueText, { color: hw.subjectColor }]}>{hw.dueDate}</Text>
-                  </View>
-                </View>
-                <Text style={s.hwDesc} numberOfLines={2}>{hw.description}</Text>
-                <View style={s.hwMeta}>
-                  <VectorIcon iconSet="Ionicons" iconName="time-outline" size={12} color={theme.colors.textMuted} />
-                  <Text style={s.hwMetaText}>Added {hw.createdAt}</Text>
-                </View>
-              </View>
-            </View>
-          ))
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {/* Add homework FAB */}
+      <TouchableOpacity
+        style={s.fab}
+        activeOpacity={0.9}
+        onPress={() => navigation.navigate('AddHomework')}
+      >
+        <VectorIcon iconSet="Ionicons" iconName="add" size={26} color="#fff" />
+      </TouchableOpacity>
+    </View>
   );
 };
 
 export default TeacherHomeworkScreen;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
-  scroll: { padding: 16 },
+  root: { flex: 1, backgroundColor: theme.colors.background },
 
-  // Dropdown
-  dropWrap: { marginBottom: 20, zIndex: 99 },
-  dropBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13,
-    borderWidth: 1.5, borderColor: theme.colors.primaryLight,
-    shadowColor: PRIMARY, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2,
+  // Date strip
+  dateStripWrap: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
-  dropLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dropIcon: { fontSize: 18 },
-  dropSelected: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
-  dropList: {
-    backgroundColor: '#fff', borderRadius: 14, marginTop: 4,
-    borderWidth: 1, borderColor: theme.colors.border,
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5, overflow: 'hidden',
+  stripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 10,
   },
-  dropItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 16, paddingVertical: 13,
-    borderBottomWidth: 1, borderBottomColor: theme.colors.border,
+  monthLabel: { fontSize: 13, fontWeight: '800', color: theme.colors.textSecondary },
+  stripHint: { fontSize: 11, fontWeight: '600', color: theme.colors.textMuted },
+  dateStrip: { paddingHorizontal: 12, gap: 8 },
+  dateCell: {
+    width: 56,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    gap: 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  dropItemActive: { backgroundColor: theme.colors.primaryLight },
-  dropItemText: { flex: 1, fontSize: 14, color: theme.colors.textSecondary, fontWeight: '500' },
-  dropItemTextActive: { color: PRIMARY, fontWeight: '700' },
+  dateCellActive: {
+    backgroundColor: PRIMARY,
+    shadowColor: PRIMARY,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  dateDayName: { fontSize: 10, fontWeight: '700', color: theme.colors.textMuted, textTransform: 'uppercase' },
+  dateTextActive: { color: 'rgba(255,255,255,0.85)' },
+  dateNum: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
+  dateNumActive: { color: '#fff' },
+  dateMonth: { fontSize: 10, fontWeight: '600', color: theme.colors.textMuted },
+  hwDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: PRIMARY, marginTop: 2 },
+  hwDotActive: { backgroundColor: '#fff' },
 
-  // Header row
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
-  addBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: PRIMARY, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
-  },
-  addBtnActive: { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: theme.colors.danger },
-  addBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  // List
+  scroll: { padding: theme.spacing.lg },
+  listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  listTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
+  countBadge: { backgroundColor: theme.colors.primaryLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  countText: { fontSize: 12, fontWeight: '700', color: PRIMARY },
 
-  // Form card
-  formCard: {
-    backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 16,
-    borderWidth: 1.5, borderColor: theme.colors.primaryLight,
-    shadowColor: PRIMARY, shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3,
-  },
-  formTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  formIconBox: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  formTitle: { fontSize: 16, fontWeight: '900', color: theme.colors.textPrimary },
-  formSub: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
-  label: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary, marginBottom: 6, marginTop: 4 },
-  input: {
-    backgroundColor: theme.colors.background, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 14,
-    color: theme.colors.textPrimary, borderWidth: 1.5, borderColor: theme.colors.border, marginBottom: 8,
-  },
-  inputMulti: { minHeight: 80 },
-  errorBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#FFF3F3', borderWidth: 1, borderColor: '#F6C7C7',
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 10,
-  },
-  errorText: { flex: 1, fontSize: 12, color: theme.colors.danger, fontWeight: '600' },
-  saveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: PRIMARY, borderRadius: 12, paddingVertical: 13, marginTop: 4,
-  },
-  saveBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  // States
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xl, gap: 10 },
+  errorText: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center' },
+  retryBtn: { marginTop: 4, paddingHorizontal: 24, paddingVertical: 10, borderRadius: theme.radius.full, backgroundColor: PRIMARY },
+  retryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 
   // HW card
   hwCard: {
-    flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, marginBottom: 10, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2,
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   hwAccent: { width: 5 },
   hwBody: { flex: 1, padding: 14 },
-  hwTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 },
-  hwTitle: { flex: 1, fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginRight: 8 },
-  dueBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  dueText: { fontSize: 11, fontWeight: '700' },
-  hwDesc: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 8 },
+  hwTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hwIcon: { width: 40, height: 40, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
+  hwTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
+  hwSubject: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  hwDesc: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginTop: 8 },
+  hwFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   hwMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   hwMetaText: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
+  fileChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  fileChipText: { fontSize: 11, fontWeight: '700', color: PRIMARY },
 
   // Empty
-  empty: { alignItems: 'center', paddingTop: 48, gap: 8 },
-  emptyText: { fontSize: 15, color: theme.colors.textSecondary, fontWeight: '700' },
+  empty: { alignItems: 'center', paddingTop: 50, gap: 8 },
+  emptyTitle: { fontSize: 17, fontWeight: '900', color: theme.colors.textPrimary },
+  emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center' },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: PRIMARY,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: PRIMARY,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+  },
 });
