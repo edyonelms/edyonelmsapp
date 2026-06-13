@@ -15,6 +15,7 @@ import { theme } from '../../../utils/theme';
 import { computeStats } from '../../attendance/attendanceTypes';
 import { EXAMS } from '../../exam/examData';
 import { HOMEWORK_STORE } from '../../homework/homeworkData';
+import { Chip, ChartCard, Donut, HBar, WeekDots } from '../../../components/Charts';
 import moment from 'moment';
 
 const { width } = Dimensions.get('window');
@@ -32,6 +33,22 @@ const NOTICES = [
   { title: 'Fee Due: 30 Apr 2026',    time: '3 days ago', icon: 'card-outline',      color: '#DC2626', bg: '#FEE2E2' },
 ];
 
+const SUBJECT_PERF = [
+  { subject: 'Mathematics', pct: 82, color: '#4F46E5' },
+  { subject: 'Science',     pct: 76, color: '#0EA5E9' },
+  { subject: 'English',     pct: 88, color: '#D97706' },
+  { subject: 'Soc. Sci.',   pct: 71, color: '#16A34A' },
+];
+
+const WEEK = [
+  { label: 'M', color: '#16A34A', bg: '#DCFCE7' },
+  { label: 'T', color: '#16A34A', bg: '#DCFCE7' },
+  { label: 'W', color: '#DC2626', bg: '#FEE2E2' },
+  { label: 'T', color: '#16A34A', bg: '#DCFCE7' },
+  { label: 'F', color: '#16A34A', bg: '#DCFCE7' },
+  { label: 'S', color: '#D97706', bg: '#FEF3C7' },
+];
+
 const StudentHomeScreen = () => {
   const navigation = useNavigation<any>();
   const stats = computeStats(moment().format('YYYY-MM'));
@@ -39,6 +56,7 @@ const StudentHomeScreen = () => {
   const attendancePct = parseFloat(stats.presentPct);
   const upcomingExams = EXAMS.filter(e => e.status === 'Published' || e.status === 'Upcoming').slice(0, 3);
   const recentHW = HOMEWORK_STORE.slice(0, 3);
+  const overallPct = Math.round(SUBJECT_PERF.reduce((s, x) => s + x.pct, 0) / SUBJECT_PERF.length);
 
   return (
     <View style={s.root}>
@@ -64,6 +82,15 @@ const StudentHomeScreen = () => {
             <View style={s.heroAvatarRing} />
           </View>
         </View>
+
+        {/* ── Quick chips ── */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
+          <Chip icon="trophy" label="Rank" value="4/42" color="#D97706" bg="#FEF3C7" />
+          <Chip icon="stats-chart" label="Avg" value={`${overallPct}%`} color="#4F46E5" bg="#E0E7FF" />
+          <Chip icon="calendar" label="Attd" value={`${stats.presentPct}%`} color="#16A34A" bg="#DCFCE7" />
+          <Chip icon="card" label="Fee due" value="₹12k" color="#DC2626" bg="#FEE2E2" />
+          <Chip icon="time" label="Next" value="Math 11:00" color="#0EA5E9" bg="#E0F2FE" />
+        </ScrollView>
 
         {/* ── Stats Scroll ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
@@ -176,6 +203,34 @@ const StudentHomeScreen = () => {
           </View>
         )}
 
+        {/* ── Performance & This Week ── */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Performance Snapshot</Text>
+          <ChartCard
+            icon="stats-chart-outline"
+            iconBg="#E0E7FF"
+            iconColor="#4F46E5"
+            title="Subject Performance"
+            right={
+              <TouchableOpacity onPress={() => navigation.navigate('Analytics', { userRole: 'student' })} activeOpacity={0.7}>
+                <Text style={s.seeAll}>Details →</Text>
+              </TouchableOpacity>
+            }
+          >
+            <View style={s.perfRow}>
+              <Donut size={104} stroke={12} pct={overallPct} color="#4F46E5" label={`${overallPct}%`} sub="overall" />
+              <View style={{ flex: 1, gap: 2 }}>
+                {SUBJECT_PERF.map(sp => (
+                  <HBar key={sp.subject} label={sp.subject} value={sp.pct} color={sp.color} />
+                ))}
+              </View>
+            </View>
+            <View style={s.cardDivider} />
+            <Text style={s.miniHead}>This Week's Attendance</Text>
+            <WeekDots days={WEEK} />
+          </ChartCard>
+        </View>
+
         {/* ── Notice Board ── */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Notice Board</Text>
@@ -239,6 +294,14 @@ const s = StyleSheet.create({
     position: 'absolute', width: 62, height: 62, borderRadius: 31,
     borderWidth: 2, borderColor: theme.colors.primaryLight,
   },
+
+  // Quick chips
+  chipsRow: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.md, gap: 8 },
+
+  // Performance snapshot
+  perfRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  cardDivider: { height: 1, backgroundColor: theme.colors.border },
+  miniHead: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
 
   // Stats scroll
   statsScroll: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, gap: 10 },

@@ -14,6 +14,7 @@ import VectorIcon from '../../../components/VectorIcon';
 import { theme } from '../../../utils/theme';
 import { HOMEWORK_STORE } from '../../homework/homeworkData';
 import { EXAMS } from '../../exam/examData';
+import { Chip, ChartCard, Donut, MiniBars, StackedBar } from '../../../components/Charts';
 
 const { width } = Dimensions.get('window');
 
@@ -38,12 +39,22 @@ const NOTICES = [
   { title: 'School Closed on 26 Apr',      time: '3 hrs ago', icon: 'megaphone-outline', color: '#0EA5E9', bg: '#E0F2FE' },
 ];
 
+const CLASS_ATT = [
+  { class: '9A', present: 38, total: 42 },
+  { class: '8B', present: 34, total: 38 },
+  { class: '10A', present: 40, total: 45 },
+  { class: '7C', present: 30, total: 36 },
+];
+
 const TeacherHomeScreen = () => {
   const navigation = useNavigation<any>();
   const greeting = getGreeting();
   const upcomingExams = EXAMS.filter(e => e.status === 'Published' || e.status === 'Upcoming').slice(0, 2);
   const pendingHW = HOMEWORK_STORE.slice(0, 3);
   const doneClasses = TODAY_CLASSES.filter(c => c.done).length;
+  const totalStudents = CLASS_ATT.reduce((s, c) => s + c.total, 0);
+  const totalPresent = CLASS_ATT.reduce((s, c) => s + c.present, 0);
+  const overallAtt = Math.round((totalPresent / totalStudents) * 100);
 
   return (
     <View style={s.root}>
@@ -71,6 +82,15 @@ const TeacherHomeScreen = () => {
             <View style={s.heroAvatarRing} />
           </View>
         </View>
+
+        {/* ── Quick chips ── */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
+          <Chip icon="people" label="Students" value={String(totalStudents)} color="#0EA5E9" bg="#E0F2FE" />
+          <Chip icon="calendar" label="Attd" value={`${overallAtt}%`} color="#16A34A" bg="#DCFCE7" />
+          <Chip icon="school" label="Classes" value={`${doneClasses}/${TODAY_CLASSES.length}`} color="#4F46E5" bg="#E0E7FF" />
+          <Chip icon="book" label="Homework" value={String(HOMEWORK_STORE.length)} color="#7C3AED" bg="#EDE9FE" />
+          <Chip icon="document-text" label="Exams" value={String(upcomingExams.length)} color="#D97706" bg="#FEF3C7" />
+        </ScrollView>
 
         {/* ── Stats Scroll ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
@@ -192,6 +212,45 @@ const TeacherHomeScreen = () => {
           </View>
         )}
 
+        {/* ── Class Attendance ── */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Class Attendance</Text>
+          <ChartCard
+            icon="bar-chart-outline"
+            iconBg="#DCFCE7"
+            iconColor="#16A34A"
+            title="Today's Overview"
+            right={
+              <TouchableOpacity onPress={() => navigation.navigate('Analytics', { userRole: 'teacher' })} activeOpacity={0.7}>
+                <Text style={s.seeAll}>Details →</Text>
+              </TouchableOpacity>
+            }
+          >
+            <View style={s.attRow}>
+              <Donut size={104} stroke={12} pct={overallAtt} color="#16A34A" label={`${overallAtt}%`} sub="present" />
+              <View style={{ flex: 1 }}>
+                <StackedBar
+                  segments={[
+                    { label: 'Present', value: totalPresent, color: '#16A34A' },
+                    { label: 'Absent', value: totalStudents - totalPresent, color: '#DC2626' },
+                  ]}
+                />
+              </View>
+            </View>
+            <View style={s.cardDivider} />
+            <Text style={s.miniHead}>Attendance % by Class</Text>
+            <MiniBars
+              data={CLASS_ATT.map(c => ({
+                label: c.class,
+                value: Math.round((c.present / c.total) * 100),
+              }))}
+              maxVal={100}
+              color="#16A34A"
+              height={110}
+            />
+          </ChartCard>
+        </View>
+
         {/* ── Notice Board ── */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Notice Board</Text>
@@ -251,6 +310,14 @@ const s = StyleSheet.create({
     position: 'absolute', width: 64, height: 64, borderRadius: 32,
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
   },
+
+  // Quick chips
+  chipsRow: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.md, gap: 8 },
+
+  // Class attendance card
+  attRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  cardDivider: { height: 1, backgroundColor: theme.colors.border },
+  miniHead: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
 
   // Stats
   statsScroll: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, gap: 10 },

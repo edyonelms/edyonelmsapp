@@ -13,6 +13,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { computeStats } from '../attendance/attendanceTypes';
+import { Chip } from '../../components/Charts';
 import moment from 'moment';
 
 const { width } = Dimensions.get('window');
@@ -153,6 +154,27 @@ const StudentAnalytics = () => {
         ))}
       </View>
 
+      {/* Quick chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
+        <Chip icon="trophy" label="Rank" value="4 / 42" color="#D97706" bg="#FEF3C7" />
+        <Chip icon="ribbon" label="Best" value="English" color="#16A34A" bg="#DCFCE7" />
+        <Chip icon="trending-up" label="Trend" value="+4%" color="#4F46E5" bg="#E0E7FF" />
+        <Chip icon="book" label="HW done" value="10/12" color="#7C3AED" bg="#EDE9FE" />
+      </ScrollView>
+
+      {/* Weekly attendance trend */}
+      <SectionCard icon="pulse-outline" iconBg="#E0F2FE" iconColor="#0EA5E9" title="Weekly Attendance Trend">
+        <BarChart
+          data={[
+            { label: 'W1', value: 92 },
+            { label: 'W2', value: 88 },
+            { label: 'W3', value: 95 },
+            { label: 'W4', value: Math.round(attPct) },
+          ]}
+          color="#0EA5E9" maxVal={100}
+        />
+      </SectionCard>
+
       {/* Attendance */}
       <SectionCard icon="calendar-outline" iconBg="#DCFCE7" iconColor="#16A34A" title="Attendance Overview">
         <View style={s.monthTabs}>
@@ -256,6 +278,28 @@ const TeacherAnalytics = () => {
           </View>
         ))}
       </View>
+
+      {/* Quick chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
+        <Chip icon="people" label="Students" value={String(totalStudents)} color="#0EA5E9" bg="#E0F2FE" />
+        <Chip icon="calendar" label="Attd" value={`${overallAtt}%`} color="#16A34A" bg="#DCFCE7" />
+        <Chip icon="school" label="Classes" value={String(CLASS_DATA.length)} color="#4F46E5" bg="#E0E7FF" />
+        <Chip icon="trophy" label="Top" value="Class 10A" color="#D97706" bg="#FEF3C7" />
+      </ScrollView>
+
+      {/* Weekly attendance trend */}
+      <SectionCard icon="pulse-outline" iconBg="#E0F2FE" iconColor="#0EA5E9" title="Weekly Attendance Trend">
+        <BarChart
+          data={[
+            { label: 'Mon', value: 90 },
+            { label: 'Tue', value: 86 },
+            { label: 'Wed', value: 92 },
+            { label: 'Thu', value: 88 },
+            { label: 'Fri', value: overallAtt },
+          ]}
+          color="#0EA5E9" maxVal={100}
+        />
+      </SectionCard>
 
       {/* Class-wise */}
       <SectionCard icon="school-outline" iconBg="#E0E7FF" iconColor="#4F46E5" title="Class-wise Analytics">
@@ -370,6 +414,7 @@ const s = StyleSheet.create({
   roleBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: theme.radius.full },
   roleBadgeText: { fontSize: 11, fontWeight: '700' },
 
+  chipsRow: { gap: 8, paddingVertical: 2 },
   row3: { flexDirection: 'row', gap: 8 },
   overviewCard: { flex: 1, borderRadius: theme.radius.md, padding: 12, alignItems: 'center', gap: 5, elevation: 1 },
   overviewVal: { fontSize: 20, fontWeight: '900' },
