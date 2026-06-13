@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Dimensions,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -12,8 +11,6 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-
-const { width } = Dimensions.get('window');
 
 type Role = 'student' | 'teacher';
 
@@ -121,30 +118,135 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-const ITEM_SIZE = (width - 40 - 48) / 4; // 4 cols, padding 20 each side, 3 gaps of 16
+// Route order as it appears in the drawer sidebar (DrawerNavigator menuItems).
+const SIDEBAR_ORDER: Record<Role, string[]> = {
+  teacher: [
+    'Announcement', 'Calendar', 'Homework', 'Timetable', 'MarkAttendance',
+    'Attendance', 'Subjects', 'Syllabus', 'Content', 'Quiz', 'Book', 'IDCard',
+    'Chats', 'Exams', 'UploadMarksScreen', 'UploadCopyScreen', 'ContactSchool',
+    'Settings', 'More',
+  ],
+  student: [
+    'Fees', 'Announcement', 'Calendar', 'Transport', 'Homework', 'Timetable',
+    'Attendance', 'Subjects', 'Syllabus', 'Content', 'Quiz', 'Book',
+    'Instructor', 'IDCard', 'Chats', 'Exams', 'PerformanceScreen',
+    'ContactSchool', 'Settings', 'More',
+  ],
+};
+
+type OrderKey = 'sidebar' | 'ascending' | 'category';
+
+const ORDER_OPTIONS: { key: OrderKey; label: string; icon: string }[] = [
+  { key: 'sidebar', label: 'Sidebar Order', icon: 'menu-outline' },
+  { key: 'ascending', label: 'A → Z (Ascending)', icon: 'swap-vertical-outline' },
+  { key: 'category', label: 'Category-wise', icon: 'grid-outline' },
+];
+
+// Each link enriched with its category metadata.
+interface FlatLink extends QuickLink {
+  categoryTitle: string;
+  categoryIcon: string;
+  categoryAccent: string;
+  categoryBg: string;
+}
+
+const FLAT_LINKS: FlatLink[] = CATEGORIES.flatMap(c =>
+  c.links.map(l => ({
+    ...l,
+    categoryTitle: c.title,
+    categoryIcon: c.icon,
+    categoryAccent: c.accent,
+    categoryBg: c.accentBg,
+  })),
+);
 
 const QuickLinksScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const role: Role = route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
+
   const [search, setSearch] = useState('');
+  const [order, setOrder] = useState<OrderKey>('sidebar');
+  const [orderOpen, setOrderOpen] = useState(false);
 
   const q = search.toLowerCase().trim();
-
-  const allLinks = CATEGORIES.flatMap(c => c.links).filter(l => l.roles.includes(role));
-  const searchResults = q ? allLinks.filter(l => l.label.toLowerCase().includes(q)) : [];
 
   const navigate = (r: string) =>
     navigation.navigate(r, r === 'Notifications' ? { role } : undefined);
 
-  const LinkItem = ({ item }: { item: QuickLink }) => (
-    <TouchableOpacity style={s.item} onPress={() => navigate(item.route)} activeOpacity={0.75}>
-      <View style={[s.itemIconWrap, { backgroundColor: item.bg }]}>
-        <View style={[s.itemIconInner, { backgroundColor: item.color + '22' }]}>
-          <VectorIcon iconSet="Ionicons" iconName={item.icon} size={22} color={item.color} />
+  const roleLinks = useMemo(
+    () => FLAT_LINKS.filter(l => l.roles.includes(role)),
+    [role],
+  );
+
+  const searchResults = useMemo(
+    () => (q ? roleLinks.filter(l => l.label.toLowerCase().includes(q)) : []),
+    [q, roleLinks],
+  );
+
+  const orderedLinks = useMemo(() => {
+    if (order === 'ascending') {
+      return [...roleLinks].sort((a, b) => a.label.localeCompare(b.label));
+    }
+    // sidebar
+    const seq = SIDEBAR_ORDER[role];
+    const idx = (r: string) => {
+      const i = seq.indexOf(r);
+      return i === -1 ? seq.length + 1 : i;
+    };
+    return [...roleLinks].sort((a, b) => idx(a.route) - idx(b.route));
+  }, [order, roleLinks, role]);
+
+  const activeOrder = ORDER_OPTIONS.find(o => o.key === order)!;
+
+  // ── Card (announcement style) ──
+  const LinkCard = ({
+    item,
+    showCategory,
+  }: {
+    item: FlatLink;
+    showCategory: boolean;
+  }) => (
+    <TouchableOpacity
+      style={s.card}
+      activeOpacity={0.85}
+      onPress={() => navigate(item.route)}
+    >
+      <View style={[s.accent, { backgroundColor: item.color }]} />
+      <View style={s.cardInner}>
+        <View style={[s.iconBox, { backgroundColor: item.bg }]}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName={item.icon}
+            size={20}
+            color={item.color}
+          />
         </View>
+        <View style={s.cardMeta}>
+          <Text style={s.cardTitle} numberOfLines={1}>
+            {item.label}
+          </Text>
+          {showCategory && (
+            <View style={[s.catPill, { backgroundColor: item.categoryBg }]}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName={item.categoryIcon}
+                size={10}
+                color={item.categoryAccent}
+              />
+              <Text style={[s.catPillText, { color: item.categoryAccent }]}>
+                {item.categoryTitle}
+              </Text>
+            </View>
+          )}
+        </View>
+        <VectorIcon
+          iconSet="Ionicons"
+          iconName="chevron-forward"
+          size={18}
+          color={theme.colors.textMuted}
+        />
       </View>
-      <Text style={s.itemLabel} numberOfLines={2}>{item.label}</Text>
     </TouchableOpacity>
   );
 
@@ -154,8 +256,6 @@ const QuickLinksScreen = () => {
 
       {/* ── Hero Header ── */}
       <View style={s.hero}>
-
-
         <View style={s.heroTop}>
           <View>
             <Text style={s.heroLabel}>EDYONE LMS</Text>
@@ -188,9 +288,77 @@ const QuickLinksScreen = () => {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      {/* ── Order dropdown ── */}
+      <View style={s.orderBar}>
+        <Text style={s.orderLabel}>Show as</Text>
+        <View style={s.orderSelectWrap}>
+          <TouchableOpacity
+            style={s.orderSelect}
+            activeOpacity={0.8}
+            onPress={() => setOrderOpen(o => !o)}
+          >
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName={activeOrder.icon}
+              size={15}
+              color={theme.colors.primary}
+            />
+            <Text style={s.orderSelectText}>{activeOrder.label}</Text>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName={orderOpen ? 'chevron-up' : 'chevron-down'}
+              size={15}
+              color={theme.colors.primary}
+            />
+          </TouchableOpacity>
 
-        {/* ── Search Results ── */}
+          {orderOpen && (
+            <View style={s.orderDropdown}>
+              {ORDER_OPTIONS.map((o, i) => {
+                const active = o.key === order;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[
+                      s.orderItem,
+                      i === ORDER_OPTIONS.length - 1 && s.orderItemLast,
+                      active && s.orderItemActive,
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setOrder(o.key);
+                      setOrderOpen(false);
+                    }}
+                  >
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName={o.icon}
+                      size={15}
+                      color={active ? theme.colors.primary : theme.colors.textSecondary}
+                    />
+                    <Text
+                      style={[s.orderItemText, active && s.orderItemTextActive]}
+                    >
+                      {o.label}
+                    </Text>
+                    {active && (
+                      <VectorIcon
+                        iconSet="Ionicons"
+                        iconName="checkmark"
+                        size={15}
+                        color={theme.colors.primary}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+        {/* ── Search results ── */}
         {q.length > 0 ? (
           <View style={s.section}>
             <View style={s.sectionHead}>
@@ -209,18 +377,20 @@ const QuickLinksScreen = () => {
                 <Text style={s.emptySubtitle}>Try a different keyword</Text>
               </View>
             ) : (
-              <View style={s.grid}>
-                {searchResults.map(item => <LinkItem key={item.route} item={item} />)}
+              <View style={s.cardList}>
+                {searchResults.map(item => (
+                  <LinkCard key={item.route} item={item} showCategory />
+                ))}
               </View>
             )}
           </View>
-        ) : (
+        ) : order === 'category' ? (
+          // ── Category-wise ──
           CATEGORIES.map(cat => {
             const links = cat.links.filter(l => l.roles.includes(role));
             if (links.length === 0) return null;
             return (
               <View key={cat.title} style={s.section}>
-                {/* Section header */}
                 <View style={s.sectionHead}>
                   <View style={[s.sectionPill, { backgroundColor: cat.accentBg }]}>
                     <VectorIcon iconSet="Ionicons" iconName={cat.icon} size={12} color={cat.accent} />
@@ -228,16 +398,25 @@ const QuickLinksScreen = () => {
                   </View>
                   <View style={[s.sectionLine, { backgroundColor: cat.accent + '30' }]} />
                 </View>
-
-                {/* Card */}
-                <View style={[s.catCard, { borderTopColor: cat.accent }]}>
-                  <View style={s.grid}>
-                    {links.map(item => <LinkItem key={item.route} item={item} />)}
-                  </View>
+                <View style={s.cardList}>
+                  {links.map(item => (
+                    <LinkCard
+                      key={item.route}
+                      item={item as FlatLink}
+                      showCategory={false}
+                    />
+                  ))}
                 </View>
               </View>
             );
           })
+        ) : (
+          // ── Sidebar / Ascending (flat list) ──
+          <View style={[s.section, s.cardList]}>
+            {orderedLinks.map(item => (
+              <LinkCard key={item.route} item={item} showCategory />
+            ))}
+          </View>
         )}
 
         <View style={{ height: 40 }} />
@@ -277,12 +456,66 @@ const s = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, color: theme.colors.textPrimary, padding: 0 },
 
+  // Order bar
+  orderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+    zIndex: 50,
+  },
+  orderLabel: { fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary },
+  orderSelectWrap: { position: 'relative' },
+  orderSelect: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  orderSelectText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
+  orderDropdown: {
+    position: 'absolute',
+    top: 44,
+    right: 0,
+    minWidth: 210,
+    backgroundColor: '#fff',
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  orderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  orderItemLast: { borderBottomWidth: 0 },
+  orderItemActive: { backgroundColor: theme.colors.primaryLight },
+  orderItemText: { flex: 1, fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary },
+  orderItemTextActive: { color: theme.colors.primary, fontWeight: '700' },
+
   // Scroll
-  scroll: { paddingHorizontal: 16, paddingTop: 18, gap: 4 },
+  scroll: { paddingHorizontal: 16, paddingTop: 10 },
 
   // Section
-  section: { marginBottom: 16 },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  section: { marginBottom: 18 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   sectionPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 10, paddingVertical: 5,
@@ -292,52 +525,47 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
   sectionLine: { flex: 1, height: 1.5, borderRadius: 1 },
 
-  // Category card
-  catCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    borderTopWidth: 3,
+  cardList: { gap: 12 },
+
+  // Card (announcement style)
+  card: {
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.radius.lg,
+    flexDirection: 'row',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-
-  // Grid
-  grid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    padding: 14, gap: 6,
-  },
-
-  // Item
-  item: {
-    width: ITEM_SIZE,
-    alignItems: 'center',
-    paddingVertical: 10,
-    gap: 7,
-  },
-  itemIconWrap: {
-    width: 54, height: 54,
-    borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  itemIconInner: {
-    width: 44, height: 44,
-    borderRadius: 13,
-    alignItems: 'center', justifyContent: 'center',
+  accent: { width: 4, alignSelf: 'stretch' },
+  cardInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
   },
-  itemLabel: {
-    fontSize: 10.5, fontWeight: '700',
-    color: theme.colors.textSecondary,
-    textAlign: 'center', lineHeight: 14,
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  cardMeta: { flex: 1, gap: 6 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
+  catPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  catPillText: { fontSize: 10, fontWeight: '700' },
 
   // Empty
   emptyBox: {
