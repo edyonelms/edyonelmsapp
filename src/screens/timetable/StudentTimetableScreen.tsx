@@ -11,6 +11,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { DAYS } from './timetableData';
 import type { Day } from './timetableData';
 import {
@@ -102,6 +104,8 @@ const StudentTimetableScreen = ({ navigation }: any) => {
     }
   }, []);
 
+  const { refreshing, onRefresh } = useRefresh(load);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -167,6 +171,9 @@ const StudentTimetableScreen = ({ navigation }: any) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {/* ── Single day card ── */}
           <View style={s.card}>

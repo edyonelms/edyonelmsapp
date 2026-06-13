@@ -12,6 +12,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   getStudentContactList,
@@ -152,6 +154,8 @@ const PastQueriesScreen = () => {
     }, [role])
   );
 
+  const { refreshing, onRefresh } = useRefresh(fetchQueries);
+
   // Handle new query button press
   const handleNewQuery = () => {
     console.log('[PastQueriesScreen] Navigating to ContactSchool');
@@ -162,7 +166,13 @@ const PastQueriesScreen = () => {
     <View style={s.root}>
       <Header title="Past Queries" onBackPress={() => navigation.goBack()} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* ── Overview card ── */}
         <View style={s.card}>
           <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />

@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   getStudentExamCopies,
@@ -138,6 +140,8 @@ const ExamCopyScreen = ({ navigation }: any) => {
     }
   }, []);
 
+  const { refreshing, onRefresh } = useRefresh(load);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -209,7 +213,13 @@ const ExamCopyScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.listContent}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.listContent}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {filtered.length > 0 && (
             <View style={s.infoBanner}>
               <VectorIcon iconSet="Ionicons" iconName="information-circle-outline" size={16} color={theme.colors.secondary} />

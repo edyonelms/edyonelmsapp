@@ -14,6 +14,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { getTeacherProfile } from '../../api/teacherApi';
 
 const { width } = Dimensions.get('window');
@@ -74,6 +76,8 @@ const TeacherProfileScreen = () => {
     }
   };
 
+  const { refreshing, onRefresh } = useRefresh(fetchProfile);
+
   useEffect(() => { fetchProfile(); }, []);
 
   if (loading) {
@@ -108,7 +112,13 @@ const TeacherProfileScreen = () => {
   return (
     <View style={s.root}>
       <Header title="Profile" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
 
         {/* ── Gradient hero ── */}
         <LinearGradient

@@ -12,6 +12,8 @@ import { useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { Exam, STATUS_CONFIG, iconForType } from './examData';
 import { getExamDetail, examErrorMessage } from '../../api/examApi';
 
@@ -70,6 +72,8 @@ const ExamDetailScreen = () => {
     }
   }, [examId, summary]);
 
+  const { refreshing, onRefresh } = useRefresh(load);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -107,6 +111,9 @@ const ExamDetailScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Hero card */}
         <View style={styles.heroCard}>

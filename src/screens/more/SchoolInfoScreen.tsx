@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { getSchoolInfo } from '../../api/authApi';
 
@@ -60,19 +62,24 @@ const SchoolInfoScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getSchoolInfo();
-        setInfo(data);
-      } catch (e: any) {
-        console.log('[SchoolInfo] ❌ Error:', e?.response?.data ?? e?.message);
-        setError(e?.response?.data?.message ?? 'Failed to load school info.');
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const load = useCallback(async () => {
+    try {
+      const data = await getSchoolInfo();
+      setInfo(data);
+      setError('');
+    } catch (e: any) {
+      console.log('[SchoolInfo] ❌ Error:', e?.response?.data ?? e?.message);
+      setError(e?.response?.data?.message ?? 'Failed to load school info.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  const { refreshing, onRefresh } = useRefresh(load);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (loading) {
     return (
@@ -118,6 +125,9 @@ const SchoolInfoScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* ── Logo + Name ── */}
         <View style={s.logoSection}>

@@ -14,6 +14,8 @@ import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { FILTERS, STATUS_CONFIG, iconForType, Exam, ExamStatus } from './examData';
 import { getExams, examErrorMessage } from '../../api/examApi';
 
@@ -39,6 +41,8 @@ const ExamsScreen = () => {
       setLoading(false);
     }
   }, []);
+
+  const { refreshing, onRefresh } = useRefresh(load);
 
   useEffect(() => {
     load();
@@ -162,6 +166,9 @@ const ExamsScreen = () => {
           renderItem={renderExam}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           ListEmptyComponent={<Text style={styles.empty}>No exams found.</Text>}
         />
       )}

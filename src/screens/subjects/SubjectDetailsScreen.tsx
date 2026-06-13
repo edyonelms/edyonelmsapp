@@ -11,6 +11,8 @@ import {
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import Header from '../../components/Header';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import {
   getChapters,
   contentErrorMessage,
@@ -44,6 +46,8 @@ const SubjectDetailsScreen = ({ route }: any) => {
     }
   }, [subjectId]);
 
+  const { refreshing, onRefresh } = useRefresh(load);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -72,7 +76,13 @@ const SubjectDetailsScreen = ({ route }: any) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {/* ── Subject overview card ── */}
           <View style={s.card}>
             <View style={[s.accentBar, { backgroundColor: color }]} />

@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { getAboutApp } from '../../api/authApi';
 import { theme } from '../../utils/theme';
 
@@ -62,6 +64,8 @@ const AboutAppScreen = () => {
     }
   };
 
+  const { refreshing, onRefresh } = useRefresh(fetchData);
+
   useEffect(() => { fetchData(); }, []);
 
   if (loading) {
@@ -94,7 +98,13 @@ const AboutAppScreen = () => {
   return (
     <View style={s.root}>
       <Header title="About App" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
 
         {/* ── Hero ── */}
         <View style={s.hero}>

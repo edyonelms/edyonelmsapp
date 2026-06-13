@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { getRulesRegulations } from '../../api/authApi';
 
@@ -44,6 +46,8 @@ const RulesRegulationsScreen = () => {
       setLoading(false);
     }
   };
+
+  const { refreshing, onRefresh } = useRefresh(fetchData);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -88,7 +92,13 @@ const RulesRegulationsScreen = () => {
   return (
     <View style={s.root}>
       <Header title="Rules & Regulations" />
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
 
         {/* ── Hero ── */}
         <View style={s.hero}>
