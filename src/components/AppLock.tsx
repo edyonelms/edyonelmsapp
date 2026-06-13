@@ -126,9 +126,8 @@ const s = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: theme.colors.white,
-    // 5-10% opacity = a barely-there veil over the dashboard; the system
-    // biometric sheet draws on top.
-    opacity: 0.08,
+    // ~25% veil over the dashboard; the system biometric sheet draws on top.
+    opacity: 0.25,
     zIndex: 999,
     elevation: 999,
   },
