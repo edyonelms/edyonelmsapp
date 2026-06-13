@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export type AttendanceStatus = 'present' | 'absent' | 'leave';
 
 export interface Student {
@@ -14,17 +16,32 @@ export interface ClassItem {
 
 export const STATUS_CONFIG: Record<
   AttendanceStatus,
-  { label: string; color: string; bg: string; icon: string }
+  { short: string; full: string; color: string; bg: string; icon: string }
 > = {
   present: {
-    label: 'P',
+    short: 'P',
+    full: 'Present',
     color: '#16A34A',
     bg: '#DCFCE7',
     icon: 'checkmark-circle',
   },
-  absent: { label: 'A', color: '#DC2626', bg: '#FEE2E2', icon: 'close-circle' },
-  leave: { label: 'L', color: '#D97706', bg: '#FEF3C7', icon: 'time' },
+  absent: {
+    short: 'A',
+    full: 'Absent',
+    color: '#DC2626',
+    bg: '#FEE2E2',
+    icon: 'close-circle',
+  },
+  leave: {
+    short: 'L',
+    full: 'Leave',
+    color: '#D97706',
+    bg: '#FEF3C7',
+    icon: 'time',
+  },
 };
+
+export const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'leave'];
 
 export const CLASSES: ClassItem[] = [
   { id: '1', label: 'Class 6A' },
@@ -33,6 +50,10 @@ export const CLASSES: ClassItem[] = [
   { id: '4', label: 'Class 9A' },
   { id: '5', label: 'Class 10B' },
 ];
+
+// Class the logged-in teacher is class-teacher of. `null` → not a class
+// teacher, so they must pick a class & section before marking.
+export const CLASS_TEACHER_OF: ClassItem | null = { id: '4', label: 'Class 9A' };
 
 export const STUDENTS: Omit<Student, 'status'>[] = [
   { id: '1', rollNo: '01', name: 'Aarav Sharma' },
@@ -52,13 +73,6 @@ export const STUDENTS: Omit<Student, 'status'>[] = [
 export const getDefaultStudents = (): Student[] =>
   STUDENTS.map(s => ({ ...s, status: 'present' }));
 
-export const getTodayLabel = (): string =>
-  new Date().toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-
 export const getCounts = (
   students: Student[],
 ): Record<AttendanceStatus, number> =>
@@ -69,3 +83,107 @@ export const getCounts = (
     },
     { present: 0, absent: 0, leave: 0 },
   );
+
+// ─── Dates ───────────────────────────────────────────────────────────────────
+export interface DateItem {
+  iso: string;
+  weekday: string;
+  day: string;
+  month: string;
+  isToday: boolean;
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+export const toIso = (d: Date): string =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+// Last `count` days ending today (oldest first, today last).
+export const getRecentDates = (count = 7): DateItem[] => {
+  const today = new Date();
+  const todayIso = toIso(today);
+  const out: DateItem[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const iso = toIso(d);
+    out.push({
+      iso,
+      weekday: WEEKDAYS[d.getDay()],
+      day: pad(d.getDate()),
+      month: MONTHS[d.getMonth()],
+      isToday: iso === todayIso,
+    });
+  }
+  return out;
+};
+
+export const formatLong = (iso: string): string => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return `${WEEKDAYS[date.getDay()]}, ${pad(d)} ${MONTHS[m - 1]} ${y}`;
+};
+
+export const EDIT_WINDOW_DAYS = 3;
+
+const midnight = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+// Whole days between the attendance date and today (0 = today).
+export const daysSince = (iso: string): number => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const target = midnight(new Date(y, m - 1, d));
+  const now = midnight(new Date());
+  return Math.round((now - target) / 86400000);
+};
+
+// Editable only for today and the previous EDIT_WINDOW_DAYS days.
+export const canEdit = (iso: string): boolean => {
+  const diff = daysSince(iso);
+  return diff >= 0 && diff <= EDIT_WINDOW_DAYS;
+};
+
+// ─── Persistence (so the 3-day edit window survives app restarts) ────────────
+export interface AttendanceRecord {
+  date: string;
+  classId: string;
+  classLabel: string;
+  statuses: Record<string, AttendanceStatus>;
+  submittedAt: string;
+}
+
+const STORAGE_KEY = 'attendance_records';
+
+export const recordKey = (date: string, classId: string) =>
+  `${date}__${classId}`;
+
+export const loadRecords = async (): Promise<
+  Record<string, AttendanceRecord>
+> => {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const getRecord = async (
+  date: string,
+  classId: string,
+): Promise<AttendanceRecord | null> => {
+  const all = await loadRecords();
+  return all[recordKey(date, classId)] ?? null;
+};
+
+export const saveRecord = async (record: AttendanceRecord): Promise<void> => {
+  const all = await loadRecords();
+  all[recordKey(record.date, record.classId)] = record;
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+};
