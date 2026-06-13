@@ -61,6 +61,8 @@ const CATEGORIES: Category[] = [
       { label: 'Exam Copy',    icon: 'copy-outline',          color: '#0EA5E9', bg: '#E0F2FE', route: 'ExamCopyScreen',   roles: ['student'] },
       { label: 'Report Card',  icon: 'ribbon-outline',        color: '#DC2626', bg: '#FEE2E2', route: 'ReportCardScreen', roles: ['student'] },
       { label: 'Performance',  icon: 'trending-up-outline',   color: '#16A34A', bg: '#DCFCE7', route: 'PerformanceScreen',roles: ['student'] },
+      { label: 'Upload Copy',  icon: 'cloud-upload-outline',  color: '#0EA5E9', bg: '#E0F2FE', route: 'UploadCopyScreen', roles: ['teacher'] },
+      { label: 'Upload Marks', icon: 'create-outline',        color: '#16A34A', bg: '#DCFCE7', route: 'UploadMarksScreen',roles: ['teacher'] },
     ],
   },
   {
