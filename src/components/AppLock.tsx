@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { BlurView } from '@react-native-community/blur';
 import { Biometrics, isPromptInProgress } from '../utils/biometrics';
 import { theme } from '../utils/theme';
 
@@ -102,14 +103,21 @@ const AppLock = ({
     <View style={s.flex}>
       {children}
       {locked && (
-        // Thin dim veil: dashboard shows at ~92% (a very light white wash).
-        // Tapping it re-fires the biometric prompt in case the user
-        // dismissed the system sheet.
+        // Real frosted-glass blur over the dashboard at 15% strength; the
+        // system biometric sheet draws on top. Tapping it re-fires the
+        // prompt in case the user dismissed the system sheet.
         <TouchableOpacity
           activeOpacity={1}
           onPress={promptUnlock}
           style={s.overlay}
-        />
+        >
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            blurType="light"
+            blurAmount={15}
+            reducedTransparencyFallbackColor={theme.colors.white}
+          />
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -125,9 +133,6 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: theme.colors.white,
-    // ~25% veil over the dashboard; the system biometric sheet draws on top.
-    opacity: 0.25,
     zIndex: 999,
     elevation: 999,
   },
