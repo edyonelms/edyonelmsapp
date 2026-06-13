@@ -94,6 +94,42 @@ export const getCalendarEvents = async (
   }
 };
 
+// Full event detail (GET /calendar/events/{id})
+export interface EventDetail {
+  id: number;
+  title: string;
+  description: string | null;
+  date: string;
+  start_time: string | null;
+  end_time: string | null;
+  is_all_day: boolean;
+  event_type: string;
+  color: string | null;
+  is_cancelled: boolean;
+  cancellation_reason: string | null;
+  location: {
+    room_number: string | null;
+    building: string | null;
+    location: string | null;
+    full_address: string | null;
+  } | null;
+  academic_details: {
+    standard: { id: number; name: string } | null;
+    section: { id: number; name: string } | null;
+    subject: { id: number; name: string } | null;
+    teacher: { id: number; name: string | null; email: string | null } | null;
+  } | null;
+  timing_display: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// GET /calendar/events/{id} - full details for a single event
+export const getEventById = async (id: string | number): Promise<EventDetail> => {
+  const { data } = await apiClient.get(`/calendar/events/${id}`);
+  return (data?.data ?? data) as EventDetail;
+};
+
 // POST /calendar/events/today - Use POST method
 export const getTodayEvents = async (): Promise<ApiEvent[]> => {
   console.log('[getTodayEvents] Fetching today\'s events with POST...');

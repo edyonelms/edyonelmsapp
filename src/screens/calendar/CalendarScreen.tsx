@@ -359,8 +359,10 @@ const CalendarScreen = ({ navigation }: any) => {
                   const meta = TYPE_META[event.type];
                   const isLast = idx === filteredEvents.length - 1;
                   return (
-                    <View
+                    <TouchableOpacity
                       key={event.id}
+                      activeOpacity={0.7}
+                      onPress={() => navigation.navigate('ViewEvent', { event })}
                       style={[s.eventRow, !isLast && s.rowBorder]}
                     >
                       <View style={[s.eventIcon, { backgroundColor: meta.bg }]}>
@@ -403,7 +405,13 @@ const CalendarScreen = ({ navigation }: any) => {
                           </View>
                         )}
                       </View>
-                    </View>
+                      <VectorIcon
+                        iconSet="Ionicons"
+                        iconName="chevron-forward"
+                        size={16}
+                        color={theme.colors.textMuted}
+                      />
+                    </TouchableOpacity>
                   );
                 })
               )}

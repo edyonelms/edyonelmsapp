@@ -16,6 +16,7 @@ import TermsOfUseScreen from '../screens/more/TermsOfUseScreen';
 import StudentProfileScreen from '../screens/profile/StudentProfileScreen';
 import TeacherProfileScreen from '../screens/profile/TeacherProfileScreen';
 import ViewAnnouncementScreen from '../screens/announcement/ViewAnnouncementScreen';
+import ViewEventScreen from '../screens/calendar/ViewEventScreen';
 import ContactSchoolScreen from '../screens/contactSchool/ContactSchoolScreen';
 import ViewQueryScreen from '../screens/contactSchool/ViewQueryScreen';
 import ChatsScreen from '../screens/chats/ChatsScreen';
@@ -77,6 +78,9 @@ const AppNavigator = () => {
         name="ViewAnnouncement"
         component={ViewAnnouncementScreen}
       />
+
+      {/* Calendar */}
+      <Stack.Screen name="ViewEvent" component={ViewEventScreen} />
 
       {/* Contact School */}
       <Stack.Screen name="NewQuery" component={ContactSchoolScreen} />
