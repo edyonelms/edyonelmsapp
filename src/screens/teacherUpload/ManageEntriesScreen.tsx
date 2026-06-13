@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Modal,
@@ -15,6 +16,7 @@ import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import SelectionCard from './SelectionCard';
 import { Selection, UploadEntry } from './uploadData';
+import { upsertMark, upsertExamCopy, marksErrorMessage } from '../../api/marksApi';
 
 type Mode = 'copy' | 'marks';
 
@@ -33,6 +35,63 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
   const [entries, setEntries] = useState<UploadEntry[]>(initial);
   const [editing, setEditing] = useState<UploadEntry | null>(null);
   const [draftMarks, setDraftMarks] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleConfirm = async () => {
+    if (!entries.length) return;
+    if (!selection.exam || !selection.cls || !selection.subject) {
+      Alert.alert('Incomplete selection', 'Please pick exam, class and subject again.');
+      return;
+    }
+    const base = {
+      exam_id: selection.exam.examId,
+      standard_id: selection.cls.standardId,
+      section_id: selection.cls.sectionId,
+      subject_id: selection.subject.subjectId,
+    };
+
+    setSubmitting(true);
+    let ok = 0;
+    const failed: string[] = [];
+
+    for (const e of entries) {
+      try {
+        if (mode === 'marks') {
+          await upsertMark({
+            ...base,
+            student_detail_id: e.studentDetailId,
+            marks_obtained: e.marks ?? 0,
+            max_marks: maxMarks,
+          });
+        } else {
+          if (!e.uri) {
+            failed.push(`${e.name} (no file)`);
+            continue;
+          }
+          await upsertExamCopy(
+            { ...base, student_detail_id: e.studentDetailId },
+            { uri: e.uri, name: e.fileName ?? 'copy.pdf', type: e.fileType },
+          );
+        }
+        ok++;
+      } catch (err: any) {
+        failed.push(`${e.name} — ${marksErrorMessage(err)}`);
+      }
+    }
+
+    setSubmitting(false);
+    const noun = mode === 'marks' ? 'marks' : 'copies';
+    if (failed.length === 0) {
+      Alert.alert('Saved', `${ok} ${noun} saved successfully.`, [
+        { text: 'Done', onPress: () => navigation.goBack() },
+      ]);
+    } else {
+      Alert.alert(
+        ok > 0 ? 'Partly saved' : 'Save failed',
+        `${ok} saved, ${failed.length} failed:\n\n${failed.slice(0, 6).join('\n')}`,
+      );
+    }
+  };
 
   const sync = (next: UploadEntry[]) => {
     setEntries(next);
@@ -199,6 +258,27 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
             </Text>
           </View>
         }
+        ListFooterComponent={
+          entries.length > 0 ? (
+            <TouchableOpacity
+              style={[s.confirmBtn, submitting && s.confirmBtnDisabled]}
+              activeOpacity={0.85}
+              disabled={submitting}
+              onPress={handleConfirm}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <VectorIcon iconSet="Ionicons" iconName="cloud-upload-outline" size={18} color="#fff" />
+              )}
+              <Text style={s.confirmText}>
+                {submitting
+                  ? 'Saving…'
+                  : `Confirm & Save ${entries.length} ${mode === 'copy' ? 'Copies' : 'Marks'}`}
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
       />
 
       {/* Marks editor modal */}
@@ -302,6 +382,19 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
+
+  confirmBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 15,
+    borderRadius: theme.radius.sm,
+    marginTop: theme.spacing.lg,
+  },
+  confirmBtnDisabled: { opacity: 0.6 },
+  confirmText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   emptyBox: { alignItems: 'center', paddingTop: 60 },
   emptyIconRing: {

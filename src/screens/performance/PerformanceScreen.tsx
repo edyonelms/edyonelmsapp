@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,6 +10,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import { getStudentMarks, marksErrorMessage } from '../../api/marksApi';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SubjectMark {
@@ -21,12 +23,10 @@ interface SubjectMark {
 interface ExamResult {
   id: string;
   examName: string;
-  examType: string;
-  dateRange: string;
   subjects: SubjectMark[];
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Subject colour (server has no styling) ───────────────────────────────────
 const SUBJECT_COLORS: Record<string, string> = {
   Mathematics: '#4F46E5',
   Science: '#0EA5E9',
@@ -35,123 +35,35 @@ const SUBJECT_COLORS: Record<string, string> = {
   Hindi: '#DC2626',
   'Computer Science': '#7C3AED',
 };
+const PALETTE = ['#4F46E5', '#0EA5E9', '#D97706', '#16A34A', '#DC2626', '#7C3AED', '#0891B2', '#DB2777'];
+const subjectColor = (name: string): string => {
+  if (SUBJECT_COLORS[name]) return SUBJECT_COLORS[name];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i)) % PALETTE.length;
+  return PALETTE[h];
+};
 
-const PERFORMANCE_DATA: ExamResult[] = [
-  {
-    id: '1',
-    examName: 'IA 1',
-    examType: 'Unit Test',
-    dateRange: '03 Feb - 26 Feb 2026',
-    subjects: [
-      {
-        subject: 'Mathematics',
-        obtained: 82,
-        total: 100,
-        color: SUBJECT_COLORS['Mathematics'],
-      },
-      {
-        subject: 'Science',
-        obtained: 76,
-        total: 100,
-        color: SUBJECT_COLORS['Science'],
-      },
-      {
-        subject: 'English',
-        obtained: 88,
-        total: 100,
-        color: SUBJECT_COLORS['English'],
-      },
-      {
-        subject: 'Social Science',
-        obtained: 71,
-        total: 100,
-        color: SUBJECT_COLORS['Social Science'],
-      },
-      {
-        subject: 'Hindi',
-        obtained: 79,
-        total: 100,
-        color: SUBJECT_COLORS['Hindi'],
-      },
-    ],
-  },
-  {
-    id: '2',
-    examName: 'IA 2',
-    examType: 'Unit Test',
-    dateRange: '05 Nov - 15 Nov 2025',
-    subjects: [
-      {
-        subject: 'Mathematics',
-        obtained: 74,
-        total: 100,
-        color: SUBJECT_COLORS['Mathematics'],
-      },
-      {
-        subject: 'Science',
-        obtained: 81,
-        total: 100,
-        color: SUBJECT_COLORS['Science'],
-      },
-      {
-        subject: 'English',
-        obtained: 90,
-        total: 100,
-        color: SUBJECT_COLORS['English'],
-      },
-      {
-        subject: 'Social Science',
-        obtained: 68,
-        total: 100,
-        color: SUBJECT_COLORS['Social Science'],
-      },
-      {
-        subject: 'Hindi',
-        obtained: 85,
-        total: 100,
-        color: SUBJECT_COLORS['Hindi'],
-      },
-    ],
-  },
-  {
-    id: '3',
-    examName: 'Final Term',
-    examType: 'Final Term',
-    dateRange: '01 Mar - 20 Mar 2026',
-    subjects: [
-      {
-        subject: 'Mathematics',
-        obtained: 91,
-        total: 100,
-        color: SUBJECT_COLORS['Mathematics'],
-      },
-      {
-        subject: 'Science',
-        obtained: 87,
-        total: 100,
-        color: SUBJECT_COLORS['Science'],
-      },
-      {
-        subject: 'English',
-        obtained: 93,
-        total: 100,
-        color: SUBJECT_COLORS['English'],
-      },
-      {
-        subject: 'Social Science',
-        obtained: 78,
-        total: 100,
-        color: SUBJECT_COLORS['Social Science'],
-      },
-      {
-        subject: 'Hindi',
-        obtained: 82,
-        total: 100,
-        color: SUBJECT_COLORS['Hindi'],
-      },
-    ],
-  },
-];
+// Group a flat marks list into exam → subjects.
+const buildExamResults = (marks: any[]): ExamResult[] => {
+  const byExam = new Map<number, ExamResult>();
+  marks.forEach(m => {
+    if (m.is_absent) return;
+    const total = Number(m.max_marks ?? 0);
+    if (!total) return;
+    let exam = byExam.get(m.exam_id);
+    if (!exam) {
+      exam = { id: String(m.exam_id), examName: m.exam_name ?? 'Exam', subjects: [] };
+      byExam.set(m.exam_id, exam);
+    }
+    exam.subjects.push({
+      subject: m.subject_name ?? 'Subject',
+      obtained: Number(m.marks_obtained ?? 0),
+      total,
+      color: subjectColor(m.subject_name ?? ''),
+    });
+  });
+  return Array.from(byExam.values());
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getGrade = (pct: number) => {
@@ -226,9 +138,31 @@ const pStyles = StyleSheet.create({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const PerformanceScreen = () => {
-  const [expandedId, setExpandedId] = useState<string | null>(
-    PERFORMANCE_DATA[0].id,
-  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [examResults, setExamResults] = useState<ExamResult[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const marks = await getStudentMarks();
+      const results = buildExamResults(marks);
+      setExamResults(results);
+      setExpandedId(results[0]?.id ?? null);
+    } catch (e: any) {
+      console.log('[getStudentMarks] Error:', e?.response?.status, e?.message);
+      setError(marksErrorMessage(e));
+      setExamResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // Overall stats across all exams
   const allSubjectTotals: Record<
@@ -238,7 +172,7 @@ const PerformanceScreen = () => {
   let grandObtained = 0;
   let grandTotal = 0;
 
-  PERFORMANCE_DATA.forEach(exam => {
+  examResults.forEach(exam => {
     exam.subjects.forEach(s => {
       if (!allSubjectTotals[s.subject]) {
         allSubjectTotals[s.subject] = { obtained: 0, total: 0, color: s.color };
@@ -250,9 +184,51 @@ const PerformanceScreen = () => {
     });
   });
 
-  const overallPct = Math.round((grandObtained / grandTotal) * 100);
+  const overallPct =
+    grandTotal > 0 ? Math.round((grandObtained / grandTotal) * 100) : 0;
   const overallPerf = getPerformanceLabel(overallPct);
   const { grade: overallGrade } = getGrade(overallPct);
+
+  if (loading) {
+    return (
+      <View style={styles.safeArea}>
+        <Header title="My Performance" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (error || examResults.length === 0) {
+    return (
+      <View style={styles.safeArea}>
+        <Header title="My Performance" />
+        <View style={styles.center}>
+          <View style={styles.stateIconWrap}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName={error ? 'cloud-offline-outline' : 'bar-chart-outline'}
+              size={32}
+              color={error ? theme.colors.danger : theme.colors.primary}
+            />
+          </View>
+          <Text style={styles.stateTitle}>
+            {error ? 'Couldn’t load performance' : 'No results yet'}
+          </Text>
+          <Text style={styles.stateText}>
+            {error || 'Your marks will appear here once exams are graded.'}
+          </Text>
+          {!!error && (
+            <TouchableOpacity style={styles.retryBtn} onPress={load} activeOpacity={0.85}>
+              <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={theme.colors.primary} />
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.safeArea}>
@@ -274,7 +250,7 @@ const PerformanceScreen = () => {
               <View>
                 <Text style={styles.summaryTitle}>Overall Performance</Text>
                 <Text style={styles.summarySubtitle}>
-                  {PERFORMANCE_DATA.length} Exams ·{' '}
+                  {examResults.length} Exams ·{' '}
                   {Object.keys(allSubjectTotals).length} Subjects
                 </Text>
               </View>
@@ -393,7 +369,7 @@ const PerformanceScreen = () => {
         {/* ── Exam-wise Breakdown ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Exam-wise Breakdown</Text>
-          {PERFORMANCE_DATA.map(exam => {
+          {examResults.map(exam => {
             const examObtained = exam.subjects.reduce(
               (s, x) => s + x.obtained,
               0,
@@ -425,7 +401,8 @@ const PerformanceScreen = () => {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.examName}>{exam.examName}</Text>
                     <Text style={styles.examMeta}>
-                      {exam.examType} · {exam.dateRange}
+                      {exam.subjects.length} subject
+                      {exam.subjects.length !== 1 ? 's' : ''}
                     </Text>
                   </View>
                   <View style={styles.examHeaderRight}>
@@ -559,6 +536,44 @@ export default PerformanceScreen;
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: theme.spacing.lg, gap: 16, paddingBottom: 30 },
+
+  // States
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: 10,
+  },
+  stateIconWrap: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
+  stateText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   // Summary card
   summaryCard: {

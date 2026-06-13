@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   StyleSheet,
@@ -13,30 +14,55 @@ import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import SelectionWizard from './SelectionWizard';
 import SelectionCard from './SelectionCard';
-import {
-  emptySelection,
-  isComplete,
-  Selection,
-  STUDENTS,
-  UploadEntry,
-  UploadStudent,
-} from './uploadData';
+import { emptySelection, isComplete, Selection, UploadEntry, UploadStudent } from './uploadData';
+import { getMarksStudents, marksErrorMessage } from '../../api/marksApi';
 
 interface UploadedCopy {
   fileName: string;
   uri: string;
+  fileType?: string;
 }
 
 const UploadCopyScreen = ({ navigation }: any) => {
   const [selection, setSelection] = useState<Selection>(emptySelection());
   const [uploads, setUploads] = useState<Record<string, UploadedCopy>>({});
+  const [students, setStudents] = useState<UploadStudent[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
 
   const ready = isComplete(selection);
   const uploadedCount = Object.keys(uploads).length;
 
+  const loadRoster = useCallback(async (sel: Selection) => {
+    if (!sel.cls) return;
+    setLoadingStudents(true);
+    setStudentsError(null);
+    try {
+      const roster = await getMarksStudents(sel.cls.standardId, sel.cls.sectionId);
+      setStudents(
+        roster.map(r => ({
+          id: String(r.student_detail_id),
+          studentDetailId: r.student_detail_id,
+          rollNo: String(r.roll_no ?? ''),
+          name: r.name,
+        })),
+      );
+    } catch (e: any) {
+      setStudentsError(marksErrorMessage(e));
+      setStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isComplete(selection)) loadRoster(selection);
+  }, [selection, loadRoster]);
+
   const onSelect = (next: Selection) => {
     setSelection(next);
     setUploads({}); // fresh context → start over
+    setStudents([]);
   };
 
   const pickCopy = (student: UploadStudent) => {
@@ -53,6 +79,7 @@ const UploadCopyScreen = ({ navigation }: any) => {
               (asset.type ?? 'image/jpeg').split('/')[1]
             }`,
           uri: asset.uri ?? '',
+          fileType: asset.type,
         },
       }));
     });
@@ -78,15 +105,17 @@ const UploadCopyScreen = ({ navigation }: any) => {
       Alert.alert('Nothing to submit', 'Upload at least one copy first.');
       return;
     }
-    const entries: UploadEntry[] = STUDENTS.filter(st => uploads[st.id]).map(
-      st => ({
+    const entries: UploadEntry[] = students
+      .filter(st => uploads[st.id])
+      .map(st => ({
         studentId: st.id,
+        studentDetailId: st.studentDetailId,
         rollNo: st.rollNo,
         name: st.name,
         fileName: uploads[st.id].fileName,
         uri: uploads[st.id].uri,
-      }),
-    );
+        fileType: uploads[st.id].fileType,
+      }));
     navigation.navigate('ManageEntries', {
       mode: 'copy',
       selection,
@@ -157,7 +186,7 @@ const UploadCopyScreen = ({ navigation }: any) => {
       <Header title="Upload Copy" onBackPress={() => navigation.goBack()} />
 
       <FlatList
-        data={ready ? STUDENTS : []}
+        data={ready && !loadingStudents && !studentsError ? students : []}
         keyExtractor={i => i.id}
         renderItem={renderStudent}
         showsVerticalScrollIndicator={false}
@@ -166,32 +195,7 @@ const UploadCopyScreen = ({ navigation }: any) => {
           <>
             <SelectionWizard value={selection} onChange={onSelect} />
 
-            {ready ? (
-              <>
-                <View style={s.cardWrap}>
-                  <SelectionCard selection={selection} />
-                </View>
-
-                <View style={s.summaryRow}>
-                  <View style={s.summaryChip}>
-                    <VectorIcon
-                      iconSet="Ionicons"
-                      iconName="checkmark-circle"
-                      size={14}
-                      color={theme.colors.success}
-                    />
-                    <Text style={s.summaryText}>
-                      {uploadedCount} of {STUDENTS.length} uploaded
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={s.listHeader}>
-                  <Text style={s.listHeaderText}>Student</Text>
-                  <Text style={s.listHeaderText}>Copy</Text>
-                </View>
-              </>
-            ) : (
+            {!ready ? (
               <View style={s.promptBox}>
                 <View style={s.promptIconRing}>
                   <VectorIcon
@@ -206,11 +210,43 @@ const UploadCopyScreen = ({ navigation }: any) => {
                   Choose Exam, Class and Subject to load the student list
                 </Text>
               </View>
+            ) : loadingStudents ? (
+              <View style={s.promptBox}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
+            ) : studentsError ? (
+              <View style={s.promptBox}>
+                <Text style={s.promptTitle}>Couldn’t load students</Text>
+                <Text style={s.promptSub}>{studentsError}</Text>
+                <TouchableOpacity style={s.rosterRetry} onPress={() => loadRoster(selection)} activeOpacity={0.85}>
+                  <Text style={s.rosterRetryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={s.cardWrap}>
+                  <SelectionCard selection={selection} />
+                </View>
+
+                <View style={s.summaryRow}>
+                  <View style={s.summaryChip}>
+                    <VectorIcon iconSet="Ionicons" iconName="checkmark-circle" size={14} color={theme.colors.success} />
+                    <Text style={s.summaryText}>
+                      {uploadedCount} of {students.length} uploaded
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={s.listHeader}>
+                  <Text style={s.listHeaderText}>Student</Text>
+                  <Text style={s.listHeaderText}>Copy</Text>
+                </View>
+              </>
             )}
           </>
         }
         ListFooterComponent={
-          ready ? (
+          ready && !loadingStudents && !studentsError && students.length > 0 ? (
             <TouchableOpacity
               style={s.submitBtn}
               onPress={handleSubmit}
@@ -360,4 +396,14 @@ const s = StyleSheet.create({
     marginTop: theme.spacing.lg,
   },
   submitText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+
+  rosterRetry: {
+    marginTop: 10,
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 20,
+    paddingVertical: 7,
+  },
+  rosterRetryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });
