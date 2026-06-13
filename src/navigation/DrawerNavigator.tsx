@@ -23,7 +23,6 @@ import TabNavigator from './TabNavigator';
 import SettingsScreen from '../screens/setting/SettingsScreen';
 import { theme } from '../utils/theme';
 import VectorIcon from '../components/VectorIcon';
-import MenuPlaceholderScreen from '../screens/home/MenuPlaceholderScreen';
 import MoreScreen from '../screens/more/MoreScreen';
 import CalendarScreen from '../screens/calendar/CalendarScreen';
 import AnnouncementScreen from '../screens/announcement/AnnouncementScreen';
@@ -51,6 +50,8 @@ import TeacherExamsScreen from '../screens/exam/TeacherExamsScreen';
 import PerformanceScreen from '../screens/performance/PerformanceScreen';
 import AnalyticsScreen from '../screens/analytics/AnalyticsScreen';
 import IDCardScreen from '../screens/idCard/IDCardScreen';
+import UploadCopyScreen from '../screens/teacherUpload/UploadCopyScreen';
+import UploadMarksScreen from '../screens/teacherUpload/UploadMarksScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -145,13 +146,13 @@ const DrawerNavigator = ({ route }: any) => {
       { name: 'Chats', label: 'Chats', icon: 'chatbubbles-outline' },
       { name: 'Exams', label: 'Exams', icon: 'school-outline' },
       {
-        name: 'Upload marks',
-        label: 'Upload marks',
+        name: 'UploadMarks',
+        label: 'Upload Marks',
         icon: 'cloud-upload-outline',
       },
       {
-        name: 'Upload copy',
-        label: 'Upload copy',
+        name: 'UploadCopy',
+        label: 'Upload Copy',
         icon: 'document-attach-outline',
       },
       { name: 'ContactSchool', label: 'Contact School', icon: 'call-outline' },
@@ -482,12 +483,12 @@ const DrawerNavigator = ({ route }: any) => {
       />
       <Drawer.Screen
         name="UploadMarks"
-        component={MenuPlaceholderScreen}
+        component={UploadMarksScreen}
         initialParams={{ title: 'Upload Marks' }}
       />
       <Drawer.Screen
         name="UploadCopy"
-        component={MenuPlaceholderScreen}
+        component={UploadCopyScreen}
         initialParams={{ title: 'Upload Copy' }}
       />
       <Drawer.Screen
