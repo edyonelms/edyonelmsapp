@@ -567,7 +567,7 @@ const s = StyleSheet.create({
   dayInner: {
     width: CELL_SIZE - 8,
     height: CELL_SIZE - 8,
-    borderRadius: (CELL_SIZE - 8) / 2,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
