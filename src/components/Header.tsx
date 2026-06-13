@@ -26,7 +26,13 @@ const Header = ({ title, onBackPress, showBack = true, backgroundColor = '#fff' 
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} translucent={false} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={theme.colors.background}
+        translucent={false}
+      />
+      {/* Light gap so the status bar and the header read as separate strips. */}
+      <View style={styles.statusGap} />
       <View style={[styles.container, { backgroundColor }]}>
         <View style={styles.side}>
           {showBack ? (
@@ -58,6 +64,11 @@ const Header = ({ title, onBackPress, showBack = true, backgroundColor = '#fff' 
 export default Header;
 
 const styles = StyleSheet.create({
+  // Light strip between the system status bar and the header bar.
+  statusGap: {
+    height: theme.spacing.sm,
+    backgroundColor: theme.colors.background,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -66,8 +77,9 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.sm,
     paddingBottom: theme.spacing.sm,
     height: 60,
+    borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderColor: theme.colors.border,
   },
   side: {
     width: 36,

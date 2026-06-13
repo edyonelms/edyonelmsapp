@@ -14,7 +14,6 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../utils/theme';
 import VectorIcon from './VectorIcon';
@@ -32,9 +31,9 @@ interface TopBarProps {
   onAvatarPress?: () => void;
 }
 
-// Attractive indigo→violet gradient for the header + status-bar area.
-const HEADER_GRADIENT = ['#4F46E5', '#6D5DF2', '#7C3AED'];
-const HEADER_TOP = '#4F46E5';
+// White header + status-bar area with dark content.
+const HEADER_BG = '#FFFFFF';
+const HEADER_TOP = '#FFFFFF';
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -121,17 +120,16 @@ const TopBar = ({
   };
 
   return (
-    <LinearGradient
-      colors={HEADER_GRADIENT}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.container, { paddingTop: insets.top + 10 }]}
-    >
-      {/* Solid status-bar tint that matches the gradient's top colour. */}
+    <View style={styles.container}>
+      {/* White status-bar tint with dark icons. */}
       <StatusBar
         translucent={false}
         backgroundColor={HEADER_TOP}
-        barStyle="light-content"
+        barStyle="dark-content"
+      />
+      {/* Paint the safe-area inset (notch / status-bar strip) white. */}
+      <View
+        style={[styles.statusBackdrop, { top: -insets.top, height: insets.top }]}
       />
 
       {/* Row 1: menu · greeting+name · bell · avatar */}
@@ -141,7 +139,7 @@ const TopBar = ({
           activeOpacity={0.7}
           style={styles.menuBtn}
         >
-          <VectorIcon iconSet="Feather" iconName="menu" size={20} color="#fff" />
+          <VectorIcon iconSet="Feather" iconName="menu" size={20} color={theme.colors.primary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -158,7 +156,7 @@ const TopBar = ({
               iconSet="Feather"
               iconName="chevron-down"
               size={16}
-              color="rgba(255,255,255,0.9)"
+              color={theme.colors.textSecondary}
             />
           </View>
         </TouchableOpacity>
@@ -168,7 +166,7 @@ const TopBar = ({
             iconSet="Ionicons"
             iconName="notifications-outline"
             size={19}
-            color="#fff"
+            color={theme.colors.primary}
           />
           <View style={styles.bellDot} />
         </TouchableOpacity>
@@ -185,7 +183,7 @@ const TopBar = ({
               iconSet="Ionicons"
               iconName="person-circle"
               size={26}
-              color="#fff"
+              color={theme.colors.primary}
             />
           )}
         </TouchableOpacity>
@@ -194,7 +192,7 @@ const TopBar = ({
       {/* Subtitle pill (class / role) */}
       {!!subtitle && (
         <View style={styles.subtitlePill}>
-          <VectorIcon iconSet="Ionicons" iconName={subtitleIcon} size={12} color="#fff" />
+          <VectorIcon iconSet="Ionicons" iconName={subtitleIcon} size={12} color={theme.colors.primary} />
           <Text style={styles.subtitleText} numberOfLines={1}>
             {subtitle}
           </Text>
@@ -220,22 +218,32 @@ const TopBar = ({
       </View>
 
       <AccountSwitcherSheet visible={switcherOpen} onClose={onSwitcherClose} />
-    </LinearGradient>
+    </View>
   );
 };
 
 export default TopBar;
 
 const styles = StyleSheet.create({
+  statusBackdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: HEADER_TOP,
+  },
   container: {
+    backgroundColor: HEADER_BG,
+    paddingTop: theme.spacing.md,
     paddingBottom: 18,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14,
-    elevation: 8,
+    borderBottomWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
   wrap: {
     flexDirection: 'row',
@@ -247,7 +255,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -258,7 +266,7 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 11,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.8)',
+    color: theme.colors.textSecondary,
     letterSpacing: 0.3,
   },
   nameRow: {
@@ -270,7 +278,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#fff',
+    color: theme.colors.textPrimary,
     flexShrink: 1,
   },
   subtitlePill: {
@@ -280,18 +288,20 @@ const styles = StyleSheet.create({
     gap: 5,
     marginTop: 10,
     marginLeft: theme.spacing.lg,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: theme.colors.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: theme.radius.full,
   },
-  subtitleText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  subtitleText: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
   searchWrap: {
     marginTop: 12,
     marginHorizontal: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     borderRadius: theme.radius.full,
     paddingHorizontal: 16,
     height: 44,
@@ -306,7 +316,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: theme.radius.full,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -317,12 +327,12 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: '#FACC15',
+    backgroundColor: '#EF4444',
     borderWidth: 1.5,
-    borderColor: HEADER_TOP,
+    borderColor: HEADER_BG,
   },
   avatarBtn: {
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: theme.colors.primaryLight,
     overflow: 'hidden',
   },
   avatarImg: {
