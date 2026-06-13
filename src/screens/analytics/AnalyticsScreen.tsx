@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   ScrollView,
   StatusBar,
@@ -12,12 +13,41 @@ import { useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { computeStats } from '../attendance/attendanceTypes';
 import { Chip } from '../../components/Charts';
+import {
+  getStudentDashboard,
+  getTeacherDashboard,
+  dashboardErrorMessage,
+  subjectTheme,
+  type StudentDashboard,
+  type TeacherDashboard,
+} from '../../api/dashboardApi';
+import { getMyAttendance, type MyAttendance } from '../../api/attendanceApi';
 import moment from 'moment';
 
 const { width } = Dimensions.get('window');
 type Role = 'student' | 'teacher';
+
+// ─── Shared state views ────────────────────────────────────────────────────────
+const Loading = () => (
+  <View style={s.stateBox}>
+    <ActivityIndicator size="large" color={theme.colors.primary} />
+  </View>
+);
+
+const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  <View style={s.stateBox}>
+    <View style={s.errorIconRing}>
+      <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
+    </View>
+    <Text style={s.errorTitle}>Couldn’t load analytics</Text>
+    <Text style={s.errorSub}>{message}</Text>
+    <TouchableOpacity style={s.retryBtn} onPress={onRetry} activeOpacity={0.85}>
+      <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={theme.colors.primary} />
+      <Text style={s.retryText}>Retry</Text>
+    </TouchableOpacity>
+  </View>
+);
 
 // ─── Bar Chart ────────────────────────────────────────────────────────────────
 const BarChart = ({ data, color, maxVal }: { data: { label: string; value: number }[]; color: string; maxVal: number }) => (
@@ -120,31 +150,71 @@ const SectionCard = ({ icon, iconBg, iconColor, title, children }: any) => (
 // ─── Student Analytics ────────────────────────────────────────────────────────
 const MONTHS = [moment().subtract(2, 'months'), moment().subtract(1, 'months'), moment()];
 
-const SUBJECT_PERF = [
-  { subject: 'Mathematics', obtained: 82, total: 100, color: '#4F46E5' },
-  { subject: 'Science',     obtained: 76, total: 100, color: '#0EA5E9' },
-  { subject: 'English',     obtained: 88, total: 100, color: '#D97706' },
-  { subject: 'Soc. Sci.',   obtained: 71, total: 100, color: '#16A34A' },
-  { subject: 'Hindi',       obtained: 79, total: 100, color: '#DC2626' },
-];
-
 const StudentAnalytics = () => {
   const [activeMonth, setActiveMonth] = useState(2);
-  const stats = computeStats(MONTHS[activeMonth].format('YYYY-MM'));
-  const attPct = Math.round(parseFloat(stats.presentPct));
+  const [dash, setDash] = useState<StudentDashboard | null>(null);
+  const [att, setAtt] = useState<MyAttendance | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadMonth = useCallback(async (idx: number) => {
+    try {
+      const a = await getMyAttendance(MONTHS[idx].format('YYYY-MM'));
+      setAtt(a);
+    } catch (e: any) {
+      console.log('[analytics myAttendance] Error:', e?.message);
+    }
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [d] = await Promise.all([getStudentDashboard(), loadMonth(2)]);
+      setDash(d);
+      setActiveMonth(2);
+    } catch (e: any) {
+      setError(dashboardErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [loadMonth]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const selectMonth = (i: number) => {
+    setActiveMonth(i);
+    loadMonth(i);
+  };
+
+  if (loading) return <Loading />;
+  if (error || !dash) return <ErrorState message={error ?? 'No data.'} onRetry={load} />;
+
+  const sum = att?.summary;
+  const attPct = Math.round(sum?.present_percentage ?? 0);
   const attColor = attPct >= 75 ? '#16A34A' : '#DC2626';
-  const grandObtained = SUBJECT_PERF.reduce((s, x) => s + x.obtained, 0);
-  const grandTotal    = SUBJECT_PERF.reduce((s, x) => s + x.total, 0);
-  const overallPct    = Math.round((grandObtained / grandTotal) * 100);
+  const perf = dash.performance;
+  const overallPct = perf.overall_percentage;
+  const subjects = perf.subject_wise.map(sp => ({
+    subject: sp.subject_name ?? 'Subject',
+    pct: sp.percentage,
+    color: subjectTheme(sp.subject_name).color,
+  }));
+  const trend = perf.trend;
+  const bestSubject = subjects.length
+    ? subjects.reduce((b, x) => (x.pct > b.pct ? x : b)).subject
+    : '—';
 
   return (
     <>
       {/* Overview */}
       <View style={s.row3}>
         {[
-          { label: 'Attendance', value: `${attPct}%`,    icon: 'calendar',    color: attColor,   bg: attPct >= 75 ? '#DCFCE7' : '#FEE2E2' },
+          { label: 'Attendance', value: `${attPct}%`,     icon: 'calendar',    color: attColor,  bg: attPct >= 75 ? '#DCFCE7' : '#FEE2E2' },
           { label: 'Avg Score',  value: `${overallPct}%`, icon: 'stats-chart', color: '#4F46E5', bg: '#E0E7FF' },
-          { label: 'Homework',   value: '12',             icon: 'book',        color: '#7C3AED', bg: '#EDE9FE' },
+          { label: 'Homework',   value: String(dash.homework.total), icon: 'book', color: '#7C3AED', bg: '#EDE9FE' },
         ].map(c => (
           <View key={c.label} style={[s.overviewCard, { backgroundColor: c.bg }]}>
             <VectorIcon iconSet="Ionicons" iconName={c.icon} size={20} color={c.color} />
@@ -156,30 +226,27 @@ const StudentAnalytics = () => {
 
       {/* Quick chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
-        <Chip icon="trophy" label="Rank" value="4 / 42" color="#D97706" bg="#FEF3C7" />
-        <Chip icon="ribbon" label="Best" value="English" color="#16A34A" bg="#DCFCE7" />
-        <Chip icon="trending-up" label="Trend" value="+4%" color="#4F46E5" bg="#E0E7FF" />
-        <Chip icon="book" label="HW done" value="10/12" color="#7C3AED" bg="#EDE9FE" />
+        <Chip icon="stats-chart" label="Avg" value={`${overallPct}%`} color="#4F46E5" bg="#E0E7FF" />
+        <Chip icon="ribbon" label="Best" value={bestSubject} color="#16A34A" bg="#DCFCE7" />
+        <Chip icon="calendar" label="Attd" value={`${attPct}%`} color="#0EA5E9" bg="#E0F2FE" />
+        <Chip icon="book" label="Homework" value={String(dash.homework.total)} color="#7C3AED" bg="#EDE9FE" />
       </ScrollView>
 
-      {/* Weekly attendance trend */}
-      <SectionCard icon="pulse-outline" iconBg="#E0F2FE" iconColor="#0EA5E9" title="Weekly Attendance Trend">
-        <BarChart
-          data={[
-            { label: 'W1', value: 92 },
-            { label: 'W2', value: 88 },
-            { label: 'W3', value: 95 },
-            { label: 'W4', value: Math.round(attPct) },
-          ]}
-          color="#0EA5E9" maxVal={100}
-        />
-      </SectionCard>
+      {/* Recent exam scores */}
+      {trend.length > 0 && (
+        <SectionCard icon="pulse-outline" iconBg="#E0F2FE" iconColor="#0EA5E9" title="Recent Exam Scores">
+          <BarChart
+            data={trend.map((t, i) => ({ label: t.exam_name ? t.exam_name.slice(0, 6) : `E${i + 1}`, value: t.percentage }))}
+            color="#0EA5E9" maxVal={100}
+          />
+        </SectionCard>
+      )}
 
       {/* Attendance */}
       <SectionCard icon="calendar-outline" iconBg="#DCFCE7" iconColor="#16A34A" title="Attendance Overview">
         <View style={s.monthTabs}>
           {MONTHS.map((m, i) => (
-            <TouchableOpacity key={i} style={[s.tab, activeMonth === i && s.tabActive]} onPress={() => setActiveMonth(i)}>
+            <TouchableOpacity key={i} style={[s.tab, activeMonth === i && s.tabActive]} onPress={() => selectMonth(i)}>
               <Text style={[s.tabText, activeMonth === i && s.tabTextActive]}>{m.format('MMM YY')}</Text>
             </TouchableOpacity>
           ))}
@@ -187,89 +254,105 @@ const StudentAnalytics = () => {
         <View style={s.ringRow}>
           <Ring pct={attPct} color={attColor} />
           <View style={{ flex: 1 }}>
-            <StatRow icon="checkmark-circle" label="Present"      value={String(stats.presentDays)} color="#16A34A" bg="#DCFCE7" />
-            <StatRow icon="close-circle"     label="Absent"       value={String(stats.absentDays)}  color="#DC2626" bg="#FEE2E2" />
-            <StatRow icon="time"             label="Leave"        value={String(stats.leaveDays)}   color="#D97706" bg="#FEF3C7" />
-            <StatRow icon="calendar"         label="Working Days" value={String(stats.workDays)}    color="#4F46E5" bg="#E0E7FF" />
+            <StatRow icon="checkmark-circle" label="Present"      value={String(sum?.present_days ?? 0)} color="#16A34A" bg="#DCFCE7" />
+            <StatRow icon="close-circle"     label="Absent"       value={String(sum?.absent_days ?? 0)}  color="#DC2626" bg="#FEE2E2" />
+            <StatRow icon="calendar"         label="Working Days" value={String(sum?.working_days ?? 0)} color="#4F46E5" bg="#E0E7FF" />
+            <StatRow icon="time"             label="Total Days"   value={String(sum?.total_days ?? 0)}   color="#D97706" bg="#FEF3C7" />
           </View>
         </View>
         <View style={s.divider} />
         <Text style={s.subTitle}>Monthly Breakdown</Text>
         <BarChart
           data={[
-            { label: 'Present', value: stats.presentDays },
-            { label: 'Absent',  value: stats.absentDays },
-            { label: 'Leave',   value: stats.leaveDays },
-            { label: 'Holiday', value: stats.totalDays - stats.workDays },
+            { label: 'Present', value: sum?.present_days ?? 0 },
+            { label: 'Absent',  value: sum?.absent_days ?? 0 },
+            { label: 'Holiday', value: (sum?.total_days ?? 0) - (sum?.working_days ?? 0) },
           ]}
-          color="#4F46E5" maxVal={stats.totalDays}
+          color="#4F46E5" maxVal={sum?.total_days || 30}
         />
       </SectionCard>
 
       {/* Academic Performance */}
-      <SectionCard icon="stats-chart-outline" iconBg="#E0E7FF" iconColor="#4F46E5" title="Academic Performance">
-        <View style={s.ringRow}>
-          <Ring pct={overallPct} color="#4F46E5" />
-          <View style={{ flex: 1 }}>
-            <StatRow icon="ribbon"       label="Obtained"  value={`${grandObtained}/${grandTotal}`} color="#4F46E5" bg="#E0E7FF" />
-            <StatRow icon="trending-up"  label="Overall"   value={`${overallPct}%`}                 color="#16A34A" bg="#DCFCE7" />
-            <StatRow icon="close-circle" label="Lost"      value={String(grandTotal - grandObtained)} color="#DC2626" bg="#FEE2E2" />
-          </View>
-        </View>
-        <View style={s.divider} />
-        <Text style={s.subTitle}>Subject-wise Marks</Text>
-        <BarChart data={SUBJECT_PERF.map(sp => ({ label: sp.subject.split(' ')[0], value: sp.obtained }))} color="#4F46E5" maxVal={100} />
-        <View style={s.divider} />
-        <Text style={s.subTitle}>Subject Progress</Text>
-        {SUBJECT_PERF.map(sp => <SubjectBar key={sp.subject} name={sp.subject} pct={Math.round((sp.obtained / sp.total) * 100)} color={sp.color} />)}
-      </SectionCard>
-
-      {/* Homework */}
-      <SectionCard icon="book-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Homework Summary">
-        <View style={s.row3}>
-          {[
-            { label: 'Assigned',  value: '12', color: '#4F46E5', bg: '#E0E7FF' },
-            { label: 'Submitted', value: '10', color: '#16A34A', bg: '#DCFCE7' },
-            { label: 'Pending',   value: '2',  color: '#DC2626', bg: '#FEE2E2' },
-          ].map(c => (
-            <View key={c.label} style={[s.miniCard, { backgroundColor: c.bg }]}>
-              <Text style={[s.miniVal, { color: c.color }]}>{c.value}</Text>
-              <Text style={s.miniLabel}>{c.label}</Text>
+      {(subjects.length > 0 || overallPct > 0) && (
+        <SectionCard icon="stats-chart-outline" iconBg="#E0E7FF" iconColor="#4F46E5" title="Academic Performance">
+          <View style={s.ringRow}>
+            <Ring pct={overallPct} color="#4F46E5" />
+            <View style={{ flex: 1 }}>
+              <StatRow icon="ribbon"       label="Obtained" value={`${Math.round(perf.total_obtained)}/${Math.round(perf.total_max)}`} color="#4F46E5" bg="#E0E7FF" />
+              <StatRow icon="trending-up"  label="Overall"  value={`${overallPct}%`} color="#16A34A" bg="#DCFCE7" />
+              <StatRow icon="library"      label="Subjects" value={String(subjects.length)} color="#D97706" bg="#FEF3C7" />
             </View>
-          ))}
-        </View>
-        <View style={s.divider} />
-        <BarChart data={[{ label: 'Physics', value: 3 }, { label: 'Math', value: 4 }, { label: 'Chem', value: 2 }, { label: 'Eng', value: 2 }, { label: 'Hist', value: 1 }]} color="#7C3AED" maxVal={5} />
-      </SectionCard>
+          </View>
+          {subjects.length > 0 && (
+            <>
+              <View style={s.divider} />
+              <Text style={s.subTitle}>Subject-wise Performance</Text>
+              <BarChart data={subjects.map(sp => ({ label: sp.subject.split(' ')[0].slice(0, 5), value: sp.pct }))} color="#4F46E5" maxVal={100} />
+              <View style={s.divider} />
+              <Text style={s.subTitle}>Subject Progress</Text>
+              {subjects.map(sp => <SubjectBar key={sp.subject} name={sp.subject} pct={sp.pct} color={sp.color} />)}
+            </>
+          )}
+        </SectionCard>
+      )}
     </>
   );
 };
 
 // ─── Teacher Analytics ────────────────────────────────────────────────────────
-const CLASS_DATA = [
-  { class: 'Class 9A',  students: 42, present: 38, homework: 3, avgScore: 78 },
-  { class: 'Class 8B',  students: 38, present: 34, homework: 2, avgScore: 72 },
-  { class: 'Class 10A', students: 45, present: 40, homework: 4, avgScore: 81 },
-  { class: 'Class 7C',  students: 36, present: 30, homework: 2, avgScore: 68 },
-];
-
 const TeacherAnalytics = () => {
   const [activeClass, setActiveClass] = useState(0);
-  const cls = CLASS_DATA[activeClass];
-  const attPct = Math.round((cls.present / cls.students) * 100);
+  const [dash, setDash] = useState<TeacherDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const d = await getTeacherDashboard();
+      setDash(d);
+      setActiveClass(0);
+    } catch (e: any) {
+      setError(dashboardErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) return <Loading />;
+  if (error || !dash) return <ErrorState message={error ?? 'No data.'} onRetry={load} />;
+
+  const classData = dash.class_attendance.by_class;
+  const totalStudents = dash.totals.total_students;
+  const overallAtt = dash.class_attendance.overall_percentage;
+
+  if (classData.length === 0) {
+    return (
+      <View style={s.stateBox}>
+        <VectorIcon iconSet="Ionicons" iconName="school-outline" size={44} color={theme.colors.textMuted} />
+        <Text style={s.errorTitle}>No class data yet</Text>
+        <Text style={s.errorSub}>Class analytics will appear once you’re assigned classes with students.</Text>
+      </View>
+    );
+  }
+
+  const cls = classData[Math.min(activeClass, classData.length - 1)];
+  const attPct = cls.percentage;
   const attColor = attPct >= 75 ? '#16A34A' : '#DC2626';
-  const totalStudents = CLASS_DATA.reduce((s, c) => s + c.students, 0);
-  const totalPresent  = CLASS_DATA.reduce((s, c) => s + c.present, 0);
-  const overallAtt    = Math.round((totalPresent / totalStudents) * 100);
 
   return (
     <>
       {/* Overview */}
       <View style={s.row3}>
         {[
-          { label: 'Total Students', value: String(totalStudents), icon: 'people',    color: '#4F46E5', bg: '#E0E7FF' },
-          { label: 'Avg Attendance', value: `${overallAtt}%`,      icon: 'calendar',  color: '#16A34A', bg: '#DCFCE7' },
-          { label: 'Classes',        value: String(CLASS_DATA.length), icon: 'school', color: '#D97706', bg: '#FEF3C7' },
+          { label: 'Total Students', value: String(totalStudents),      icon: 'people',   color: '#4F46E5', bg: '#E0E7FF' },
+          { label: 'Avg Attendance', value: `${overallAtt}%`,           icon: 'calendar', color: '#16A34A', bg: '#DCFCE7' },
+          { label: 'Classes',        value: String(classData.length),   icon: 'school',   color: '#D97706', bg: '#FEF3C7' },
         ].map(c => (
           <View key={c.label} style={[s.overviewCard, { backgroundColor: c.bg }]}>
             <VectorIcon iconSet="Ionicons" iconName={c.icon} size={20} color={c.color} />
@@ -283,28 +366,14 @@ const TeacherAnalytics = () => {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
         <Chip icon="people" label="Students" value={String(totalStudents)} color="#0EA5E9" bg="#E0F2FE" />
         <Chip icon="calendar" label="Attd" value={`${overallAtt}%`} color="#16A34A" bg="#DCFCE7" />
-        <Chip icon="school" label="Classes" value={String(CLASS_DATA.length)} color="#4F46E5" bg="#E0E7FF" />
-        <Chip icon="trophy" label="Top" value="Class 10A" color="#D97706" bg="#FEF3C7" />
+        <Chip icon="school" label="Classes" value={String(classData.length)} color="#4F46E5" bg="#E0E7FF" />
+        <Chip icon="document-text" label="Exams" value={String(dash.totals.upcoming_exams)} color="#D97706" bg="#FEF3C7" />
       </ScrollView>
-
-      {/* Weekly attendance trend */}
-      <SectionCard icon="pulse-outline" iconBg="#E0F2FE" iconColor="#0EA5E9" title="Weekly Attendance Trend">
-        <BarChart
-          data={[
-            { label: 'Mon', value: 90 },
-            { label: 'Tue', value: 86 },
-            { label: 'Wed', value: 92 },
-            { label: 'Thu', value: 88 },
-            { label: 'Fri', value: overallAtt },
-          ]}
-          color="#0EA5E9" maxVal={100}
-        />
-      </SectionCard>
 
       {/* Class-wise */}
       <SectionCard icon="school-outline" iconBg="#E0E7FF" iconColor="#4F46E5" title="Class-wise Analytics">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-          {CLASS_DATA.map((c, i) => (
+          {classData.map((c, i) => (
             <TouchableOpacity key={i} style={[s.tab, activeClass === i && s.tabActive]} onPress={() => setActiveClass(i)}>
               <Text style={[s.tabText, activeClass === i && s.tabTextActive]}>{c.class}</Text>
             </TouchableOpacity>
@@ -313,34 +382,31 @@ const TeacherAnalytics = () => {
         <View style={s.ringRow}>
           <Ring pct={attPct} color={attColor} />
           <View style={{ flex: 1 }}>
-            <StatRow icon="people"           label="Total Students" value={String(cls.students)}              color="#4F46E5" bg="#E0E7FF" />
+            <StatRow icon="people"           label="Total Students" value={String(cls.total)}                 color="#4F46E5" bg="#E0E7FF" />
             <StatRow icon="checkmark-circle" label="Present Today"  value={String(cls.present)}               color="#16A34A" bg="#DCFCE7" />
-            <StatRow icon="close-circle"     label="Absent Today"   value={String(cls.students - cls.present)} color="#DC2626" bg="#FEE2E2" />
-            <StatRow icon="stats-chart"      label="Avg Score"      value={`${cls.avgScore}%`}                color="#D97706" bg="#FEF3C7" />
+            <StatRow icon="close-circle"     label="Absent Today"   value={String(Math.max(cls.total - cls.present, 0))} color="#DC2626" bg="#FEE2E2" />
+            <StatRow icon="stats-chart"      label="Attendance"     value={`${cls.percentage}%`}              color="#D97706" bg="#FEF3C7" />
           </View>
         </View>
       </SectionCard>
 
       {/* Attendance by class */}
       <SectionCard icon="calendar-outline" iconBg="#DCFCE7" iconColor="#16A34A" title="Attendance by Class">
-        <BarChart data={CLASS_DATA.map(c => ({ label: c.class.replace('Class ', ''), value: Math.round((c.present / c.students) * 100) }))} color="#16A34A" maxVal={100} />
+        <BarChart data={classData.map(c => ({ label: c.class.replace('Class ', ''), value: c.percentage }))} color="#16A34A" maxVal={100} />
         <View style={s.divider} />
-        {CLASS_DATA.map((c, i) => {
-          const pct = Math.round((c.present / c.students) * 100);
-          const col = pct >= 75 ? '#16A34A' : '#DC2626';
-          return <SubjectBar key={i} name={c.class} pct={pct} color={col} />;
+        {classData.map((c, i) => {
+          const col = c.percentage >= 75 ? '#16A34A' : '#DC2626';
+          return <SubjectBar key={i} name={c.class} pct={c.percentage} color={col} />;
         })}
       </SectionCard>
 
-      {/* Homework */}
-      <SectionCard icon="book-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Homework Assigned">
-        <BarChart data={CLASS_DATA.map(c => ({ label: c.class.replace('Class ', ''), value: c.homework }))} color="#7C3AED" maxVal={5} />
-        <View style={s.divider} />
+      {/* Homework + exams */}
+      <SectionCard icon="book-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Workload">
         <View style={s.row3}>
           {[
-            { label: 'Total',   value: String(CLASS_DATA.reduce((s, c) => s + c.homework, 0)), color: '#7C3AED', bg: '#EDE9FE' },
-            { label: 'Avg/Class', value: String(Math.round(CLASS_DATA.reduce((s, c) => s + c.homework, 0) / CLASS_DATA.length)), color: '#4F46E5', bg: '#E0E7FF' },
-            { label: 'Pending', value: '3', color: '#D97706', bg: '#FEF3C7' },
+            { label: 'Homework', value: String(dash.totals.homework_count), color: '#7C3AED', bg: '#EDE9FE' },
+            { label: 'Exams',    value: String(dash.totals.upcoming_exams), color: '#4F46E5', bg: '#E0E7FF' },
+            { label: 'Classes',  value: String(dash.totals.total_classes_today), color: '#D97706', bg: '#FEF3C7' },
           ].map(c => (
             <View key={c.label} style={[s.miniCard, { backgroundColor: c.bg }]}>
               <Text style={[s.miniVal, { color: c.color }]}>{c.value}</Text>
@@ -348,13 +414,6 @@ const TeacherAnalytics = () => {
             </View>
           ))}
         </View>
-      </SectionCard>
-
-      {/* Avg Score */}
-      <SectionCard icon="trophy-outline" iconBg="#FEF3C7" iconColor="#D97706" title="Average Score by Class">
-        <BarChart data={CLASS_DATA.map(c => ({ label: c.class.replace('Class ', ''), value: c.avgScore }))} color="#D97706" maxVal={100} />
-        <View style={s.divider} />
-        {CLASS_DATA.map((c, i) => <SubjectBar key={i} name={c.class} pct={c.avgScore} color="#D97706" />)}
       </SectionCard>
     </>
   );
@@ -442,4 +501,20 @@ const s = StyleSheet.create({
   miniCard: { flex: 1, borderRadius: theme.radius.sm, padding: 10, alignItems: 'center', gap: 3 },
   miniVal: { fontSize: 18, fontWeight: '900' },
   miniLabel: { fontSize: 9, fontWeight: '700', color: theme.colors.textSecondary, textAlign: 'center' },
+
+  // States
+  stateBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 10 },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  errorSub: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19, paddingHorizontal: 24 },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: theme.colors.primary, borderRadius: theme.radius.full,
+    paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });

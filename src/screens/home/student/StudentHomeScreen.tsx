@@ -1,67 +1,127 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/TopBar';
 import VectorIcon from '../../../components/VectorIcon';
 import { theme } from '../../../utils/theme';
-import { computeStats } from '../../attendance/attendanceTypes';
-import { EXAMS } from '../../exam/examData';
-import { HOMEWORK_STORE } from '../../homework/homeworkData';
 import { Chip, ChartCard, Donut, HBar, WeekDots } from '../../../components/Charts';
+import {
+  getStudentDashboard,
+  dashboardErrorMessage,
+  subjectTheme,
+  type StudentDashboard,
+} from '../../../api/dashboardApi';
 import moment from 'moment';
 
 const { width } = Dimensions.get('window');
 
-const getGreeting = () => {
-  const h = new Date().getHours();
-  if (h < 12) return { text: 'Good Morning', emoji: '☀️' };
-  if (h < 17) return { text: 'Good Afternoon', emoji: '🌤️' };
-  return { text: 'Good Evening', emoji: '🌙' };
+const weekDotStyle = (status: string) => {
+  if (status === 'present') return { color: '#16A34A', bg: '#DCFCE7' };
+  if (status === 'absent') return { color: '#DC2626', bg: '#FEE2E2' };
+  return { color: '#94A3B8', bg: '#F1F5F9' };
 };
 
-const NOTICES = [
-  { title: 'School Closed on 26 Apr', time: '2 hrs ago',  icon: 'megaphone-outline', color: '#0EA5E9', bg: '#E0F2FE' },
-  { title: 'Annual Sports Day — 5 May', time: '2 days ago', icon: 'trophy-outline',  color: '#D97706', bg: '#FEF3C7' },
-  { title: 'Fee Due: 30 Apr 2026',    time: '3 days ago', icon: 'card-outline',      color: '#DC2626', bg: '#FEE2E2' },
-];
-
-const SUBJECT_PERF = [
-  { subject: 'Mathematics', pct: 82, color: '#4F46E5' },
-  { subject: 'Science',     pct: 76, color: '#0EA5E9' },
-  { subject: 'English',     pct: 88, color: '#D97706' },
-  { subject: 'Soc. Sci.',   pct: 71, color: '#16A34A' },
-];
-
-const WEEK = [
-  { label: 'M', color: '#16A34A', bg: '#DCFCE7' },
-  { label: 'T', color: '#16A34A', bg: '#DCFCE7' },
-  { label: 'W', color: '#DC2626', bg: '#FEE2E2' },
-  { label: 'T', color: '#16A34A', bg: '#DCFCE7' },
-  { label: 'F', color: '#16A34A', bg: '#DCFCE7' },
-  { label: 'S', color: '#D97706', bg: '#FEF3C7' },
-];
+const examColors = (status: string) =>
+  status === 'ongoing' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
 
 const StudentHomeScreen = () => {
   const navigation = useNavigation<any>();
-  const stats = computeStats(moment().format('YYYY-MM'));
-  const greeting = getGreeting();
-  const attendancePct = parseFloat(stats.presentPct);
-  const upcomingExams = EXAMS.filter(e => e.status === 'Ongoing' || e.status === 'Upcoming').slice(0, 3);
-  const recentHW = HOMEWORK_STORE.slice(0, 3);
-  const overallPct = Math.round(SUBJECT_PERF.reduce((s, x) => s + x.pct, 0) / SUBJECT_PERF.length);
+  const [data, setData] = useState<StudentDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const d = await getStudentDashboard();
+      setData(d);
+    } catch (e: any) {
+      console.log('[getStudentDashboard] Error:', e?.response?.status, e?.message);
+      setError(dashboardErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Refresh silently when returning to the dashboard.
+  useFocusEffect(
+    useCallback(() => {
+      if (data) load();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [load]),
+  );
+
+  const att = data?.attendance;
+  const perf = data?.performance;
+  const attendancePct = att?.present_percentage ?? 0;
+  const overallPct = perf?.overall_percentage ?? 0;
+  const upcomingExams = data?.exams.upcoming ?? [];
+  const recentHW = data?.homework.recent ?? [];
+  const notices = data?.notices ?? [];
+  const subjectPerf = (perf?.subject_wise ?? []).slice(0, 5).map(sp => ({
+    subject: sp.subject_name ?? 'Subject',
+    pct: sp.percentage,
+    color: subjectTheme(sp.subject_name).color,
+  }));
+  const week = (att?.week ?? []).map(d => ({ label: d.label, ...weekDotStyle(d.status) }));
+  const profileSubtitle = data
+    ? [data.profile.standard && data.profile.section ? `${data.profile.standard}${data.profile.section}` : data.profile.standard, data.profile.roll_no ? `Roll No. ${data.profile.roll_no}` : null]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+
+  if (loading) {
+    return (
+      <View style={s.root}>
+        <TopBar
+          onAvatarPress={() => navigation.navigate('StudentProfile')}
+          onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
+        />
+        <View style={s.stateBox}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <View style={s.root}>
+        <TopBar
+          onAvatarPress={() => navigation.navigate('StudentProfile')}
+          onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
+        />
+        <View style={s.stateBox}>
+          <View style={s.errorIconRing}>
+            <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
+          </View>
+          <Text style={s.errorTitle}>Couldn’t load dashboard</Text>
+          <Text style={s.errorSub}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => { setLoading(true); load(); }} activeOpacity={0.85}>
+            <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={theme.colors.primary} />
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={s.root}>
       <TopBar
-        subtitle="Class 9A · Roll No. 24"
+        subtitle={profileSubtitle}
         subtitleIcon="school"
         onAvatarPress={() => navigation.navigate('StudentProfile')}
         onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
@@ -71,21 +131,20 @@ const StudentHomeScreen = () => {
 
         {/* ── Quick chips ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
-          <Chip icon="trophy" label="Rank" value="4/42" color="#D97706" bg="#FEF3C7" />
           <Chip icon="stats-chart" label="Avg" value={`${overallPct}%`} color="#4F46E5" bg="#E0E7FF" />
-          <Chip icon="calendar" label="Attd" value={`${stats.presentPct}%`} color="#16A34A" bg="#DCFCE7" />
-          <Chip icon="card" label="Fee due" value="₹12k" color="#DC2626" bg="#FEE2E2" />
-          <Chip icon="time" label="Next" value="Math 11:00" color="#0EA5E9" bg="#E0F2FE" />
+          <Chip icon="calendar" label="Attd" value={`${attendancePct}%`} color="#16A34A" bg="#DCFCE7" />
+          <Chip icon="book" label="Homework" value={String(data.homework.total)} color="#7C3AED" bg="#EDE9FE" />
+          <Chip icon="document-text" label="Exams" value={String(upcomingExams.length)} color="#0EA5E9" bg="#E0F2FE" />
         </ScrollView>
 
         {/* ── Stats Scroll ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
           {[
-            { label: 'Present',    value: stats.presentDays,  color: '#16A34A', bg: '#DCFCE7', icon: 'checkmark-circle', sub: `${stats.presentPct}%` },
-            { label: 'Absent',     value: stats.absentDays,   color: '#DC2626', bg: '#FEE2E2', icon: 'close-circle',     sub: `${stats.absentPct}%` },
-            { label: 'Leave',      value: stats.leaveDays,    color: '#D97706', bg: '#FEF3C7', icon: 'time',             sub: 'days' },
-            { label: 'Homework',   value: HOMEWORK_STORE.length, color: '#7C3AED', bg: '#EDE9FE', icon: 'book',          sub: 'tasks' },
-            { label: 'Exams',      value: upcomingExams.length,  color: '#4F46E5', bg: '#E0E7FF', icon: 'document-text', sub: 'upcoming' },
+            { label: 'Present',  value: att!.present_days, color: '#16A34A', bg: '#DCFCE7', icon: 'checkmark-circle', sub: `${attendancePct}%` },
+            { label: 'Absent',   value: att!.absent_days,  color: '#DC2626', bg: '#FEE2E2', icon: 'close-circle',     sub: 'days' },
+            { label: 'Working',  value: att!.working_days, color: '#D97706', bg: '#FEF3C7', icon: 'time',             sub: 'days' },
+            { label: 'Homework', value: data.homework.total, color: '#7C3AED', bg: '#EDE9FE', icon: 'book',           sub: 'tasks' },
+            { label: 'Exams',    value: upcomingExams.length, color: '#4F46E5', bg: '#E0E7FF', icon: 'document-text', sub: 'upcoming' },
           ].map(st => (
             <TouchableOpacity key={st.label} style={[s.statCard, { backgroundColor: st.bg }]} activeOpacity={0.8}>
               <View style={[s.statIconWrap, { backgroundColor: st.color + '22' }]}>
@@ -103,10 +162,10 @@ const StudentHomeScreen = () => {
           <View style={s.attTop}>
             <View>
               <Text style={s.attTitle}>Monthly Attendance</Text>
-              <Text style={s.attSub}>{moment().format('MMMM YYYY')}</Text>
+              <Text style={s.attSub}>{moment(att!.month, 'YYYY-MM').format('MMMM YYYY')}</Text>
             </View>
             <View style={[s.attPctBadge, { backgroundColor: attendancePct >= 75 ? '#DCFCE7' : '#FEE2E2' }]}>
-              <Text style={[s.attPct, { color: attendancePct >= 75 ? '#16A34A' : '#DC2626' }]}>{stats.presentPct}%</Text>
+              <Text style={[s.attPct, { color: attendancePct >= 75 ? '#16A34A' : '#DC2626' }]}>{attendancePct}%</Text>
             </View>
           </View>
           <View style={s.attBarBg}>
@@ -117,9 +176,9 @@ const StudentHomeScreen = () => {
           </View>
           <View style={s.attLegend}>
             {[
-              { label: 'Present', val: stats.presentDays, color: '#16A34A' },
-              { label: 'Absent',  val: stats.absentDays,  color: '#DC2626' },
-              { label: 'Leave',   val: stats.leaveDays,   color: '#D97706' },
+              { label: 'Present', val: att!.present_days, color: '#16A34A' },
+              { label: 'Absent',  val: att!.absent_days,  color: '#DC2626' },
+              { label: 'Working', val: att!.working_days, color: '#D97706' },
             ].map(l => (
               <View key={l.label} style={s.attLegendItem}>
                 <View style={[s.attDot, { backgroundColor: l.color }]} />
@@ -141,9 +200,9 @@ const StudentHomeScreen = () => {
             <View style={s.sectionCard}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                 {upcomingExams.map(exam => {
-                  const sc = exam.status === 'Ongoing' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
+                  const sc = examColors(exam.status);
                   return (
-                    <TouchableOpacity key={exam.id} style={s.examCard} onPress={() => navigation.navigate('ExamDetail', { exam })} activeOpacity={0.85}>
+                    <TouchableOpacity key={exam.id} style={s.examCard} onPress={() => navigation.navigate('ExamDetail', { examId: exam.id })} activeOpacity={0.85}>
                       <View style={[s.examTop, { backgroundColor: sc.bg }]}>
                         <VectorIcon iconSet="Ionicons" iconName="document-text-outline" size={22} color={sc.color} />
                         <View style={[s.examStatusDot, { backgroundColor: sc.color }]} />
@@ -153,7 +212,7 @@ const StudentHomeScreen = () => {
                         <Text style={s.examType}>{exam.type}</Text>
                         <View style={s.examDateRow}>
                           <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={11} color={theme.colors.textMuted} />
-                          <Text style={s.examDate}>{exam.dateRange}</Text>
+                          <Text style={s.examDate}>{exam.date_range}</Text>
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -174,70 +233,83 @@ const StudentHomeScreen = () => {
               </TouchableOpacity>
             </View>
             <View style={s.sectionCard}>
-              {recentHW.map((hw, i) => (
-                <View key={hw.id} style={[s.hwCard, i < recentHW.length - 1 && s.rowDivider]}>
-                  <View style={[s.hwIconWrap, { backgroundColor: hw.subjectColor + '18' }]}>
-                    <Text style={s.hwEmoji}>{hw.subjectIcon}</Text>
+              {recentHW.map((hw, i) => {
+                const st = subjectTheme(hw.subject_name);
+                return (
+                  <View key={hw.id} style={[s.hwCard, i < recentHW.length - 1 && s.rowDivider]}>
+                    <View style={[s.hwIconWrap, { backgroundColor: st.color + '18' }]}>
+                      <Text style={s.hwEmoji}>{st.icon}</Text>
+                    </View>
+                    <View style={s.hwContent}>
+                      <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
+                      <Text style={s.hwSubject} numberOfLines={1}>{hw.subject_name}</Text>
+                    </View>
+                    {!!hw.date && (
+                      <View style={[s.hwDueBadge, { backgroundColor: st.color + '18' }]}>
+                        <Text style={[s.hwDueText, { color: st.color }]}>{hw.date}</Text>
+                      </View>
+                    )}
                   </View>
-                  <View style={s.hwContent}>
-                    <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
-                    <Text style={s.hwSubject} numberOfLines={1}>{hw.subjectName}</Text>
-                  </View>
-                  <View style={[s.hwDueBadge, { backgroundColor: hw.subjectColor + '18' }]}>
-                    <Text style={[s.hwDueText, { color: hw.subjectColor }]}>{hw.dueDate}</Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </View>
         )}
 
         {/* ── Performance & This Week ── */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Performance Snapshot</Text>
-          <ChartCard
-            icon="stats-chart-outline"
-            iconBg="#E0E7FF"
-            iconColor="#4F46E5"
-            title="Subject Performance"
-            right={
-              <TouchableOpacity onPress={() => navigation.navigate('Analytics', { userRole: 'student' })} activeOpacity={0.7}>
-                <Text style={s.seeAll}>Details →</Text>
-              </TouchableOpacity>
-            }
-          >
-            <View style={s.perfRow}>
-              <Donut size={104} stroke={12} pct={overallPct} color="#4F46E5" label={`${overallPct}%`} sub="overall" />
-              <View style={{ flex: 1, gap: 2 }}>
-                {SUBJECT_PERF.map(sp => (
-                  <HBar key={sp.subject} label={sp.subject} value={sp.pct} color={sp.color} />
-                ))}
+        {(subjectPerf.length > 0 || overallPct > 0) && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Performance Snapshot</Text>
+            <ChartCard
+              icon="stats-chart-outline"
+              iconBg="#E0E7FF"
+              iconColor="#4F46E5"
+              title="Subject Performance"
+              right={
+                <TouchableOpacity onPress={() => navigation.navigate('Analytics', { userRole: 'student' })} activeOpacity={0.7}>
+                  <Text style={s.seeAll}>Details →</Text>
+                </TouchableOpacity>
+              }
+            >
+              <View style={s.perfRow}>
+                <Donut size={104} stroke={12} pct={overallPct} color="#4F46E5" label={`${overallPct}%`} sub="overall" />
+                <View style={{ flex: 1, gap: 2 }}>
+                  {subjectPerf.map(sp => (
+                    <HBar key={sp.subject} label={sp.subject} value={sp.pct} color={sp.color} />
+                  ))}
+                </View>
               </View>
-            </View>
-            <View style={s.cardDivider} />
-            <Text style={s.miniHead}>This Week's Attendance</Text>
-            <WeekDots days={WEEK} />
-          </ChartCard>
-        </View>
+              {week.length > 0 && (
+                <>
+                  <View style={s.cardDivider} />
+                  <Text style={s.miniHead}>This Week's Attendance</Text>
+                  <WeekDots days={week} />
+                </>
+              )}
+            </ChartCard>
+          </View>
+        )}
 
         {/* ── Notice Board ── */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Notice Board</Text>
-          <View style={s.sectionCard}>
-            {NOTICES.map((n, i) => (
-              <TouchableOpacity key={i} style={[s.noticeCard, i < NOTICES.length - 1 && s.rowDivider]} activeOpacity={0.8}>
-                <View style={[s.noticeIconWrap, { backgroundColor: n.bg }]}>
-                  <VectorIcon iconSet="Ionicons" iconName={n.icon} size={18} color={n.color} />
-                </View>
-                <View style={s.noticeContent}>
-                  <Text style={s.noticeTitle}>{n.title}</Text>
-                  <Text style={s.noticeTime}>{n.time}</Text>
-                </View>
-                <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textMuted} />
-              </TouchableOpacity>
-            ))}
+        {notices.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Notice Board</Text>
+            <View style={s.sectionCard}>
+              {notices.map((n, i) => (
+                <TouchableOpacity key={n.id} style={[s.noticeCard, i < notices.length - 1 && s.rowDivider]} activeOpacity={0.8} onPress={() => navigation.navigate('Notifications', { role: 'student' })}>
+                  <View style={[s.noticeIconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+                    <VectorIcon iconSet="Ionicons" iconName="megaphone-outline" size={18} color={theme.colors.primary} />
+                  </View>
+                  <View style={s.noticeContent}>
+                    <Text style={s.noticeTitle} numberOfLines={2}>{n.title}</Text>
+                    <Text style={s.noticeTime}>{n.time}</Text>
+                  </View>
+                  <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -252,6 +324,22 @@ const CARD_W = width * 0.38;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 20 },
+
+  // States
+  stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  errorSub: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16 },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: theme.colors.primary, borderRadius: theme.radius.full,
+    paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   // Hero
   hero: {

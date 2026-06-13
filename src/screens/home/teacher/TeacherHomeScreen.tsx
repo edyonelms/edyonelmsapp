@@ -1,65 +1,114 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/TopBar';
 import VectorIcon from '../../../components/VectorIcon';
 import { theme } from '../../../utils/theme';
-import { HOMEWORK_STORE } from '../../homework/homeworkData';
-import { EXAMS } from '../../exam/examData';
 import { Chip, ChartCard, Donut, MiniBars, StackedBar } from '../../../components/Charts';
+import {
+  getTeacherDashboard,
+  dashboardErrorMessage,
+  subjectTheme,
+  type TeacherDashboard,
+} from '../../../api/dashboardApi';
 
 const { width } = Dimensions.get('window');
 
-const getGreeting = () => {
-  const h = new Date().getHours();
-  if (h < 12) return { text: 'Good Morning', emoji: '☀️' };
-  if (h < 17) return { text: 'Good Afternoon', emoji: '🌤️' };
-  return { text: 'Good Evening', emoji: '🌙' };
+const nowHHmm = () => {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
-const TODAY_CLASSES = [
-  { subject: 'Mathematics', class: 'Class 9A',  time: '08:00', room: 'R-101', done: true  },
-  { subject: 'Mathematics', class: 'Class 8B',  time: '09:00', room: 'R-203', done: true  },
-  { subject: 'Mathematics', class: 'Class 10A', time: '11:00', room: 'R-105', done: false },
-  { subject: 'Mathematics', class: 'Class 7C',  time: '14:00', room: 'R-302', done: false },
-];
-
-
-const NOTICES = [
-  { title: 'Staff Meeting — 25 Apr 2026',  time: '1 hr ago',  icon: 'people-outline',   color: '#4F46E5', bg: '#E0E7FF' },
-  { title: 'IA 1 Paper Submission Due',    time: '2 hrs ago', icon: 'document-outline', color: '#DC2626', bg: '#FEE2E2' },
-  { title: 'School Closed on 26 Apr',      time: '3 hrs ago', icon: 'megaphone-outline', color: '#0EA5E9', bg: '#E0F2FE' },
-];
-
-const CLASS_ATT = [
-  { class: '9A', present: 38, total: 42 },
-  { class: '8B', present: 34, total: 38 },
-  { class: '10A', present: 40, total: 45 },
-  { class: '7C', present: 30, total: 36 },
-];
+const examColors = (status: string) =>
+  status === 'ongoing' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
 
 const TeacherHomeScreen = () => {
   const navigation = useNavigation<any>();
-  const greeting = getGreeting();
-  const upcomingExams = EXAMS.filter(e => e.status === 'Ongoing' || e.status === 'Upcoming').slice(0, 2);
-  const pendingHW = HOMEWORK_STORE.slice(0, 3);
-  const doneClasses = TODAY_CLASSES.filter(c => c.done).length;
-  const totalStudents = CLASS_ATT.reduce((s, c) => s + c.total, 0);
-  const totalPresent = CLASS_ATT.reduce((s, c) => s + c.present, 0);
-  const overallAtt = Math.round((totalPresent / totalStudents) * 100);
+  const [data, setData] = useState<TeacherDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const d = await getTeacherDashboard();
+      setData(d);
+    } catch (e: any) {
+      console.log('[getTeacherDashboard] Error:', e?.response?.status, e?.message);
+      setError(dashboardErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (data) load();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [load]),
+  );
+
+  if (loading) {
+    return (
+      <View style={s.root}>
+        <TopBar onAvatarPress={() => navigation.navigate('TeacherProfile')} onBellPress={() => navigation.navigate('Notifications', { role: 'teacher' })} />
+        <View style={s.stateBox}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <View style={s.root}>
+        <TopBar onAvatarPress={() => navigation.navigate('TeacherProfile')} onBellPress={() => navigation.navigate('Notifications', { role: 'teacher' })} />
+        <View style={s.stateBox}>
+          <View style={s.errorIconRing}>
+            <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
+          </View>
+          <Text style={s.errorTitle}>Couldn’t load dashboard</Text>
+          <Text style={s.errorSub}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => { setLoading(true); load(); }} activeOpacity={0.85}>
+            <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={theme.colors.primary} />
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const totals = data.totals;
+  const overallAtt = data.class_attendance.overall_percentage;
+  const byClass = data.class_attendance.by_class;
+  const todayClasses = data.today_classes;
+  const pendingHW = data.homework.recent;
+  const upcomingExams = data.exams.upcoming;
+  const notices = data.notices;
+
+  const cur = nowHHmm();
+  const isDone = (t: string | null) => !!t && t < cur;
+  const doneClasses = todayClasses.filter(c => isDone(c.time)).length;
+  const totalPresent = byClass.reduce((sum, c) => sum + c.present, 0);
+  const totalRoster = byClass.reduce((sum, c) => sum + c.total, 0);
+  const profileSubtitle = [data.profile.name, data.profile.employee_id].filter(Boolean).join(' · ');
 
   return (
     <View style={s.root}>
       <TopBar
-        subtitle="Mathematics · Senior Teacher"
+        subtitle={profileSubtitle}
         subtitleIcon="ribbon"
         onAvatarPress={() => navigation.navigate('TeacherProfile')}
         onBellPress={() => navigation.navigate('Notifications', { role: 'teacher' })}
@@ -69,21 +118,21 @@ const TeacherHomeScreen = () => {
 
         {/* ── Quick chips ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
-          <Chip icon="people" label="Students" value={String(totalStudents)} color="#0EA5E9" bg="#E0F2FE" />
+          <Chip icon="people" label="Students" value={String(totals.total_students)} color="#0EA5E9" bg="#E0F2FE" />
           <Chip icon="calendar" label="Attd" value={`${overallAtt}%`} color="#16A34A" bg="#DCFCE7" />
-          <Chip icon="school" label="Classes" value={`${doneClasses}/${TODAY_CLASSES.length}`} color="#4F46E5" bg="#E0E7FF" />
-          <Chip icon="book" label="Homework" value={String(HOMEWORK_STORE.length)} color="#7C3AED" bg="#EDE9FE" />
-          <Chip icon="document-text" label="Exams" value={String(upcomingExams.length)} color="#D97706" bg="#FEF3C7" />
+          <Chip icon="school" label="Classes" value={`${doneClasses}/${todayClasses.length}`} color="#4F46E5" bg="#E0E7FF" />
+          <Chip icon="book" label="Homework" value={String(totals.homework_count)} color="#7C3AED" bg="#EDE9FE" />
+          <Chip icon="document-text" label="Exams" value={String(totals.upcoming_exams)} color="#D97706" bg="#FEF3C7" />
         </ScrollView>
 
         {/* ── Stats Scroll ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
           {[
-            { label: 'Classes',  value: TODAY_CLASSES.length, color: '#4F46E5', bg: '#E0E7FF', icon: 'school',          sub: 'today' },
-            { label: 'Done',     value: doneClasses,          color: '#16A34A', bg: '#DCFCE7', icon: 'checkmark-circle', sub: 'classes' },
-            { label: 'Students', value: 148,                  color: '#0EA5E9', bg: '#E0F2FE', icon: 'people',           sub: 'total' },
-            { label: 'Homework', value: HOMEWORK_STORE.length, color: '#7C3AED', bg: '#EDE9FE', icon: 'book',            sub: 'assigned' },
-            { label: 'Exams',    value: upcomingExams.length, color: '#D97706', bg: '#FEF3C7', icon: 'document-text',    sub: 'upcoming' },
+            { label: 'Classes',  value: todayClasses.length, color: '#4F46E5', bg: '#E0E7FF', icon: 'school',          sub: 'today' },
+            { label: 'Done',     value: doneClasses,         color: '#16A34A', bg: '#DCFCE7', icon: 'checkmark-circle', sub: 'classes' },
+            { label: 'Students', value: totals.total_students, color: '#0EA5E9', bg: '#E0F2FE', icon: 'people',         sub: 'total' },
+            { label: 'Homework', value: totals.homework_count, color: '#7C3AED', bg: '#EDE9FE', icon: 'book',           sub: 'assigned' },
+            { label: 'Exams',    value: totals.upcoming_exams, color: '#D97706', bg: '#FEF3C7', icon: 'document-text',  sub: 'upcoming' },
           ].map(st => (
             <View key={st.label} style={[s.statCard, { backgroundColor: st.bg }]}>
               <View style={[s.statIconWrap, { backgroundColor: st.color + '22' }]}>
@@ -97,41 +146,43 @@ const TeacherHomeScreen = () => {
         </ScrollView>
 
         {/* ── Today's Classes Timeline ── */}
-        <View style={s.section}>
-          <View style={s.sectionRow}>
-            <Text style={s.sectionTitle}>Today's Classes</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Timetable')} activeOpacity={0.7}>
-              <Text style={s.seeAll}>See All →</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={[s.sectionCard, s.timeline]}>
-            {TODAY_CLASSES.map((cls, i) => (
-              <View key={i} style={s.timelineRow}>
-                {/* Time column */}
-                <View style={s.timelineLeft}>
-                  <Text style={[s.timelineTime, cls.done && s.timelineDone]}>{cls.time}</Text>
-                  {i < TODAY_CLASSES.length - 1 && <View style={[s.timelineLine, cls.done && s.timelineLineDone]} />}
-                </View>
-                {/* Dot */}
-                <View style={[s.timelineDot, cls.done ? s.timelineDotDone : s.timelineDotPending]}>
-                  {cls.done && <VectorIcon iconSet="Ionicons" iconName="checkmark" size={10} color="#fff" />}
-                </View>
-                {/* Card */}
-                <View style={[s.timelineCard, cls.done && s.timelineCardDone]}>
-                  <View style={s.timelineCardLeft}>
-                    <Text style={[s.timelineSubject, cls.done && { color: theme.colors.textMuted }]}>{cls.subject}</Text>
-                    <Text style={s.timelineMeta}>{cls.class} · Room {cls.room}</Text>
-                  </View>
-                  {!cls.done && (
-                    <View style={s.upcomingBadge}>
-                      <Text style={s.upcomingBadgeText}>Upcoming</Text>
+        {todayClasses.length > 0 && (
+          <View style={s.section}>
+            <View style={s.sectionRow}>
+              <Text style={s.sectionTitle}>Today's Classes</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Timetable')} activeOpacity={0.7}>
+                <Text style={s.seeAll}>See All →</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={[s.sectionCard, s.timeline]}>
+              {todayClasses.map((cls, i) => {
+                const done = isDone(cls.time);
+                return (
+                  <View key={i} style={s.timelineRow}>
+                    <View style={s.timelineLeft}>
+                      <Text style={[s.timelineTime, done && s.timelineDone]}>{cls.time ?? '--'}</Text>
+                      {i < todayClasses.length - 1 && <View style={[s.timelineLine, done && s.timelineLineDone]} />}
                     </View>
-                  )}
-                </View>
-              </View>
-            ))}
+                    <View style={[s.timelineDot, done ? s.timelineDotDone : s.timelineDotPending]}>
+                      {done && <VectorIcon iconSet="Ionicons" iconName="checkmark" size={10} color="#fff" />}
+                    </View>
+                    <View style={[s.timelineCard, done && s.timelineCardDone]}>
+                      <View style={s.timelineCardLeft}>
+                        <Text style={[s.timelineSubject, done && { color: theme.colors.textMuted }]}>{cls.subject}</Text>
+                        <Text style={s.timelineMeta}>{cls.class}{cls.room ? ` · Room ${cls.room}` : ''}</Text>
+                      </View>
+                      {!done && (
+                        <View style={s.upcomingBadge}>
+                          <Text style={s.upcomingBadgeText}>Upcoming</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* ── Assigned Homework ── */}
         {pendingHW.length > 0 && (
@@ -143,20 +194,25 @@ const TeacherHomeScreen = () => {
               </TouchableOpacity>
             </View>
             <View style={s.sectionCard}>
-              {pendingHW.map((hw, i) => (
-                <View key={hw.id} style={[s.hwCard, i < pendingHW.length - 1 && s.rowDivider]}>
-                  <View style={[s.hwIconWrap, { backgroundColor: hw.subjectColor + '18' }]}>
-                    <Text style={s.hwEmoji}>{hw.subjectIcon}</Text>
+              {pendingHW.map((hw, i) => {
+                const st = subjectTheme(hw.subject_name);
+                return (
+                  <View key={hw.id} style={[s.hwCard, i < pendingHW.length - 1 && s.rowDivider]}>
+                    <View style={[s.hwIconWrap, { backgroundColor: st.color + '18' }]}>
+                      <Text style={s.hwEmoji}>{st.icon}</Text>
+                    </View>
+                    <View style={s.hwContent}>
+                      <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
+                      <Text style={s.hwSubject}>{[hw.subject_name, hw.class].filter(Boolean).join(' · ')}</Text>
+                    </View>
+                    {!!hw.date && (
+                      <View style={[s.hwDueBadge, { backgroundColor: st.color + '18' }]}>
+                        <Text style={[s.hwDueText, { color: st.color }]}>{hw.date}</Text>
+                      </View>
+                    )}
                   </View>
-                  <View style={s.hwContent}>
-                    <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
-                    <Text style={s.hwSubject}>{hw.subjectName}</Text>
-                  </View>
-                  <View style={[s.hwDueBadge, { backgroundColor: hw.subjectColor + '18' }]}>
-                    <Text style={[s.hwDueText, { color: hw.subjectColor }]}>{hw.dueDate}</Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </View>
         )}
@@ -172,7 +228,7 @@ const TeacherHomeScreen = () => {
             </View>
             <View style={s.sectionCard}>
             {upcomingExams.map(exam => {
-              const sc = exam.status === 'Ongoing' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
+              const sc = examColors(exam.status);
               return (
                 <View key={exam.id} style={s.examCard}>
                   <View style={[s.examAccent, { backgroundColor: sc.color }]} />
@@ -180,7 +236,7 @@ const TeacherHomeScreen = () => {
                     <View style={s.examRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={s.examName}>{exam.name}</Text>
-                        <Text style={s.examType}>{exam.type} · {exam.academicYear}</Text>
+                        <Text style={s.examType}>{[exam.type, exam.academic_year].filter(Boolean).join(' · ')}</Text>
                       </View>
                       <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
                         <View style={[s.statusDot, { backgroundColor: sc.color }]} />
@@ -189,7 +245,7 @@ const TeacherHomeScreen = () => {
                     </View>
                     <View style={s.examDateRow}>
                       <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={12} color={theme.colors.textMuted} />
-                      <Text style={s.examDate}>{exam.dateRange}</Text>
+                      <Text style={s.examDate}>{exam.date_range}</Text>
                     </View>
                   </View>
                 </View>
@@ -200,62 +256,63 @@ const TeacherHomeScreen = () => {
         )}
 
         {/* ── Class Attendance ── */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Class Attendance</Text>
-          <ChartCard
-            icon="bar-chart-outline"
-            iconBg="#DCFCE7"
-            iconColor="#16A34A"
-            title="Today's Overview"
-            right={
-              <TouchableOpacity onPress={() => navigation.navigate('Analytics', { userRole: 'teacher' })} activeOpacity={0.7}>
-                <Text style={s.seeAll}>Details →</Text>
-              </TouchableOpacity>
-            }
-          >
-            <View style={s.attRow}>
-              <Donut size={104} stroke={12} pct={overallAtt} color="#16A34A" label={`${overallAtt}%`} sub="present" />
-              <View style={{ flex: 1 }}>
-                <StackedBar
-                  segments={[
-                    { label: 'Present', value: totalPresent, color: '#16A34A' },
-                    { label: 'Absent', value: totalStudents - totalPresent, color: '#DC2626' },
-                  ]}
-                />
+        {byClass.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Class Attendance</Text>
+            <ChartCard
+              icon="bar-chart-outline"
+              iconBg="#DCFCE7"
+              iconColor="#16A34A"
+              title="Today's Overview"
+              right={
+                <TouchableOpacity onPress={() => navigation.navigate('Analytics', { userRole: 'teacher' })} activeOpacity={0.7}>
+                  <Text style={s.seeAll}>Details →</Text>
+                </TouchableOpacity>
+              }
+            >
+              <View style={s.attRow}>
+                <Donut size={104} stroke={12} pct={overallAtt} color="#16A34A" label={`${overallAtt}%`} sub="present" />
+                <View style={{ flex: 1 }}>
+                  <StackedBar
+                    segments={[
+                      { label: 'Present', value: totalPresent, color: '#16A34A' },
+                      { label: 'Absent', value: Math.max(totalRoster - totalPresent, 0), color: '#DC2626' },
+                    ]}
+                  />
+                </View>
               </View>
-            </View>
-            <View style={s.cardDivider} />
-            <Text style={s.miniHead}>Attendance % by Class</Text>
-            <MiniBars
-              data={CLASS_ATT.map(c => ({
-                label: c.class,
-                value: Math.round((c.present / c.total) * 100),
-              }))}
-              maxVal={100}
-              color="#16A34A"
-              height={110}
-            />
-          </ChartCard>
-        </View>
+              <View style={s.cardDivider} />
+              <Text style={s.miniHead}>Attendance % by Class</Text>
+              <MiniBars
+                data={byClass.map(c => ({ label: c.class, value: c.percentage }))}
+                maxVal={100}
+                color="#16A34A"
+                height={110}
+              />
+            </ChartCard>
+          </View>
+        )}
 
         {/* ── Notice Board ── */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Notice Board</Text>
-          <View style={s.sectionCard}>
-            {NOTICES.map((n, i) => (
-              <TouchableOpacity key={i} style={[s.noticeCard, i < NOTICES.length - 1 && s.rowDivider]} activeOpacity={0.8}>
-                <View style={[s.noticeIconWrap, { backgroundColor: n.bg }]}>
-                  <VectorIcon iconSet="Ionicons" iconName={n.icon} size={18} color={n.color} />
-                </View>
-                <View style={s.noticeContent}>
-                  <Text style={s.noticeTitle}>{n.title}</Text>
-                  <Text style={s.noticeTime}>{n.time}</Text>
-                </View>
-                <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textMuted} />
-              </TouchableOpacity>
-            ))}
+        {notices.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Notice Board</Text>
+            <View style={s.sectionCard}>
+              {notices.map((n, i) => (
+                <TouchableOpacity key={n.id} style={[s.noticeCard, i < notices.length - 1 && s.rowDivider]} activeOpacity={0.8} onPress={() => navigation.navigate('Notifications', { role: 'teacher' })}>
+                  <View style={[s.noticeIconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+                    <VectorIcon iconSet="Ionicons" iconName="megaphone-outline" size={18} color={theme.colors.primary} />
+                  </View>
+                  <View style={s.noticeContent}>
+                    <Text style={s.noticeTitle} numberOfLines={2}>{n.title}</Text>
+                    <Text style={s.noticeTime}>{n.time}</Text>
+                  </View>
+                  <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={16} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -268,6 +325,22 @@ export default TeacherHomeScreen;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 20 },
+
+  // States
+  stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  errorSub: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16 },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: theme.colors.primary, borderRadius: theme.radius.full,
+    paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   // Hero
   hero: {
