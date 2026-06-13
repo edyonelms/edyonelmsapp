@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,11 +14,20 @@ import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
+import constant from '../../utils/constant';
 import {
   getMyTransport,
   type FeeStatus,
   type TransportRoute,
 } from '../../api/transportApi';
+
+// Files come from the same host as the API but outside the /api/v1 prefix.
+const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+const resolveFileUrl = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${FILE_ORIGIN}/${url.replace(/^\/+/, '')}`;
+};
 
 // Status key → label + colors (matches backend `fees.schedule[].status`)
 const STATUS_CONFIG: Record<FeeStatus, { label: string; color: string; bg: string }> = {
@@ -235,8 +245,8 @@ const TransportScreen = ({ navigation }: any) => {
               value={data.capacity ? `${data.capacity} Seats` : '–'}
             />
             <InfoRow label="Pickup Time" value={data.pickup_time || '–'} />
-            <InfoRow label="Pickup Point" value={data.pickup_location || '–'} />
-            <InfoRow label="Drop Point" value={data.drop_location || '–'} />
+            <InfoRow label="Pickup Point" value={data.route_name || '–'} />
+            <InfoRow label="Drop Point" value={data.route_name || '–'} />
 
             {/* Driver Details accordion */}
             {driver && (
@@ -266,11 +276,18 @@ const TransportScreen = ({ navigation }: any) => {
                 {driverExpanded && (
                   <View style={s.driverBody}>
                     <View style={s.driverTop}>
-                      <View style={s.driverAvatar}>
-                        <Text style={s.driverInitial}>
-                          {initialsOf(driver.name)}
-                        </Text>
-                      </View>
+                      {resolveFileUrl(driver.image) ? (
+                        <Image
+                          source={{ uri: resolveFileUrl(driver.image) }}
+                          style={s.driverAvatar}
+                        />
+                      ) : (
+                        <View style={s.driverAvatar}>
+                          <Text style={s.driverInitial}>
+                            {initialsOf(driver.name)}
+                          </Text>
+                        </View>
+                      )}
                       <View style={{ flex: 1 }}>
                         <Text style={s.driverName}>{driver.name || '–'}</Text>
                         {!!driver.email && (
