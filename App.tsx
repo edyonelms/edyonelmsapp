@@ -13,7 +13,7 @@ const App = () => {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-          <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+          <StatusBar barStyle="dark-content" backgroundColor="#fff" translucent={false} />
           <AppLock>
             <NavigationContainer>
               <AppNavigator />

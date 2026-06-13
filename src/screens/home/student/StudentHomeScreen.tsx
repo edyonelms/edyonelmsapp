@@ -152,27 +152,29 @@ const StudentHomeScreen = () => {
                 <Text style={s.seeAll}>See All →</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-              {upcomingExams.map(exam => {
-                const sc = exam.status === 'Published' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
-                return (
-                  <TouchableOpacity key={exam.id} style={s.examCard} onPress={() => navigation.navigate('ExamDetail', { exam })} activeOpacity={0.85}>
-                    <View style={[s.examTop, { backgroundColor: sc.bg }]}>
-                      <VectorIcon iconSet="Ionicons" iconName="document-text-outline" size={22} color={sc.color} />
-                      <View style={[s.examStatusDot, { backgroundColor: sc.color }]} />
-                    </View>
-                    <View style={s.examBody}>
-                      <Text style={s.examName}>{exam.name}</Text>
-                      <Text style={s.examType}>{exam.type}</Text>
-                      <View style={s.examDateRow}>
-                        <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={11} color={theme.colors.textMuted} />
-                        <Text style={s.examDate}>{exam.dateRange}</Text>
+            <View style={s.sectionCard}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                {upcomingExams.map(exam => {
+                  const sc = exam.status === 'Published' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
+                  return (
+                    <TouchableOpacity key={exam.id} style={s.examCard} onPress={() => navigation.navigate('ExamDetail', { exam })} activeOpacity={0.85}>
+                      <View style={[s.examTop, { backgroundColor: sc.bg }]}>
+                        <VectorIcon iconSet="Ionicons" iconName="document-text-outline" size={22} color={sc.color} />
+                        <View style={[s.examStatusDot, { backgroundColor: sc.color }]} />
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                      <View style={s.examBody}>
+                        <Text style={s.examName}>{exam.name}</Text>
+                        <Text style={s.examType}>{exam.type}</Text>
+                        <View style={s.examDateRow}>
+                          <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={11} color={theme.colors.textMuted} />
+                          <Text style={s.examDate}>{exam.dateRange}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
           </View>
         )}
 
@@ -185,21 +187,22 @@ const StudentHomeScreen = () => {
                 <Text style={s.seeAll}>See All →</Text>
               </TouchableOpacity>
             </View>
-            {recentHW.map(hw => (
-              <View key={hw.id} style={s.hwCard}>
-                <View style={[s.hwStripe, { backgroundColor: hw.subjectColor }]} />
-                <View style={[s.hwIconWrap, { backgroundColor: hw.subjectColor + '18' }]}>
-                  <Text style={s.hwEmoji}>{hw.subjectIcon}</Text>
+            <View style={s.sectionCard}>
+              {recentHW.map((hw, i) => (
+                <View key={hw.id} style={[s.hwCard, i < recentHW.length - 1 && s.rowDivider]}>
+                  <View style={[s.hwIconWrap, { backgroundColor: hw.subjectColor + '18' }]}>
+                    <Text style={s.hwEmoji}>{hw.subjectIcon}</Text>
+                  </View>
+                  <View style={s.hwContent}>
+                    <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
+                    <Text style={s.hwSubject} numberOfLines={1}>{hw.subjectName}</Text>
+                  </View>
+                  <View style={[s.hwDueBadge, { backgroundColor: hw.subjectColor + '18' }]}>
+                    <Text style={[s.hwDueText, { color: hw.subjectColor }]}>{hw.dueDate}</Text>
+                  </View>
                 </View>
-                <View style={s.hwContent}>
-                  <Text style={s.hwTitle} numberOfLines={1}>{hw.title}</Text>
-                  <Text style={s.hwSubject} numberOfLines={1}>{hw.subjectName}</Text>
-                </View>
-                <View style={[s.hwDueBadge, { backgroundColor: hw.subjectColor + '18' }]}>
-                  <Text style={[s.hwDueText, { color: hw.subjectColor }]}>{hw.dueDate}</Text>
-                </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         )}
 
@@ -234,9 +237,9 @@ const StudentHomeScreen = () => {
         {/* ── Notice Board ── */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Notice Board</Text>
-          <View style={s.noticeList}>
+          <View style={s.sectionCard}>
             {NOTICES.map((n, i) => (
-              <TouchableOpacity key={i} style={s.noticeCard} activeOpacity={0.8}>
+              <TouchableOpacity key={i} style={[s.noticeCard, i < NOTICES.length - 1 && s.rowDivider]} activeOpacity={0.8}>
                 <View style={[s.noticeIconWrap, { backgroundColor: n.bg }]}>
                   <VectorIcon iconSet="Ionicons" iconName={n.icon} size={18} color={n.color} />
                 </View>
@@ -337,6 +340,19 @@ const s = StyleSheet.create({
 
   // Section
   section: { marginTop: theme.spacing.lg, paddingHorizontal: theme.spacing.lg },
+  sectionCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   sectionTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 10 },
   seeAll: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
@@ -349,9 +365,9 @@ const s = StyleSheet.create({
 
   // Exam cards (horizontal)
   examCard: {
-    width: CARD_W, backgroundColor: theme.colors.card,
+    width: CARD_W, backgroundColor: theme.colors.background,
     borderRadius: theme.radius.md, overflow: 'hidden',
-    borderWidth: 1, borderColor: theme.colors.border, elevation: 2,
+    borderWidth: 1, borderColor: theme.colors.border,
   },
   examTop: { padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   examStatusDot: { width: 8, height: 8, borderRadius: 4 },
@@ -361,15 +377,12 @@ const s = StyleSheet.create({
   examDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   examDate: { fontSize: 11, color: theme.colors.textMuted },
 
-  // HW cards
+  // HW rows
   hwCard: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border,
-    overflow: 'hidden', marginBottom: 8, padding: 10, elevation: 1,
+    paddingVertical: 10,
   },
-  hwStripe: { width: 3, height: '100%', position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 2 },
-  hwIconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+  hwIconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   hwEmoji: { fontSize: 18 },
   hwContent: { flex: 1 },
   hwTitle: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
@@ -378,12 +391,9 @@ const s = StyleSheet.create({
   hwDueText: { fontSize: 10, fontWeight: '700' },
 
   // Notice
-  noticeList: { gap: 8 },
   noticeCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border,
-    padding: 12, elevation: 1,
+    paddingVertical: 12,
   },
   noticeIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   noticeContent: { flex: 1 },

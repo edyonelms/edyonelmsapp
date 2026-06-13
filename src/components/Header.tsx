@@ -26,7 +26,7 @@ const Header = ({ title, onBackPress, showBack = true, backgroundColor = '#fff' 
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} />
+      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} translucent={false} />
       <View style={[styles.container, { backgroundColor }]}>
         <View style={styles.side}>
           {showBack ? (

@@ -14,6 +14,7 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../utils/theme';
 import VectorIcon from './VectorIcon';
@@ -29,8 +30,8 @@ interface TopBarProps {
   onAvatarPress?: () => void;
 }
 
-// Soft indigo-tinted white shared by the bar and the status bar area above it.
-const BAR_BG = '#EEF2FF';
+// Attractive indigo→violet gradient for the header + status-bar area.
+const HEADER_GRADIENT = ['#4F46E5', '#6D5DF2', '#7C3AED'];
 
 const TopBar = ({
   userName,
@@ -108,13 +109,14 @@ const TopBar = ({
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={BAR_BG} />
-      {/* Tints the status-bar inset (time/battery area), which the root
-          SafeAreaView otherwise paints white. */}
-      <View
-        style={[styles.statusBackdrop, { top: -insets.top, height: insets.top }]}
-      />
+    <LinearGradient
+      colors={HEADER_GRADIENT}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.container, { marginTop: -insets.top, paddingTop: insets.top }]}
+    >
+      {/* Translucent so the gradient flows up behind the status-bar icons. */}
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <View style={styles.wrap}>
         <TouchableOpacity
           onPress={openDrawer}
@@ -143,7 +145,7 @@ const TopBar = ({
               iconSet="Feather"
               iconName="chevron-down"
               size={16}
-              color={theme.colors.textSecondary}
+              color="rgba(255,255,255,0.9)"
             />
           </View>
         </TouchableOpacity>
@@ -194,29 +196,22 @@ const TopBar = ({
       </View>
 
       <AccountSwitcherSheet visible={switcherOpen} onClose={onSwitcherClose} />
-    </View>
+    </LinearGradient>
   );
 };
 
 export default TopBar;
 
 const styles = StyleSheet.create({
-  statusBackdrop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    backgroundColor: BAR_BG,
-  },
   container: {
-    backgroundColor: BAR_BG,
     paddingBottom: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E7FF',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
   },
   wrap: {
     flexDirection: 'row',
@@ -242,7 +237,7 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 11,
     fontWeight: '600',
-    color: theme.colors.textMuted,
+    color: 'rgba(255,255,255,0.7)',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
@@ -255,7 +250,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
+    color: '#fff',
     flexShrink: 1,
   },
   searchWrap: {
