@@ -59,29 +59,13 @@ const TeacherHomeScreen = () => {
   return (
     <View style={s.root}>
       <TopBar
+        subtitle="Mathematics · Senior Teacher"
+        subtitleIcon="ribbon"
         onAvatarPress={() => navigation.navigate('TeacherProfile')}
         onBellPress={() => navigation.navigate('Notifications', { role: 'teacher' })}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-
-        {/* ── Hero ── */}
-        <View style={s.hero}>
-          <View style={s.heroLeft}>
-            <Text style={s.heroGreeting}>{greeting.emoji} {greeting.text}</Text>
-            <Text style={s.heroName}>Mr. Arjun Verma</Text>
-            <View style={s.heroBadge}>
-              <VectorIcon iconSet="Ionicons" iconName="ribbon-outline" size={11} color="#fff" />
-              <Text style={s.heroBadgeText}>Mathematics · Senior Teacher</Text>
-            </View>
-          </View>
-          <View style={s.heroRight}>
-            <View style={s.heroAvatar}>
-              <Text style={s.heroAvatarText}>AV</Text>
-            </View>
-            <View style={s.heroAvatarRing} />
-          </View>
-        </View>
 
         {/* ── Quick chips ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>

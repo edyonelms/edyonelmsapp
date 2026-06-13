@@ -61,27 +61,13 @@ const StudentHomeScreen = () => {
   return (
     <View style={s.root}>
       <TopBar
+        subtitle="Class 9A · Roll No. 24"
+        subtitleIcon="school"
         onAvatarPress={() => navigation.navigate('StudentProfile')}
         onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-
-        {/* ── Hero Card ── */}
-        <View style={s.hero}>
-          <View style={s.heroLeft}>
-            <Text style={s.heroGreeting}>{greeting.emoji} {greeting.text}</Text>
-            <Text style={s.heroName}>Rahul Sharma</Text>
-            <View style={s.heroBadge}>
-              <VectorIcon iconSet="Ionicons" iconName="school-outline" size={11} color={theme.colors.primary} />
-              <Text style={s.heroBadgeText}>Class 9A · Roll No. 24</Text>
-            </View>
-          </View>
-          <View style={s.heroAvatar}>
-            <Text style={s.heroAvatarText}>RS</Text>
-            <View style={s.heroAvatarRing} />
-          </View>
-        </View>
 
         {/* ── Quick chips ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>

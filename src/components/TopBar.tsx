@@ -24,6 +24,8 @@ import { fetchCurrentSnapshot } from '../api/switchAccountApi';
 
 interface TopBarProps {
   userName?: string;
+  subtitle?: string;
+  subtitleIcon?: string;
   searchValue?: string;
   onSearchChange?: (text: string) => void;
   onBellPress?: () => void;
@@ -32,9 +34,19 @@ interface TopBarProps {
 
 // Attractive indigo→violet gradient for the header + status-bar area.
 const HEADER_GRADIENT = ['#4F46E5', '#6D5DF2', '#7C3AED'];
+const HEADER_TOP = '#4F46E5';
+
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
 
 const TopBar = ({
   userName,
+  subtitle,
+  subtitleIcon = 'sparkles',
   searchValue,
   onSearchChange,
   onBellPress,
@@ -113,22 +125,23 @@ const TopBar = ({
       colors={HEADER_GRADIENT}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={[styles.container, { marginTop: -insets.top, paddingTop: insets.top }]}
+      style={[styles.container, { paddingTop: insets.top + 10 }]}
     >
-      {/* Translucent so the gradient flows up behind the status-bar icons. */}
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      {/* Solid status-bar tint that matches the gradient's top colour. */}
+      <StatusBar
+        translucent={false}
+        backgroundColor={HEADER_TOP}
+        barStyle="light-content"
+      />
+
+      {/* Row 1: menu · greeting+name · bell · avatar */}
       <View style={styles.wrap}>
         <TouchableOpacity
           onPress={openDrawer}
           activeOpacity={0.7}
           style={styles.menuBtn}
         >
-          <VectorIcon
-            iconSet="Feather"
-            iconName="menu"
-            size={20}
-            color={theme.colors.textPrimary}
-          />
+          <VectorIcon iconSet="Feather" iconName="menu" size={20} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -136,7 +149,7 @@ const TopBar = ({
           activeOpacity={0.7}
           onPress={() => setSwitcherOpen(true)}
         >
-          <Text style={styles.greeting}>Welcome back</Text>
+          <Text style={styles.greeting}>{getGreeting()} 👋</Text>
           <View style={styles.nameRow}>
             <Text style={styles.userName} numberOfLines={1}>
               {displayName || 'Account'}
@@ -155,7 +168,7 @@ const TopBar = ({
             iconSet="Ionicons"
             iconName="notifications-outline"
             size={19}
-            color={theme.colors.textPrimary}
+            color="#fff"
           />
           <View style={styles.bellDot} />
         </TouchableOpacity>
@@ -170,14 +183,25 @@ const TopBar = ({
           ) : (
             <VectorIcon
               iconSet="Ionicons"
-              iconName="person-circle-outline"
-              size={22}
-              color={theme.colors.primary}
+              iconName="person-circle"
+              size={26}
+              color="#fff"
             />
           )}
         </TouchableOpacity>
       </View>
 
+      {/* Subtitle pill (class / role) */}
+      {!!subtitle && (
+        <View style={styles.subtitlePill}>
+          <VectorIcon iconSet="Ionicons" iconName={subtitleIcon} size={12} color="#fff" />
+          <Text style={styles.subtitleText} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        </View>
+      )}
+
+      {/* Search */}
       <View style={styles.searchWrap}>
         <VectorIcon
           iconSet="Feather"
@@ -204,29 +228,26 @@ export default TopBar;
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: theme.spacing.md,
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
     shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 8,
   },
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
   },
   menuBtn: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E0E7FF',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -236,10 +257,9 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.8)',
     letterSpacing: 0.3,
-    textTransform: 'uppercase',
   },
   nameRow: {
     flexDirection: 'row',
@@ -248,22 +268,33 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   userName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#fff',
     flexShrink: 1,
   },
+  subtitlePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    marginTop: 10,
+    marginLeft: theme.spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.full,
+  },
+  subtitleText: { fontSize: 12, fontWeight: '700', color: '#fff' },
   searchWrap: {
     marginTop: 12,
     marginHorizontal: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E0E7FF',
     borderRadius: theme.radius.full,
     paddingHorizontal: 16,
-    height: 42,
+    height: 44,
   },
   input: {
     flex: 1,
@@ -275,9 +306,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: theme.radius.full,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E0E7FF',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -288,12 +317,12 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: theme.colors.danger,
+    backgroundColor: '#FACC15',
     borderWidth: 1.5,
-    borderColor: '#fff',
+    borderColor: HEADER_TOP,
   },
   avatarBtn: {
-    backgroundColor: theme.colors.primaryLight,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     overflow: 'hidden',
   },
   avatarImg: {
