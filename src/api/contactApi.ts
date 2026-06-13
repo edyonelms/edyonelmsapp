@@ -25,12 +25,17 @@ export interface ContactListResponse {
 //  STUDENT APIs
 // ════════════════════════════════════════════════════════════════════════════
 
-// Build the request body: multipart when a file is attached, JSON otherwise
-const buildContactRequest = (payload: ContactPayload) => {
+// Build the request body: multipart when a file is attached, JSON otherwise.
+// The query field name differs by role: students send `student_query`, teachers
+// send `teacher_query` (the backend validates these names per endpoint).
+const buildContactRequest = (
+  payload: ContactPayload,
+  queryField: 'student_query' | 'teacher_query',
+) => {
   if (payload.attachment?.uri) {
     const formData = new FormData();
     formData.append('topic', payload.subject);
-    formData.append('student_query', payload.message);
+    formData.append(queryField, payload.message);
     formData.append('image', {
       uri: payload.attachment.uri,
       name: payload.attachment.name,
@@ -42,14 +47,14 @@ const buildContactRequest = (payload: ContactPayload) => {
     };
   }
   return {
-    body: { topic: payload.subject, student_query: payload.message },
+    body: { topic: payload.subject, [queryField]: payload.message },
     headers: { 'Content-Type': 'application/json' },
   };
 };
 
 // POST /user/admin/contact - multipart when an attachment is present
 export const studentContactAdmin = async (payload: ContactPayload) => {
-  const { body, headers } = buildContactRequest(payload);
+  const { body, headers } = buildContactRequest(payload, 'student_query');
 
   console.log('[studentContactAdmin] Sending, hasAttachment:', !!payload.attachment);
 
@@ -86,7 +91,7 @@ export const getStudentContactReply = async (contact_id: string | number) => {
 
 // POST /teacher/admin/contact - multipart when an attachment is present
 export const teacherContactAdmin = async (payload: ContactPayload) => {
-  const { body, headers } = buildContactRequest(payload);
+  const { body, headers } = buildContactRequest(payload, 'teacher_query');
 
   console.log('[teacherContactAdmin] Sending, hasAttachment:', !!payload.attachment);
 

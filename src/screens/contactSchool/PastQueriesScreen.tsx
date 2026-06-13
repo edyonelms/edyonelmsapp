@@ -61,7 +61,8 @@ const PastQueriesScreen = () => {
     return {
       id: apiItem.id,
       subject: apiItem.topic,
-      message: apiItem.student_query,
+      // Students store the body in `student_query`, teachers in `teacher_query`.
+      message: apiItem.student_query ?? apiItem.teacher_query ?? '',
       status: status,
       created_at: apiItem.created_at,
       daysAgo: daysAgo,
