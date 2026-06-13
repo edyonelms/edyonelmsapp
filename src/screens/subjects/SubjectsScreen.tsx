@@ -3,6 +3,7 @@ import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,6 +14,7 @@ import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
+import constant from '../../utils/constant';
 import {
   getStudentSubjects,
   getChapters,
@@ -21,24 +23,50 @@ import {
   type SyllabusChapter,
 } from '../../api/contentApi';
 
+// Subject images come from the same host as the API but outside the /api/v1 prefix.
+const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+const resolveFileUrl = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${FILE_ORIGIN}/${url.replace(/^\/+/, '')}`;
+};
+
 interface SubjectRow {
   id: number;
   name: string;
   color: string;
-  icon: string;
+  image: string | null;
   chapters: SyllabusChapter[];
 }
 
 // ─── Subject card ─────────────────────────────────────────────────────────────
 const SubjectCard = ({ item, onPress }: { item: SubjectRow; onPress: () => void }) => {
   const totalTopics = item.chapters.reduce((sum, c) => sum + c.topics.length, 0);
+  const imageUrl = resolveFileUrl(item.image);
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = !!imageUrl && !imgFailed;
   return (
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.85}>
       <View style={[s.accentBar, { backgroundColor: item.color }]} />
       <View style={s.cardInner}>
         <View style={s.cardTop}>
           <View style={[s.iconWrap, { backgroundColor: item.color + '20' }]}>
-            <Text style={s.iconEmoji}>{item.icon}</Text>
+            {showImage ? (
+              <Image
+                source={{ uri: imageUrl }}
+                style={s.iconImage}
+                resizeMode="contain"
+                onError={() => setImgFailed(true)}
+              />
+            ) : (
+              // Fallback when the subject has no image: a clean book vector icon
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="book"
+                size={20}
+                color={item.color}
+              />
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.cardTitle}>{item.name}</Text>
@@ -99,7 +127,7 @@ const SubjectsScreen = ({ navigation }: any) => {
             id: sub.id,
             name: sub.name,
             color: style.color,
-            icon: style.icon,
+            image: sub.image ?? null,
             chapters: bySubject.get(sub.id) ?? [],
           };
         }),
@@ -198,8 +226,8 @@ const s = StyleSheet.create({
   cardInner: { padding: theme.spacing.md, gap: 10 },
 
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  iconWrap: { width: 40, height: 40, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
-  iconEmoji: { fontSize: 20 },
+  iconWrap: { width: 40, height: 40, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  iconImage: { width: 28, height: 28 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
   cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
   chevronWrap: {
