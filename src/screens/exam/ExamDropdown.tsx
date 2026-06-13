@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { Exam, EXAMS, TYPE_ICON } from './examData';
+import { Exam, EXAMS, iconForType } from './examData';
 
 interface Props {
   selected: Exam;
@@ -24,7 +24,7 @@ const ExamDropdown = ({ selected, onSelect }: Props) => {
           <View style={s.iconWrap}>
             <VectorIcon
               iconSet="Ionicons"
-              iconName={TYPE_ICON[selected.type]}
+              iconName={iconForType(selected.type)}
               size={18}
               color={theme.colors.primary}
             />

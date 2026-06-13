@@ -1,4 +1,4 @@
-export type ExamStatus = 'Published' | 'Upcoming' | 'Completed';
+export type ExamStatus = 'Upcoming' | 'Ongoing' | 'Completed';
 export type ExamType = 'Unit Test' | 'Mid Term' | 'Final Term' | 'Pre-Board';
 
 export interface SyllabusItem {
@@ -11,7 +11,8 @@ export interface Exam {
   name: string;
   subtitle: string;
   academicYear: string;
-  type: ExamType;
+  // Free-form exam type coming from the API (e.g. "Unit Test", "Mid Term").
+  type: string;
   dateRange: string;
   startDate: string;
   endDate: string;
@@ -27,22 +28,47 @@ export const STATUS_CONFIG: Record<
   ExamStatus,
   { color: string; bg: string; accent: string }
 > = {
-  Published: { color: '#16A34A', bg: '#DCFCE7', accent: '#16A34A' },
+  Ongoing: { color: '#16A34A', bg: '#DCFCE7', accent: '#16A34A' },
   Upcoming: { color: '#D97706', bg: '#FEF3C7', accent: '#D97706' },
   Completed: { color: '#64748B', bg: '#F1F5F9', accent: '#94A3B8' },
 };
 
-export const TYPE_ICON: Record<ExamType, string> = {
+// Maps the API exam status (lower-case) to the UI status label.
+export const statusFromApi = (status?: string | null): ExamStatus => {
+  switch ((status || '').toLowerCase()) {
+    case 'upcoming':
+      return 'Upcoming';
+    case 'completed':
+      return 'Completed';
+    default:
+      return 'Ongoing';
+  }
+};
+
+export const TYPE_ICON: Record<string, string> = {
   'Unit Test': 'document-text-outline',
   'Mid Term': 'school-outline',
   'Final Term': 'trophy-outline',
   'Pre-Board': 'ribbon-outline',
 };
 
+// Tolerant icon lookup — exam_type is free-form on the backend, so fall back to
+// a sensible default for anything not in TYPE_ICON.
+export const iconForType = (type?: string | null): string =>
+  (type && TYPE_ICON[type]) || 'document-text-outline';
+
+// Shown on the Exam Detail screen when the backend has no per-exam instructions.
+export const DEFAULT_EXAM_INSTRUCTIONS: string[] = [
+  'Carry your admit card on all exam days.',
+  'No electronic devices allowed inside the hall.',
+  'Report 30 minutes before the exam starts.',
+  'Use blue or black ink pen only.',
+];
+
 export const FILTERS: (ExamStatus | 'All')[] = [
   'All',
-  'Published',
   'Upcoming',
+  'Ongoing',
   'Completed',
 ];
 
@@ -278,7 +304,7 @@ export const EXAMS: Exam[] = [
     dateRange: '03 Feb - 26 Feb 2026',
     startDate: '03 Feb 2026',
     endDate: '26 Feb 2026',
-    status: 'Published',
+    status: 'Ongoing',
     totalMarks: 100,
     passingMarks: 35,
     venue: 'Main Examination Hall',

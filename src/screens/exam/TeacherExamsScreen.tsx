@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -11,14 +12,71 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { EXAMS, FILTERS, STATUS_CONFIG, TYPE_ICON, Exam, ExamStatus } from './examData';
+import {
+  FILTERS,
+  STATUS_CONFIG,
+  iconForType,
+  Exam,
+  ExamStatus,
+  SyllabusItem,
+} from './examData';
+import {
+  getExams,
+  getExamSyllabus,
+  examErrorMessage,
+} from '../../api/examApi';
 
 const TeacherExamsScreen = () => {
   const [activeFilter, setActiveFilter] = useState<ExamStatus | 'All'>('All');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // Syllabus is fetched lazily per exam when its card is expanded.
+  const [syllabusMap, setSyllabusMap] = useState<Record<string, SyllabusItem[]>>({});
+  const [syllabusLoading, setSyllabusLoading] = useState<Record<string, boolean>>({});
 
-  const filtered = EXAMS.filter(e => {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await getExams();
+      setExams(list);
+    } catch (e: any) {
+      console.log('[getExams] Error:', e?.response?.status, e?.message);
+      setError(examErrorMessage(e));
+      setExams([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const toggleSyllabus = useCallback(
+    async (id: string) => {
+      const next = expandedId === id ? null : id;
+      setExpandedId(next);
+      if (next && syllabusMap[id] === undefined && !syllabusLoading[id]) {
+        setSyllabusLoading(p => ({ ...p, [id]: true }));
+        try {
+          const s = await getExamSyllabus(id);
+          setSyllabusMap(p => ({ ...p, [id]: s }));
+        } catch (e: any) {
+          console.log('[getExamSyllabus] Error:', e?.response?.status, e?.message);
+          setSyllabusMap(p => ({ ...p, [id]: [] }));
+        } finally {
+          setSyllabusLoading(p => ({ ...p, [id]: false }));
+        }
+      }
+    },
+    [expandedId, syllabusMap, syllabusLoading],
+  );
+
+  const filtered = exams.filter(e => {
     const matchFilter = activeFilter === 'All' || e.status === activeFilter;
     const q = search.toLowerCase();
     const matchSearch =
@@ -32,6 +90,8 @@ const TeacherExamsScreen = () => {
   const renderExam = ({ item }: { item: Exam }) => {
     const isExpanded = expandedId === item.id;
     const sc = STATUS_CONFIG[item.status];
+    const syllabus = syllabusMap[item.id] ?? [];
+    const sylLoading = !!syllabusLoading[item.id];
 
     return (
       <View style={styles.card}>
@@ -44,7 +104,7 @@ const TeacherExamsScreen = () => {
             <View style={styles.iconWrap}>
               <VectorIcon
                 iconSet="Ionicons"
-                iconName={TYPE_ICON[item.type]}
+                iconName={iconForType(item.type)}
                 size={20}
                 color={theme.colors.primary}
               />
@@ -98,7 +158,7 @@ const TeacherExamsScreen = () => {
         {/* Syllabus toggle */}
         <TouchableOpacity
           style={styles.syllabusToggle}
-          onPress={() => setExpandedId(isExpanded ? null : item.id)}
+          onPress={() => toggleSyllabus(item.id)}
           activeOpacity={0.7}
         >
           <Text style={styles.syllabusToggleText}>
@@ -115,21 +175,29 @@ const TeacherExamsScreen = () => {
         {/* Syllabus expanded */}
         {isExpanded && (
           <View style={styles.syllabusBox}>
-            {item.syllabus.map((s, i) => (
-              <View key={i} style={styles.syllabusItem}>
-                <View style={styles.syllabusLeft}>
-                  <View style={styles.subjectDot} />
-                  <Text style={styles.syllabusSubject}>{s.subject}</Text>
-                </View>
-                <View style={styles.topicsWrap}>
-                  {s.topics.map((t, j) => (
-                    <View key={j} style={styles.topicChip}>
-                      <Text style={styles.topicChipText}>{t}</Text>
-                    </View>
-                  ))}
-                </View>
+            {sylLoading ? (
+              <View style={styles.syllabusLoading}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
               </View>
-            ))}
+            ) : syllabus.length === 0 ? (
+              <Text style={styles.syllabusEmpty}>No syllabus available for this exam.</Text>
+            ) : (
+              syllabus.map((s, i) => (
+                <View key={i} style={styles.syllabusItem}>
+                  <View style={styles.syllabusLeft}>
+                    <View style={styles.subjectDot} />
+                    <Text style={styles.syllabusSubject}>{s.subject}</Text>
+                  </View>
+                  <View style={styles.topicsWrap}>
+                    {s.topics.map((t, j) => (
+                      <View key={j} style={styles.topicChip}>
+                        <Text style={styles.topicChipText}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         )}
       </View>
@@ -188,14 +256,32 @@ const TeacherExamsScreen = () => {
         </ScrollView>
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={i => i.id}
-        renderItem={renderExam}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={<Text style={styles.empty}>No exams found.</Text>}
-      />
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : error ? (
+        <View style={styles.center}>
+          <View style={styles.errorIconRing}>
+            <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
+          </View>
+          <Text style={styles.errorTitle}>Couldn’t load exams</Text>
+          <Text style={styles.errorSubtitle}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={load} activeOpacity={0.85}>
+            <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={theme.colors.primary} />
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={i => i.id}
+          renderItem={renderExam}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={<Text style={styles.empty}>No exams found.</Text>}
+        />
+      )}
     </View>
   );
 };
@@ -407,4 +493,22 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     marginTop: 40,
   },
+
+  syllabusLoading: { paddingVertical: 8, alignItems: 'center' },
+  syllabusEmpty: { fontSize: 12, color: theme.colors.textMuted, paddingVertical: 4 },
+
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xl, gap: 10 },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  errorSubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: theme.colors.primary, borderRadius: theme.radius.full,
+    paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });

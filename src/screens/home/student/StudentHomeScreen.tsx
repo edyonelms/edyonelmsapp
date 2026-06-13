@@ -54,7 +54,7 @@ const StudentHomeScreen = () => {
   const stats = computeStats(moment().format('YYYY-MM'));
   const greeting = getGreeting();
   const attendancePct = parseFloat(stats.presentPct);
-  const upcomingExams = EXAMS.filter(e => e.status === 'Published' || e.status === 'Upcoming').slice(0, 3);
+  const upcomingExams = EXAMS.filter(e => e.status === 'Ongoing' || e.status === 'Upcoming').slice(0, 3);
   const recentHW = HOMEWORK_STORE.slice(0, 3);
   const overallPct = Math.round(SUBJECT_PERF.reduce((s, x) => s + x.pct, 0) / SUBJECT_PERF.length);
 
@@ -141,7 +141,7 @@ const StudentHomeScreen = () => {
             <View style={s.sectionCard}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                 {upcomingExams.map(exam => {
-                  const sc = exam.status === 'Published' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
+                  const sc = exam.status === 'Ongoing' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
                   return (
                     <TouchableOpacity key={exam.id} style={s.examCard} onPress={() => navigation.navigate('ExamDetail', { exam })} activeOpacity={0.85}>
                       <View style={[s.examTop, { backgroundColor: sc.bg }]}>

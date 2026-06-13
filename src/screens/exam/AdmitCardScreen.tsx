@@ -18,7 +18,7 @@ import {
   SEATING_DATA,
   STATUS_CONFIG,
   STUDENT_INFO,
-  TYPE_ICON,
+  iconForType,
 } from './examData';
 import ExamDropdown from './ExamDropdown';
 
@@ -70,7 +70,7 @@ const AdmitCardScreen = ({ navigation }: any) => {
               <View style={s.iconBox}>
                 <VectorIcon
                   iconSet="Ionicons"
-                  iconName={TYPE_ICON[exam.type]}
+                  iconName={iconForType(exam.type)}
                   size={20}
                   color={theme.colors.primary}
                 />

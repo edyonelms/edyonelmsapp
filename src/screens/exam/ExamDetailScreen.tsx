@@ -1,10 +1,18 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { Exam, STATUS_CONFIG, TYPE_ICON } from './examData';
+import { Exam, STATUS_CONFIG, iconForType } from './examData';
+import { getExamDetail, examErrorMessage } from '../../api/examApi';
 
 const InfoRow = ({
   icon,
@@ -33,7 +41,63 @@ const InfoRow = ({
 
 const ExamDetailScreen = () => {
   const route = useRoute<any>();
-  const exam: Exam = route.params?.exam;
+  const summary: Exam | undefined = route.params?.exam;
+  const examId: string | number | undefined = route.params?.examId ?? summary?.id;
+
+  // Start from the summary passed by the list (instant render), then enrich it
+  // with the full detail (syllabus, description) fetched from the API.
+  const [exam, setExam] = useState<Exam | undefined>(summary);
+  const [loading, setLoading] = useState(!summary);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (examId == null) {
+      setError('Exam not found.');
+      setLoading(false);
+      return;
+    }
+    if (!summary) setLoading(true);
+    setError(null);
+    try {
+      const detail = await getExamDetail(examId);
+      setExam(detail);
+    } catch (e: any) {
+      console.log('[getExamDetail] Error:', e?.response?.status, e?.message);
+      if (!summary) setError(examErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [examId, summary]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading || !exam) {
+    return (
+      <View style={styles.safeArea}>
+        <Header title="Exam Details" />
+        {error ? (
+          <View style={styles.stateBox}>
+            <View style={styles.errorIconRing}>
+              <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
+            </View>
+            <Text style={styles.errorTitle}>Couldn’t load exam</Text>
+            <Text style={styles.errorSubtitle}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={load} activeOpacity={0.85}>
+              <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={theme.colors.primary} />
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.stateBox}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        )}
+      </View>
+    );
+  }
+
   const sc = STATUS_CONFIG[exam.status];
 
   return (
@@ -51,7 +115,7 @@ const ExamDetailScreen = () => {
               <View style={styles.heroIconWrap}>
                 <VectorIcon
                   iconSet="Ionicons"
-                  iconName={TYPE_ICON[exam.type]}
+                  iconName={iconForType(exam.type)}
                   size={26}
                   color={theme.colors.primary}
                 />
@@ -114,47 +178,61 @@ const ExamDetailScreen = () => {
               label="Date Range"
               value={exam.dateRange}
             />
-            <View style={styles.divider} />
-            <InfoRow icon="location-outline" label="Venue" value={exam.venue} />
-            <View style={styles.divider} />
-            <InfoRow
-              icon="checkmark-circle-outline"
-              label="Total Marks"
-              value={`${exam.totalMarks} Marks`}
-            />
-            <View style={styles.divider} />
-            <InfoRow
-              icon="ribbon-outline"
-              label="Passing Marks"
-              value={`${exam.passingMarks} Marks`}
-            />
+            {!!exam.venue && (
+              <>
+                <View style={styles.divider} />
+                <InfoRow icon="location-outline" label="Venue" value={exam.venue} />
+              </>
+            )}
+            {exam.totalMarks > 0 && (
+              <>
+                <View style={styles.divider} />
+                <InfoRow
+                  icon="checkmark-circle-outline"
+                  label="Total Marks"
+                  value={`${exam.totalMarks} Marks`}
+                />
+              </>
+            )}
+            {exam.passingMarks > 0 && (
+              <>
+                <View style={styles.divider} />
+                <InfoRow
+                  icon="ribbon-outline"
+                  label="Passing Marks"
+                  value={`${exam.passingMarks} Marks`}
+                />
+              </>
+            )}
           </View>
         </View>
 
         {/* Syllabus */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Syllabus</Text>
-          <View style={styles.sectionCard}>
-            {exam.syllabus.map((s, i) => (
-              <View key={i}>
-                {i > 0 && <View style={styles.divider} />}
-                <View style={styles.syllabusItem}>
-                  <View style={styles.syllabusHeader}>
-                    <View style={styles.subjectDot} />
-                    <Text style={styles.syllabusSubject}>{s.subject}</Text>
-                  </View>
-                  <View style={styles.topicsWrap}>
-                    {s.topics.map((t, j) => (
-                      <View key={j} style={styles.topicChip}>
-                        <Text style={styles.topicChipText}>{t}</Text>
-                      </View>
-                    ))}
+        {exam.syllabus.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Syllabus</Text>
+            <View style={styles.sectionCard}>
+              {exam.syllabus.map((s, i) => (
+                <View key={i}>
+                  {i > 0 && <View style={styles.divider} />}
+                  <View style={styles.syllabusItem}>
+                    <View style={styles.syllabusHeader}>
+                      <View style={styles.subjectDot} />
+                      <Text style={styles.syllabusSubject}>{s.subject}</Text>
+                    </View>
+                    <View style={styles.topicsWrap}>
+                      {s.topics.map((t, j) => (
+                        <View key={j} style={styles.topicChip}>
+                          <Text style={styles.topicChipText}>{t}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Instructions */}
         <View style={styles.section}>
@@ -180,6 +258,21 @@ export default ExamDetailScreen;
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: theme.spacing.lg, gap: 16, paddingBottom: 30 },
+
+  stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xl, gap: 10 },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  errorSubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: theme.colors.primary, borderRadius: theme.radius.full,
+    paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   heroCard: {
     backgroundColor: theme.colors.card,

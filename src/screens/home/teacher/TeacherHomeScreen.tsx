@@ -49,7 +49,7 @@ const CLASS_ATT = [
 const TeacherHomeScreen = () => {
   const navigation = useNavigation<any>();
   const greeting = getGreeting();
-  const upcomingExams = EXAMS.filter(e => e.status === 'Published' || e.status === 'Upcoming').slice(0, 2);
+  const upcomingExams = EXAMS.filter(e => e.status === 'Ongoing' || e.status === 'Upcoming').slice(0, 2);
   const pendingHW = HOMEWORK_STORE.slice(0, 3);
   const doneClasses = TODAY_CLASSES.filter(c => c.done).length;
   const totalStudents = CLASS_ATT.reduce((s, c) => s + c.total, 0);
@@ -172,7 +172,7 @@ const TeacherHomeScreen = () => {
             </View>
             <View style={s.sectionCard}>
             {upcomingExams.map(exam => {
-              const sc = exam.status === 'Published' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
+              const sc = exam.status === 'Ongoing' ? { color: '#16A34A', bg: '#DCFCE7' } : { color: '#D97706', bg: '#FEF3C7' };
               return (
                 <View key={exam.id} style={s.examCard}>
                   <View style={[s.examAccent, { backgroundColor: sc.color }]} />

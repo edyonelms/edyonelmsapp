@@ -13,7 +13,7 @@ import {
   Exam,
   SEATING_DATA,
   SubjectSeat,
-  TYPE_ICON,
+  iconForType,
 } from './examData';
 import ExamDropdown from './ExamDropdown';
 
@@ -115,7 +115,7 @@ const SeatingPlanScreen = ({ navigation }: any) => {
           <View style={s.summaryIconRing}>
             <VectorIcon
               iconSet="Ionicons"
-              iconName={TYPE_ICON[exam.type]}
+              iconName={iconForType(exam.type)}
               size={20}
               color={theme.colors.primary}
             />
