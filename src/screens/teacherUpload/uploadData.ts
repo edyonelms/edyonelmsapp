@@ -1,65 +1,19 @@
-import { ExamType, TYPE_ICON } from '../exam/examData';
-
-export { TYPE_ICON };
-export type { ExamType };
-
-export const EXAM_TYPES: ExamType[] = [
-  'Unit Test',
-  'Mid Term',
-  'Final Term',
-  'Pre-Board',
-];
-
-// ─── Editable exam used by the teacher upload screens ────────────────────────
-export interface UploadExam {
-  id: string;
-  name: string;
-  type: ExamType;
-  academicYear: string;
-  totalMarks: number;
-  dateRange: string;
-}
-
-export const SEED_EXAMS: UploadExam[] = [
-  {
-    id: '1',
-    name: 'IA 1',
-    type: 'Unit Test',
-    academicYear: '2026-2027',
-    totalMarks: 100,
-    dateRange: '03 Feb - 26 Feb 2026',
-  },
-  {
-    id: '2',
-    name: 'Mid Term',
-    type: 'Mid Term',
-    academicYear: '2026-2027',
-    totalMarks: 100,
-    dateRange: '10 Mar - 20 Mar 2026',
-  },
-  {
-    id: '3',
-    name: 'IA 2',
-    type: 'Unit Test',
-    academicYear: '2025-2026',
-    totalMarks: 50,
-    dateRange: '05 Nov - 15 Nov 2025',
-  },
-  {
-    id: '4',
-    name: 'Final Term',
-    type: 'Final Term',
-    academicYear: '2025-2026',
-    totalMarks: 100,
-    dateRange: '01 Mar - 20 Mar 2026',
-  },
-];
-
-// ─── Class / subject selectors ───────────────────────────────────────────────
+// ─── Selectors ───────────────────────────────────────────────────────────────
 export interface OptionItem {
   id: string;
   label: string;
 }
+
+export interface ExamOption extends OptionItem {
+  totalMarks: number;
+}
+
+export const EXAM_OPTIONS: ExamOption[] = [
+  { id: '1', label: 'IA 1 (2026-2027)', totalMarks: 100 },
+  { id: '2', label: 'Mid Term (2026-2027)', totalMarks: 100 },
+  { id: '3', label: 'IA 2 (2025-2026)', totalMarks: 50 },
+  { id: '4', label: 'Final Term (2025-2026)', totalMarks: 100 },
+];
 
 export const CLASSES: OptionItem[] = [
   { id: '1', label: 'Class 6A' },
@@ -76,6 +30,22 @@ export const SUBJECTS: OptionItem[] = [
   { id: 'SST', label: 'Social Science' },
   { id: 'HIN', label: 'Hindi' },
 ];
+
+// ─── Selection across the stepped dropdown ───────────────────────────────────
+export interface Selection {
+  exam: ExamOption | null;
+  cls: OptionItem | null;
+  subject: OptionItem | null;
+}
+
+export const emptySelection = (): Selection => ({
+  exam: null,
+  cls: null,
+  subject: null,
+});
+
+export const isComplete = (s: Selection): boolean =>
+  !!(s.exam && s.cls && s.subject);
 
 // ─── Students ────────────────────────────────────────────────────────────────
 export interface UploadStudent {
@@ -99,8 +69,12 @@ export const STUDENTS: UploadStudent[] = [
   { id: '12', rollNo: '12', name: 'Pooja Desai' },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-export const ACADEMIC_YEARS = ['2026-2027', '2025-2026', '2024-2025'];
-
-export const makeId = (): string =>
-  Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// ─── Submitted entries (shared by upload + manage screens) ───────────────────
+export interface UploadEntry {
+  studentId: string;
+  rollNo: string;
+  name: string;
+  fileName?: string; // copy mode
+  uri?: string; // copy mode
+  marks?: number; // marks mode
+}

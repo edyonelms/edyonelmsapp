@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,33 +11,33 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import ExamManagerCard from './ExamManagerCard';
-import SelectDropdown from './SelectDropdown';
+import SelectionWizard from './SelectionWizard';
+import SelectionCard from './SelectionCard';
 import {
-  CLASSES,
-  SEED_EXAMS,
+  emptySelection,
+  isComplete,
+  Selection,
   STUDENTS,
-  SUBJECTS,
-  UploadExam,
+  UploadEntry,
   UploadStudent,
 } from './uploadData';
 
 interface UploadedCopy {
-  name: string;
+  fileName: string;
   uri: string;
 }
 
 const UploadCopyScreen = ({ navigation }: any) => {
-  const [exams, setExams] = useState<UploadExam[]>(SEED_EXAMS);
-  const [selectedExam, setSelectedExam] = useState<UploadExam | null>(
-    SEED_EXAMS[0],
-  );
-  const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
-  const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0]);
+  const [selection, setSelection] = useState<Selection>(emptySelection());
   const [uploads, setUploads] = useState<Record<string, UploadedCopy>>({});
-  const [submitted, setSubmitted] = useState(false);
 
+  const ready = isComplete(selection);
   const uploadedCount = Object.keys(uploads).length;
+
+  const onSelect = (next: Selection) => {
+    setSelection(next);
+    setUploads({}); // fresh context → start over
+  };
 
   const pickCopy = (student: UploadStudent) => {
     launchImageLibrary({ mediaType: 'mixed', quality: 0.8 }, response => {
@@ -48,7 +47,7 @@ const UploadCopyScreen = ({ navigation }: any) => {
       setUploads(prev => ({
         ...prev,
         [student.id]: {
-          name:
+          fileName:
             asset.fileName ??
             `${student.name.split(' ')[0]}_copy.${
               (asset.type ?? 'image/jpeg').split('/')[1]
@@ -66,9 +65,35 @@ const UploadCopyScreen = ({ navigation }: any) => {
       return next;
     });
 
+  const handleManageSave = (entries: UploadEntry[]) => {
+    const map: Record<string, UploadedCopy> = {};
+    entries.forEach(e => {
+      if (e.fileName) map[e.studentId] = { fileName: e.fileName, uri: e.uri ?? '' };
+    });
+    setUploads(map);
+  };
+
   const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 2000);
+    if (uploadedCount === 0) {
+      Alert.alert('Nothing to submit', 'Upload at least one copy first.');
+      return;
+    }
+    const entries: UploadEntry[] = STUDENTS.filter(st => uploads[st.id]).map(
+      st => ({
+        studentId: st.id,
+        rollNo: st.rollNo,
+        name: st.name,
+        fileName: uploads[st.id].fileName,
+        uri: uploads[st.id].uri,
+      }),
+    );
+    navigation.navigate('ManageEntries', {
+      mode: 'copy',
+      selection,
+      maxMarks: selection.exam?.totalMarks ?? 100,
+      entries,
+      onSave: handleManageSave,
+    });
   };
 
   const renderStudent = ({ item }: { item: UploadStudent }) => {
@@ -94,7 +119,7 @@ const UploadCopyScreen = ({ navigation }: any) => {
               color={theme.colors.success}
             />
             <Text style={s.uploadedText} numberOfLines={1}>
-              {copy.name}
+              {copy.fileName}
             </Text>
             <TouchableOpacity
               onPress={() => removeCopy(item.id)}
@@ -128,87 +153,81 @@ const UploadCopyScreen = ({ navigation }: any) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={s.safeArea}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={s.safeArea}>
       <Header title="Upload Copy" onBackPress={() => navigation.goBack()} />
 
       <FlatList
-        data={STUDENTS}
+        data={ready ? STUDENTS : []}
         keyExtractor={i => i.id}
         renderItem={renderStudent}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <>
-            <ExamManagerCard
-              exams={exams}
-              selected={selectedExam}
-              onSelect={setSelectedExam}
-              onChangeExams={setExams}
-            />
+            <SelectionWizard value={selection} onChange={onSelect} />
 
-            {/* Class + Subject */}
-            <View style={s.selectorRow}>
-              <SelectDropdown
-                icon="people-outline"
-                label="Class"
-                options={CLASSES}
-                selected={selectedClass}
-                onSelect={setSelectedClass}
-              />
-              <SelectDropdown
-                icon="book-outline"
-                label="Subject"
-                options={SUBJECTS}
-                selected={selectedSubject}
-                onSelect={setSelectedSubject}
-              />
-            </View>
+            {ready ? (
+              <>
+                <View style={s.cardWrap}>
+                  <SelectionCard selection={selection} />
+                </View>
 
-            {/* Summary */}
-            <View style={s.summaryRow}>
-              <View style={s.summaryChip}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="checkmark-circle"
-                  size={14}
-                  color={theme.colors.success}
-                />
-                <Text style={s.summaryText}>
-                  {uploadedCount} of {STUDENTS.length} uploaded
+                <View style={s.summaryRow}>
+                  <View style={s.summaryChip}>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="checkmark-circle"
+                      size={14}
+                      color={theme.colors.success}
+                    />
+                    <Text style={s.summaryText}>
+                      {uploadedCount} of {STUDENTS.length} uploaded
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={s.listHeader}>
+                  <Text style={s.listHeaderText}>Student</Text>
+                  <Text style={s.listHeaderText}>Copy</Text>
+                </View>
+              </>
+            ) : (
+              <View style={s.promptBox}>
+                <View style={s.promptIconRing}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="funnel-outline"
+                    size={30}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={s.promptTitle}>Select to begin</Text>
+                <Text style={s.promptSub}>
+                  Choose Exam, Class and Subject to load the student list
                 </Text>
               </View>
-              <Text style={s.summaryHint}>{selectedSubject.label}</Text>
-            </View>
-
-            {/* List header */}
-            <View style={s.listHeader}>
-              <Text style={s.listHeaderText}>Student</Text>
-              <Text style={s.listHeaderText}>Copy</Text>
-            </View>
+            )}
           </>
         }
         ListFooterComponent={
-          <TouchableOpacity
-            style={[s.submitBtn, submitted && s.submitBtnDone]}
-            onPress={handleSubmit}
-            activeOpacity={0.85}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={submitted ? 'checkmark-done' : 'send'}
-              size={18}
-              color="#fff"
-            />
-            <Text style={s.submitText}>
-              {submitted ? 'Copies Submitted!' : 'Submit Copies'}
-            </Text>
-          </TouchableOpacity>
+          ready ? (
+            <TouchableOpacity
+              style={s.submitBtn}
+              onPress={handleSubmit}
+              activeOpacity={0.85}
+            >
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="arrow-forward-circle"
+                size={18}
+                color="#fff"
+              />
+              <Text style={s.submitText}>Submit & Manage</Text>
+            </TouchableOpacity>
+          ) : null
         }
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -218,12 +237,11 @@ const s = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
   list: { paddingHorizontal: theme.spacing.lg, paddingTop: 14, paddingBottom: 30 },
 
-  selectorRow: { flexDirection: 'row', gap: 10, marginTop: theme.spacing.md },
+  cardWrap: { marginTop: theme.spacing.md },
 
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginTop: theme.spacing.md,
     marginBottom: theme.spacing.xs,
   },
@@ -237,7 +255,6 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.full,
   },
   summaryText: { fontSize: 12, fontWeight: '700', color: theme.colors.success },
-  summaryHint: { fontSize: 12, fontWeight: '600', color: theme.colors.textMuted },
 
   listHeader: {
     flexDirection: 'row',
@@ -309,6 +326,29 @@ const s = StyleSheet.create({
     flexShrink: 1,
   },
 
+  promptBox: { alignItems: 'center', paddingTop: 50, paddingHorizontal: 30 },
+  promptIconRing: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  promptTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  promptSub: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -319,6 +359,5 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.sm,
     marginTop: theme.spacing.lg,
   },
-  submitBtnDone: { backgroundColor: theme.colors.success },
   submitText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

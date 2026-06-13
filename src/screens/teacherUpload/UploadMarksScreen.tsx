@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -12,28 +13,28 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import ExamManagerCard from './ExamManagerCard';
-import SelectDropdown from './SelectDropdown';
+import SelectionWizard from './SelectionWizard';
+import SelectionCard from './SelectionCard';
 import {
-  CLASSES,
-  SEED_EXAMS,
+  emptySelection,
+  isComplete,
+  Selection,
   STUDENTS,
-  SUBJECTS,
-  UploadExam,
+  UploadEntry,
   UploadStudent,
 } from './uploadData';
 
 const UploadMarksScreen = ({ navigation }: any) => {
-  const [exams, setExams] = useState<UploadExam[]>(SEED_EXAMS);
-  const [selectedExam, setSelectedExam] = useState<UploadExam | null>(
-    SEED_EXAMS[0],
-  );
-  const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
-  const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0]);
+  const [selection, setSelection] = useState<Selection>(emptySelection());
   const [marks, setMarks] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
 
-  const maxMarks = selectedExam?.totalMarks ?? 100;
+  const ready = isComplete(selection);
+  const maxMarks = selection.exam?.totalMarks ?? 100;
+
+  const onSelect = (next: Selection) => {
+    setSelection(next);
+    setMarks({}); // fresh context → start over
+  };
 
   const setMark = (id: string, raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '');
@@ -60,9 +61,34 @@ const UploadMarksScreen = ({ navigation }: any) => {
     };
   }, [marks]);
 
+  const handleManageSave = (entries: UploadEntry[]) => {
+    const map: Record<string, string> = {};
+    entries.forEach(e => {
+      if (e.marks != null) map[e.studentId] = String(e.marks);
+    });
+    setMarks(map);
+  };
+
   const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 2000);
+    if (enteredCount === 0) {
+      Alert.alert('Nothing to submit', 'Enter marks for at least one student.');
+      return;
+    }
+    const entries: UploadEntry[] = STUDENTS.filter(
+      st => marks[st.id] != null,
+    ).map(st => ({
+      studentId: st.id,
+      rollNo: st.rollNo,
+      name: st.name,
+      marks: parseInt(marks[st.id], 10),
+    }));
+    navigation.navigate('ManageEntries', {
+      mode: 'marks',
+      selection,
+      maxMarks,
+      entries,
+      onSave: handleManageSave,
+    });
   };
 
   const renderStudent = ({ item }: { item: UploadStudent }) => {
@@ -105,7 +131,7 @@ const UploadMarksScreen = ({ navigation }: any) => {
       <Header title="Upload Marks" onBackPress={() => navigation.goBack()} />
 
       <FlatList
-        data={STUDENTS}
+        data={ready ? STUDENTS : []}
         keyExtractor={i => i.id}
         renderItem={renderStudent}
         showsVerticalScrollIndicator={false}
@@ -113,81 +139,81 @@ const UploadMarksScreen = ({ navigation }: any) => {
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <>
-            <ExamManagerCard
-              exams={exams}
-              selected={selectedExam}
-              onSelect={setSelectedExam}
-              onChangeExams={setExams}
-            />
+            <SelectionWizard value={selection} onChange={onSelect} />
 
-            {/* Class + Subject */}
-            <View style={s.selectorRow}>
-              <SelectDropdown
-                icon="people-outline"
-                label="Class"
-                options={CLASSES}
-                selected={selectedClass}
-                onSelect={setSelectedClass}
-              />
-              <SelectDropdown
-                icon="book-outline"
-                label="Subject"
-                options={SUBJECTS}
-                selected={selectedSubject}
-                onSelect={setSelectedSubject}
-              />
-            </View>
+            {ready ? (
+              <>
+                <View style={s.cardWrap}>
+                  <SelectionCard selection={selection} />
+                </View>
 
-            {/* Summary */}
-            <View style={s.summaryRow}>
-              <View style={s.summaryChip}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="create"
-                  size={14}
-                  color={theme.colors.primary}
-                />
-                <Text style={s.summaryText}>
-                  {enteredCount} of {STUDENTS.length} entered
+                <View style={s.summaryRow}>
+                  <View style={s.summaryChip}>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="create"
+                      size={14}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={s.summaryText}>
+                      {enteredCount} of {STUDENTS.length} entered
+                    </Text>
+                  </View>
+                  <View style={[s.summaryChip, s.summaryChipAlt]}>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="stats-chart"
+                      size={14}
+                      color={theme.colors.secondary}
+                    />
+                    <Text
+                      style={[s.summaryText, { color: theme.colors.secondary }]}
+                    >
+                      Avg {average}/{maxMarks}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={s.listHeader}>
+                  <Text style={[s.listHeaderText, { flex: 1 }]}>Student</Text>
+                  <Text style={[s.listHeaderText, s.colMarks]}>Marks</Text>
+                  <Text style={[s.listHeaderText, s.colTotal]}>Total</Text>
+                </View>
+              </>
+            ) : (
+              <View style={s.promptBox}>
+                <View style={s.promptIconRing}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="funnel-outline"
+                    size={30}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={s.promptTitle}>Select to begin</Text>
+                <Text style={s.promptSub}>
+                  Choose Exam, Class and Subject to load the student list
                 </Text>
               </View>
-              <View style={[s.summaryChip, s.summaryChipAlt]}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="stats-chart"
-                  size={14}
-                  color={theme.colors.secondary}
-                />
-                <Text style={[s.summaryText, { color: theme.colors.secondary }]}>
-                  Avg {average}/{maxMarks}
-                </Text>
-              </View>
-            </View>
-
-            {/* List header */}
-            <View style={s.listHeader}>
-              <Text style={[s.listHeaderText, { flex: 1 }]}>Student</Text>
-              <Text style={[s.listHeaderText, s.colMarks]}>Marks</Text>
-              <Text style={[s.listHeaderText, s.colTotal]}>Total</Text>
-            </View>
+            )}
           </>
         }
         ListFooterComponent={
-          <TouchableOpacity
-            style={[s.submitBtn, submitted && s.submitBtnDone]}
-            onPress={handleSubmit}
-            activeOpacity={0.85}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={submitted ? 'checkmark-done' : 'send'}
-              size={18}
-              color="#fff"
-            />
-            <Text style={s.submitText}>
-              {submitted ? 'Marks Submitted!' : 'Submit Marks'}
-            </Text>
-          </TouchableOpacity>
+          ready ? (
+            <TouchableOpacity
+              style={s.submitBtn}
+              onPress={handleSubmit}
+              activeOpacity={0.85}
+            >
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="arrow-forward-circle"
+                size={18}
+                color="#fff"
+              />
+              <Text style={s.submitText}>Submit & Manage</Text>
+            </TouchableOpacity>
+          ) : null
         }
       />
     </KeyboardAvoidingView>
@@ -200,7 +226,7 @@ const s = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
   list: { paddingHorizontal: theme.spacing.lg, paddingTop: 14, paddingBottom: 30 },
 
-  selectorRow: { flexDirection: 'row', gap: 10, marginTop: theme.spacing.md },
+  cardWrap: { marginTop: theme.spacing.md },
 
   summaryRow: {
     flexDirection: 'row',
@@ -289,6 +315,29 @@ const s = StyleSheet.create({
   },
   totalMax: { fontSize: 12, fontWeight: '600', color: theme.colors.textMuted },
 
+  promptBox: { alignItems: 'center', paddingTop: 50, paddingHorizontal: 30 },
+  promptIconRing: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  promptTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  promptSub: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -299,6 +348,5 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.sm,
     marginTop: theme.spacing.lg,
   },
-  submitBtnDone: { backgroundColor: theme.colors.success },
   submitText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
