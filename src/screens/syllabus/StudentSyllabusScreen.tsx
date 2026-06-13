@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,18 +10,26 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { SUBJECTS } from '../subjects/subjectsData';
-import type { Subject } from '../subjects/subjectsData';
+import {
+  getStudentSubjects,
+  getChapters,
+  contentErrorMessage,
+  subjectStyle,
+  type StudentSubject,
+  type SyllabusChapter,
+} from '../../api/contentApi';
 
 const PRIMARY = theme.colors.primary;
 
 // ─── Subject Dropdown (shared template) ───────────────────────────────────────
 const SubjectDropdown = ({
+  subjects,
   selected,
   onSelect,
 }: {
-  selected: Subject;
-  onSelect: (sub: Subject) => void;
+  subjects: StudentSubject[];
+  selected: StudentSubject;
+  onSelect: (sub: StudentSubject) => void;
 }) => {
   const [open, setOpen] = useState(false);
   return (
@@ -31,7 +40,7 @@ const SubjectDropdown = ({
         activeOpacity={0.8}
       >
         <View style={s.dropLeft}>
-          <Text style={s.dropIcon}>{selected.icon}</Text>
+          <Text style={s.dropIcon}>{subjectStyle(selected.id).icon}</Text>
           <Text style={s.dropSelected}>{selected.name}</Text>
         </View>
         <VectorIcon
@@ -44,7 +53,7 @@ const SubjectDropdown = ({
 
       {open && (
         <View style={s.dropList}>
-          {SUBJECTS.map(sub => (
+          {subjects.map(sub => (
             <TouchableOpacity
               key={sub.id}
               style={[s.dropItem, sub.id === selected.id && s.dropItemActive]}
@@ -54,7 +63,7 @@ const SubjectDropdown = ({
               }}
               activeOpacity={0.7}
             >
-              <Text style={s.dropIcon}>{sub.icon}</Text>
+              <Text style={s.dropIcon}>{subjectStyle(sub.id).icon}</Text>
               <Text
                 style={[
                   s.dropItemText,
@@ -81,229 +90,269 @@ const SubjectDropdown = ({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const StudentSyllabusScreen = ({ navigation }: any) => {
-  const [selectedSub, setSelectedSub] = useState<Subject>(SUBJECTS[0]);
-  const [expandedId, setExpandedId] = useState<string | null>(
-    SUBJECTS[0].chapters[0]?.id ?? null,
-  );
+  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
+  const [selectedSub, setSelectedSub] = useState<StudentSubject | null>(null);
+  const [chapters, setChapters] = useState<SyllabusChapter[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const totalTopics = selectedSub.chapters.reduce(
-    (sum, c) => sum + c.topics.length,
-    0,
-  );
-  const activeChapters = selectedSub.chapters.filter(
-    c => c.topics.length > 0,
-  ).length;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
 
-  const selectSubject = (sub: Subject) => {
+  const color = selectedSub ? subjectStyle(selectedSub.id).color : PRIMARY;
+  const icon = selectedSub ? subjectStyle(selectedSub.id).icon : '📘';
+  const totalTopics = chapters.reduce((sum, c) => sum + c.topics.length, 0);
+  const activeChapters = chapters.filter(c => c.topics.length > 0).length;
+
+  const loadChapters = useCallback(async (subjectId: number) => {
+    setChaptersLoading(true);
+    try {
+      const list = await getChapters({ subject_id: subjectId });
+      setChapters(list);
+      setExpandedId(list[0]?.id ?? null);
+    } catch (e: any) {
+      console.log('[getChapters] Error:', e?.response?.status, e?.message);
+      setChapters([]);
+    } finally {
+      setChaptersLoading(false);
+    }
+  }, []);
+
+  const loadSubjects = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const subs = await getStudentSubjects();
+      setSubjects(subs);
+      if (subs.length > 0) {
+        setSelectedSub(subs[0]);
+        await loadChapters(subs[0].id);
+      }
+    } catch (e: any) {
+      console.log('[getStudentSubjects] Error:', e?.response?.status, e?.message);
+      setError(contentErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [loadChapters]);
+
+  useEffect(() => {
+    loadSubjects();
+  }, [loadSubjects]);
+
+  const selectSubject = (sub: StudentSubject) => {
     setSelectedSub(sub);
-    setExpandedId(sub.chapters[0]?.id ?? null);
+    setChapters([]);
+    setExpandedId(null);
+    loadChapters(sub.id);
   };
 
   return (
     <View style={s.root}>
       <Header title="Syllabus" onBackPress={() => navigation.goBack()} />
 
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <SubjectDropdown selected={selectedSub} onSelect={selectSubject} />
+      {loading ? (
+        <View style={s.stateBox}>
+          <ActivityIndicator size="large" color={PRIMARY} />
+        </View>
+      ) : error ? (
+        <View style={s.stateBox}>
+          <View style={s.errorIconRing}>
+            <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
+          </View>
+          <Text style={s.emptyTitle}>Couldn’t load syllabus</Text>
+          <Text style={s.emptySubText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={loadSubjects} activeOpacity={0.85}>
+            <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={PRIMARY} />
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : !selectedSub ? (
+        <View style={s.stateBox}>
+          <VectorIcon iconSet="Ionicons" iconName="book-outline" size={44} color={theme.colors.textMuted} />
+          <Text style={s.emptyTitle}>No Subjects Yet</Text>
+          <Text style={s.emptySubText}>No subjects have been assigned to your class yet.</Text>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <SubjectDropdown subjects={subjects} selected={selectedSub} onSelect={selectSubject} />
 
-        {/* ── Subject overview card ── */}
-        <View style={s.card}>
-          <View style={[s.accentBar, { backgroundColor: selectedSub.color }]} />
-          <View style={s.cardInner}>
-            <View style={s.cardTop}>
-              <View
-                style={[s.iconWrap, { backgroundColor: selectedSub.color + '20' }]}
-              >
-                <Text style={s.iconEmoji}>{selectedSub.icon}</Text>
+          {/* ── Subject overview card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                  <Text style={s.iconEmoji}>{icon}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>{selectedSub.name}</Text>
+                  <Text style={s.cardSubtitle} numberOfLines={1}>
+                    Syllabus overview
+                  </Text>
+                </View>
+                <View style={[s.countBadge, { backgroundColor: color + '15' }]}>
+                  <Text style={[s.countBadgeText, { color }]}>
+                    {chapters.length} ch
+                  </Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.cardTitle}>{selectedSub.name}</Text>
-                <Text style={s.cardSubtitle} numberOfLines={1}>
-                  {selectedSub.teacher}
-                </Text>
-              </View>
-              <View
-                style={[s.countBadge, { backgroundColor: selectedSub.color + '15' }]}
-              >
-                <Text style={[s.countBadgeText, { color: selectedSub.color }]}>
-                  {selectedSub.chapters.length} ch
-                </Text>
-              </View>
-            </View>
 
-            {/* Stats footer */}
-            <View style={s.tableFooter}>
-              <View style={s.footerItem}>
-                <View
-                  style={[s.footerDot, { backgroundColor: selectedSub.color }]}
-                />
-                <Text style={s.footerLabel}>Chapters</Text>
-                <Text style={s.footerValue}>{selectedSub.chapters.length}</Text>
-              </View>
-              <View style={s.footerDivider} />
-              <View style={s.footerItem}>
-                <View style={[s.footerDot, { backgroundColor: '#0EA5E9' }]} />
-                <Text style={s.footerLabel}>Topics</Text>
-                <Text style={s.footerValue}>{totalTopics}</Text>
-              </View>
-              <View style={s.footerDivider} />
-              <View style={s.footerItem}>
-                <View style={[s.footerDot, { backgroundColor: '#16A34A' }]} />
-                <Text style={s.footerLabel}>Active</Text>
-                <Text style={s.footerValue}>{activeChapters}</Text>
+              {/* Stats footer */}
+              <View style={s.tableFooter}>
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: color }]} />
+                  <Text style={s.footerLabel}>Chapters</Text>
+                  <Text style={s.footerValue}>{chapters.length}</Text>
+                </View>
+                <View style={s.footerDivider} />
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: '#0EA5E9' }]} />
+                  <Text style={s.footerLabel}>Topics</Text>
+                  <Text style={s.footerValue}>{totalTopics}</Text>
+                </View>
+                <View style={s.footerDivider} />
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: '#16A34A' }]} />
+                  <Text style={s.footerLabel}>Active</Text>
+                  <Text style={s.footerValue}>{activeChapters}</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
 
-        {/* ── Chapters card ── */}
-        <View style={s.card}>
-          <View style={[s.accentBar, { backgroundColor: selectedSub.color }]} />
-          <View style={s.cardInner}>
-            <View style={s.cardTop}>
-              <View
-                style={[s.iconWrap, { backgroundColor: selectedSub.color + '20' }]}
-              >
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="book-outline"
-                  size={20}
-                  color={selectedSub.color}
-                />
+          {/* ── Chapters card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="book-outline"
+                    size={20}
+                    color={color}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>Chapters & Topics</Text>
+                  <Text style={s.cardSubtitle}>
+                    {chapters.length} chapters · {totalTopics} topics
+                  </Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.cardTitle}>Chapters & Topics</Text>
-                <Text style={s.cardSubtitle}>
-                  {selectedSub.chapters.length} chapters · {totalTopics} topics
-                </Text>
-              </View>
-            </View>
 
-            {selectedSub.chapters.length === 0 ? (
-              <View style={s.empty}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="book-outline"
-                  size={44}
-                  color={theme.colors.textMuted}
-                />
-                <Text style={s.emptyTitle}>No Chapters Yet</Text>
-                <Text style={s.emptySubText}>
-                  Your teacher hasn't added any chapters for {selectedSub.name}{' '}
-                  yet.
-                </Text>
-              </View>
-            ) : (
-              selectedSub.chapters.map((chapter, i) => {
-                const expanded = expandedId === chapter.id;
-                return (
-                  <View key={chapter.id}>
-                    <TouchableOpacity
-                      style={[
-                        s.chapterRow,
-                        !expanded &&
-                          i < selectedSub.chapters.length - 1 &&
-                          s.rowBorder,
-                      ]}
-                      onPress={() => setExpandedId(expanded ? null : chapter.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View
+              {chaptersLoading ? (
+                <View style={s.chaptersLoading}>
+                  <ActivityIndicator size="small" color={color} />
+                </View>
+              ) : chapters.length === 0 ? (
+                <View style={s.empty}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="book-outline"
+                    size={44}
+                    color={theme.colors.textMuted}
+                  />
+                  <Text style={s.emptyTitle}>No Chapters Yet</Text>
+                  <Text style={s.emptySubText}>
+                    Your teacher hasn't added any chapters for {selectedSub.name} yet.
+                  </Text>
+                </View>
+              ) : (
+                chapters.map((chapter, i) => {
+                  const expanded = expandedId === chapter.id;
+                  return (
+                    <View key={chapter.id}>
+                      <TouchableOpacity
                         style={[
-                          s.chapterBadge,
-                          { backgroundColor: selectedSub.color },
+                          s.chapterRow,
+                          !expanded && i < chapters.length - 1 && s.rowBorder,
                         ]}
+                        onPress={() => setExpandedId(expanded ? null : chapter.id)}
+                        activeOpacity={0.7}
                       >
-                        <Text style={s.chapterBadgeText}>{i + 1}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.chapterName}>{chapter.name}</Text>
-                        <Text style={s.chapterMeta}>
-                          {chapter.topics.length} topic
-                          {chapter.topics.length !== 1 ? 's' : ''}
-                        </Text>
-                      </View>
-                      <View
-                        style={[
-                          s.expandBtn,
-                          expanded && {
-                            backgroundColor: selectedSub.color + '18',
-                          },
-                        ]}
-                      >
-                        <VectorIcon
-                          iconSet="Ionicons"
-                          iconName={expanded ? 'chevron-up' : 'chevron-down'}
-                          size={16}
-                          color={
-                            expanded ? selectedSub.color : theme.colors.textMuted
-                          }
-                        />
-                      </View>
-                    </TouchableOpacity>
+                        <View style={[s.chapterBadge, { backgroundColor: color }]}>
+                          <Text style={s.chapterBadgeText}>{i + 1}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.chapterName}>{chapter.name}</Text>
+                          <Text style={s.chapterMeta}>
+                            {chapter.topics.length} topic
+                            {chapter.topics.length !== 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            s.expandBtn,
+                            expanded && { backgroundColor: color + '18' },
+                          ]}
+                        >
+                          <VectorIcon
+                            iconSet="Ionicons"
+                            iconName={expanded ? 'chevron-up' : 'chevron-down'}
+                            size={16}
+                            color={expanded ? color : theme.colors.textMuted}
+                          />
+                        </View>
+                      </TouchableOpacity>
 
-                    {/* Expanded topics */}
-                    {expanded && (
-                      <View
-                        style={[
-                          s.topicsBox,
-                          i < selectedSub.chapters.length - 1 && s.rowBorder,
-                        ]}
-                      >
-                        {chapter.topics.length === 0 ? (
-                          <View style={s.noTopics}>
-                            <VectorIcon
-                              iconSet="Ionicons"
-                              iconName="document-outline"
-                              size={16}
-                              color={theme.colors.textMuted}
-                            />
-                            <Text style={s.noTopicsText}>
-                              No topics added yet
-                            </Text>
-                          </View>
-                        ) : (
-                          chapter.topics.map((topic, ti) => (
-                            <View
-                              key={topic.id}
-                              style={[
-                                s.topicRow,
-                                ti === chapter.topics.length - 1 && {
-                                  borderBottomWidth: 0,
-                                },
-                              ]}
-                            >
+                      {/* Expanded topics */}
+                      {expanded && (
+                        <View
+                          style={[
+                            s.topicsBox,
+                            i < chapters.length - 1 && s.rowBorder,
+                          ]}
+                        >
+                          {chapter.topics.length === 0 ? (
+                            <View style={s.noTopics}>
+                              <VectorIcon
+                                iconSet="Ionicons"
+                                iconName="document-outline"
+                                size={16}
+                                color={theme.colors.textMuted}
+                              />
+                              <Text style={s.noTopicsText}>No topics added yet</Text>
+                            </View>
+                          ) : (
+                            chapter.topics.map((topic, ti) => (
                               <View
+                                key={topic.id}
                                 style={[
-                                  s.topicIndexBadge,
-                                  { backgroundColor: selectedSub.color + '18' },
+                                  s.topicRow,
+                                  ti === chapter.topics.length - 1 && {
+                                    borderBottomWidth: 0,
+                                  },
                                 ]}
                               >
-                                <Text
+                                <View
                                   style={[
-                                    s.topicIndexText,
-                                    { color: selectedSub.color },
+                                    s.topicIndexBadge,
+                                    { backgroundColor: color + '18' },
                                   ]}
                                 >
-                                  {ti + 1}
-                                </Text>
+                                  <Text style={[s.topicIndexText, { color }]}>
+                                    {ti + 1}
+                                  </Text>
+                                </View>
+                                <Text style={s.topicName}>{topic.name}</Text>
                               </View>
-                              <Text style={s.topicName}>{topic.name}</Text>
-                            </View>
-                          ))
-                        )}
-                      </View>
-                    )}
-                  </View>
-                );
-              })
-            )}
+                            ))
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -535,4 +584,19 @@ const s = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: 20,
   },
+
+  // States
+  stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
+  chaptersLoading: { paddingVertical: 24, alignItems: 'center' },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: PRIMARY, borderRadius: theme.radius.full,
+    paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: PRIMARY },
 });
