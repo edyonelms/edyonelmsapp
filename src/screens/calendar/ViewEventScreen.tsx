@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
@@ -10,6 +10,16 @@ import type { CalEvent } from './calendarTypes';
 import { getEventById } from '../../api/calendarApi';
 import type { EventDetail } from '../../api/calendarApi';
 import { mapEventType } from '../../api/calendarApi';
+import constant from '../../utils/constant';
+
+// Files come from the same host as the API but outside the /api/v1 prefix
+const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+
+const resolveFileUrl = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${FILE_ORIGIN}/${url.replace(/^\/+/, '')}`;
+};
 
 const ViewEventScreen = ({ navigation, route }: any) => {
   const passedEvent: CalEvent | undefined = route.params?.event;
@@ -60,6 +70,10 @@ const ViewEventScreen = ({ navigation, route }: any) => {
   const location = detail?.location;
   const academic = detail?.academic_details;
   const isCancelled = detail?.is_cancelled;
+
+  const creatorName = detail?.creator_name;
+  const creatorEmail = detail?.creator_email;
+  const creatorAvatar = resolveFileUrl(detail?.creator_avatar);
 
   if (!passedEvent && !detail) {
     return (
@@ -215,6 +229,36 @@ const ViewEventScreen = ({ navigation, route }: any) => {
                   </View>
                 </>
               )}
+
+              {/* Posted by */}
+              {!!creatorName && (
+                <>
+                  <View style={s.divider} />
+                  <Text style={s.sectionLabel}>Posted By</Text>
+                  <View style={s.creatorRow}>
+                    {creatorAvatar ? (
+                      <Image
+                        source={{ uri: creatorAvatar }}
+                        style={s.creatorAvatar}
+                      />
+                    ) : (
+                      <View
+                        style={[s.creatorAvatar, { backgroundColor: meta.bg }]}
+                      >
+                        <Text style={[s.creatorInitial, { color: meta.color }]}>
+                          {creatorName.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={s.creatorInfo}>
+                      <Text style={s.creatorName}>{creatorName}</Text>
+                      {!!creatorEmail && (
+                        <Text style={s.creatorEmail}>{creatorEmail}</Text>
+                      )}
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -336,4 +380,23 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
   },
+
+  // Creator ("Posted By")
+  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  creatorAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  creatorInitial: { fontSize: 17, fontWeight: '800' },
+  creatorInfo: { flex: 1 },
+  creatorName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: 2,
+  },
+  creatorEmail: { fontSize: 13, color: theme.colors.textSecondary },
 });

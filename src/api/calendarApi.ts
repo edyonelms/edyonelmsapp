@@ -120,6 +120,9 @@ export interface EventDetail {
     teacher: { id: number; name: string | null; email: string | null } | null;
   } | null;
   timing_display: string | null;
+  creator_name: string | null;
+  creator_email: string | null;
+  creator_avatar: string | null;
   created_at: string;
   updated_at: string;
 }
