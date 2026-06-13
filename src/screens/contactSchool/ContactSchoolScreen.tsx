@@ -17,6 +17,8 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { studentContactAdmin, teacherContactAdmin } from '../../api/contactApi';
 
@@ -27,6 +29,9 @@ const ContactSchoolScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<string>('student');
   const [successVisible, setSuccessVisible] = useState(false);
+
+  // TODO: wire to an API loader if this screen gains server data.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   // Load role on mount
   React.useEffect(() => {
@@ -153,6 +158,9 @@ const ContactSchoolScreen = ({ navigation }: any) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {/* ── Query form card ── */}
           <View style={s.card}>

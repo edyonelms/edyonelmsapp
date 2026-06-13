@@ -13,6 +13,8 @@ import {
 import React, { useState } from 'react';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import { updatePassword } from '../../api/authApi';
@@ -85,6 +87,9 @@ const ChangePasswordScreen = () => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
+  // TODO: wire to an API loader if this screen gains server data.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   const handleChange = async () => {
     if (!current) {
       setError('Enter your current password.');
@@ -135,6 +140,9 @@ const ChangePasswordScreen = () => {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View style={styles.card}>
           <Text style={styles.heading}>Update Password</Text>

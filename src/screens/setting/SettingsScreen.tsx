@@ -11,6 +11,8 @@ import React, { useEffect, useState } from 'react';
 import { theme } from '../../utils/theme';
 import VectorIcon from '../../components/VectorIcon';
 import Header from '../../components/Header';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { useNavigation } from '@react-navigation/native';
 import { Biometrics } from '../../utils/biometrics';
 
@@ -20,6 +22,9 @@ const SettingsScreen = () => {
   const [bioEnabled, setBioEnabled] = useState(false);
   const [bioAvailable, setBioAvailable] = useState(true);
   const [bioBusy, setBioBusy] = useState(false);
+
+  // TODO: wire to an API loader if this screen gains server data.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   useEffect(() => {
     Promise.all([Biometrics.isEnabled(), Biometrics.check()]).then(
@@ -82,7 +87,11 @@ const SettingsScreen = () => {
   return (
     <View style={styles.safeArea}>
       <Header title="Settings" onBackPress={() => navigation.goBack()} />
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.card}>
           {/* Biometric unlock — inline toggle */}
           <View style={styles.row}>

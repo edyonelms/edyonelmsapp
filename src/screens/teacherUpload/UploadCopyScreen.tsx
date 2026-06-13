@@ -13,6 +13,8 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import SelectionWizard from './SelectionWizard';
 import SelectionCard from './SelectionCard';
 import { emptySelection, isComplete, Selection, UploadEntry, UploadStudent } from './uploadData';
@@ -30,6 +32,9 @@ const UploadCopyScreen = ({ navigation }: any) => {
   const [students, setStudents] = useState<UploadStudent[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentsError, setStudentsError] = useState<string | null>(null);
+
+  // TODO: wire to the student-load API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   const ready = isComplete(selection);
   const uploadedCount = Object.keys(uploads).length;
@@ -191,6 +196,9 @@ const UploadCopyScreen = ({ navigation }: any) => {
         keyExtractor={i => i.id}
         renderItem={renderStudent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <>

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { TYPE_META } from './calendarTypes';
 import type { CalEvent } from './calendarTypes';
@@ -26,30 +28,28 @@ const ViewEventScreen = ({ navigation, route }: any) => {
   const [detail, setDetail] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const load = useCallback(async () => {
+    if (!passedEvent?.id) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const data = await getEventById(passedEvent.id);
+      if (data?.id) setDetail(data);
+    } catch (err: any) {
+      console.log(
+        '[ViewEvent] Fetch failed, using passed event:',
+        err?.response?.status ?? err?.message,
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [passedEvent?.id]);
+
+  const { refreshing, onRefresh } = useRefresh(load);
+
   useEffect(() => {
-    let mounted = true;
-    const fetchDetail = async () => {
-      if (!passedEvent?.id) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      try {
-        const data = await getEventById(passedEvent.id);
-        if (mounted && data?.id) setDetail(data);
-      } catch (err: any) {
-        console.log(
-          '[ViewEvent] Fetch failed, using passed event:',
-          err?.response?.status ?? err?.message,
-        );
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    fetchDetail();
-    return () => {
-      mounted = false;
-    };
+    load();
   }, [passedEvent?.id]);
 
   // Resolve type/colors from either the fetched detail or the passed event
@@ -128,6 +128,9 @@ const ViewEventScreen = ({ navigation, route }: any) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <View style={s.card}>
             <View style={[s.accentStrip, { backgroundColor: meta.color }]} />

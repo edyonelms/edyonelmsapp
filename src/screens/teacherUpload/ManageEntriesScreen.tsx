@@ -14,6 +14,8 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import SelectionCard from './SelectionCard';
 import { Selection, UploadEntry } from './uploadData';
 import { upsertMark, upsertExamCopy, marksErrorMessage } from '../../api/marksApi';
@@ -36,6 +38,9 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
   const [editing, setEditing] = useState<UploadEntry | null>(null);
   const [draftMarks, setDraftMarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // TODO: wire to an API loader if this screen gains server data.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   const handleConfirm = async () => {
     if (!entries.length) return;
@@ -228,6 +233,9 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
         keyExtractor={e => e.studentId}
         renderItem={renderRow}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <>

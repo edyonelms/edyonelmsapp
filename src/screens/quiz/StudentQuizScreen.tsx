@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { QUIZ_SUBJECTS, Subject, Quiz, Question } from './quizData';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import VectorIcon from '../../components/VectorIcon';
 
 const PRIMARY = theme.colors.primary;
@@ -103,6 +105,9 @@ const StudentQuizScreen = () => {
     ),
   );
 
+  // TODO: wire to the quiz API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   // ─── Screens ──────────────────────────────────────────────────────────────
   if (screen === 'quiz' && activeQuiz) {
     return (
@@ -137,6 +142,9 @@ const StudentQuizScreen = () => {
       <ScrollView
         contentContainerStyle={s.scroll}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Subject Dropdown */}
         <View style={[s.dropWrap, subDropOpen && { zIndex: 99 }]}>

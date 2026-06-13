@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 
 const { width } = Dimensions.get('window');
@@ -174,6 +176,9 @@ const QuickLinksScreen = () => {
   const [order, setOrder] = useState<OrderKey>('sidebar');
   const [orderOpen, setOrderOpen] = useState(false);
 
+  // TODO: wire to an API loader if this screen gains server data.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   const q = search.toLowerCase().trim();
 
   const navigate = (r: string) =>
@@ -323,7 +328,13 @@ const QuickLinksScreen = () => {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* ── Search results ── */}
         {q.length > 0 ? (
           <View style={s.section}>

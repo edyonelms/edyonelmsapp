@@ -15,6 +15,8 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { getTeacherClassesSubjects, marksErrorMessage, type ClassSubject } from '../../api/marksApi';
 import { createHomework, homeworkErrorMessage } from '../../api/homeworkApi';
 
@@ -51,6 +53,8 @@ const AddHomeworkScreen = ({ navigation }: any) => {
   useEffect(() => {
     loadTriples();
   }, [loadTriples]);
+
+  const { refreshing, onRefresh } = useRefresh(loadTriples);
 
   const pickFile = () => {
     launchImageLibrary({ mediaType: 'mixed', quality: 0.8 }, res => {
@@ -95,7 +99,14 @@ const AddHomeworkScreen = ({ navigation }: any) => {
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Header title="Add Homework" onBackPress={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={s.card}>
           <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
           <View style={s.cardInner}>

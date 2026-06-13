@@ -14,6 +14,8 @@ import {
 import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { TAG_META } from './announcementData';
 import type { Announcement } from './announcementData';
@@ -87,6 +89,8 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialItem?.id]);
 
+  const { refreshing, onRefresh } = useRefresh(fetchAnnouncementDetails);
+
   const openPdf = async () => {
     if (!pdfUrl) return;
     try {
@@ -122,6 +126,9 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {/* ── Single detail card ── */}
           <View style={s.card}>

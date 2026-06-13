@@ -10,9 +10,14 @@ import Header from '../../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 
 const ExamMainScreen = () => {
   const navigation = useNavigation<any>();
+
+  // TODO: wire to an API loader if this screen gains server data.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   const items = [
     {
@@ -48,6 +53,9 @@ const ExamMainScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View style={styles.card}>
           {items.map((item, index) => (

@@ -29,6 +29,8 @@ import {
 import { theme } from '../../utils/theme';
 import VectorIcon from '../../components/VectorIcon';
 import Header from '../../components/Header';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 
 type Step = 'setup' | 'mark' | 'summary';
 type Filter = 'all' | AttendanceStatus;
@@ -148,6 +150,8 @@ const MarkAttendanceScreen = () => {
     loadClasses(selectedDate);
   }, [selectedDate, loadClasses]);
 
+  const { refreshing, onRefresh } = useRefresh(() => loadClasses(selectedDate));
+
   // ── Actions ──
   const setStatus = (id: number, status: AttendanceStatus) =>
     setStudents(prev => prev.map(s => (s.id === id ? { ...s, status } : s)));
@@ -240,6 +244,9 @@ const MarkAttendanceScreen = () => {
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.setupBody}
+      refreshControl={
+        <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       <Text style={styles.sectionLabel}>Select Date</Text>
       <ScrollView

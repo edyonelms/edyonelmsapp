@@ -15,6 +15,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import SelectionWizard from './SelectionWizard';
 import SelectionCard from './SelectionCard';
 import { emptySelection, isComplete, Selection, UploadEntry, UploadStudent } from './uploadData';
@@ -26,6 +28,9 @@ const UploadMarksScreen = ({ navigation }: any) => {
   const [students, setStudents] = useState<UploadStudent[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentsError, setStudentsError] = useState<string | null>(null);
+
+  // TODO: wire to the student-load API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   const ready = isComplete(selection);
   const maxMarks = selection.exam?.totalMarks ?? 100;
@@ -163,6 +168,9 @@ const UploadMarksScreen = ({ navigation }: any) => {
         renderItem={renderStudent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <>
