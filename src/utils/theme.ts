@@ -14,6 +14,7 @@ export const theme = {
     white: '#FFFFFF',
 
     border: '#E2E8F0',
+    statusBar: '#E2E8F0',
     shadow: '#0F172A',
     iconActive: '#4F46E5',
     iconInactive: '#94A3B8',
