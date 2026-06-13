@@ -46,19 +46,34 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
 const TransportScreen = ({ navigation }: any) => {
   const [driverExpanded, setDriverExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
+  // `notUsing` = student simply has no transport assigned (informational, no retry).
+  // `error`    = an actual failure (network/server) — retryable.
+  const [notUsing, setNotUsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<TransportRoute | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setNotUsing(false);
     try {
       const res = await getMyTransport();
-      setData(res);
+      if (!res || !res.id) {
+        // Authenticated but no route in the payload → treat as "not using transport".
+        setNotUsing(true);
+        setData(null);
+      } else {
+        setData(res);
+      }
     } catch (e: any) {
       const status = e?.response?.status;
       if (status === 404) {
-        setError(e?.response?.data?.message || 'No transport route assigned to you.');
+        // No transport route assigned to this student.
+        setNotUsing(true);
+      } else if (status === 403) {
+        setError('You are not allowed to view transport details.');
+      } else if (e?.message === 'Network Error' || !e?.response) {
+        setError('No internet connection. Check your network and try again.');
       } else {
         setError('Unable to load transport details. Please try again.');
       }
@@ -81,16 +96,43 @@ const TransportScreen = ({ navigation }: any) => {
       );
     }
 
+    // Student is not using school transport — friendly, no retry.
+    if (notUsing) {
+      return (
+        <View style={s.center}>
+          <View style={s.emptyIconWrap}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="bus-outline"
+              size={36}
+              color={theme.colors.primary}
+            />
+          </View>
+          <Text style={s.emptyTitle}>No Transport Service</Text>
+          <Text style={s.emptyText}>
+            You are not using the school transport service. If you'd like to
+            opt in, please contact the school office.
+          </Text>
+        </View>
+      );
+    }
+
+    // Real failure (network / server) — retryable.
     if (error || !data) {
       return (
         <View style={s.center}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="bus-outline"
-            size={40}
-            color={theme.colors.textMuted}
-          />
-          <Text style={s.emptyText}>{error || 'No transport details found.'}</Text>
+          <View style={[s.emptyIconWrap, { backgroundColor: '#FEE2E2' }]}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="cloud-offline-outline"
+              size={34}
+              color={theme.colors.danger}
+            />
+          </View>
+          <Text style={s.emptyTitle}>Something went wrong</Text>
+          <Text style={s.emptyText}>
+            {error || 'No transport details found.'}
+          </Text>
           <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
             <VectorIcon
               iconSet="Ionicons"
@@ -342,13 +384,29 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: theme.spacing.xl,
-    gap: 12,
+    gap: 10,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
+    lineHeight: 19,
+    paddingHorizontal: 8,
   },
   retryBtn: {
     flexDirection: 'row',
