@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Image,
@@ -13,6 +14,12 @@ import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import {
+  getIdCard,
+  idCardErrorMessage,
+  type IdCardData,
+  type IdRole,
+} from '../../api/idCardApi';
 
 type DrawerRole = 'student' | 'teacher';
 
@@ -20,56 +27,8 @@ const { width } = Dimensions.get('window');
 const CARD_W = Math.min(width - 44, 360);
 const CARD_H = CARD_W * 1.52;
 
-const SCHOOL = {
-  name: 'EDYONE PUBLIC SCHOOL',
-  tagline: 'Learn · Grow · Succeed',
-  address: '42, MG Road, Aligarh, Uttar Pradesh – 202001',
-  phone: '+91 98765 00000',
-  email: 'info@edyoneschool.com',
-  session: '2026 – 27',
-};
-
-const STUDENT_CARD = {
-  name: 'Arjun Patel',
-  photo: 'https://randomuser.me/api/portraits/men/11.jpg',
-  idNo: 'STU-2026-0231',
-  grid: [
-    { label: 'Class', value: '10th — A' },
-    { label: 'Roll No', value: '23' },
-    { label: 'Date of Birth', value: '14 Aug 2011' },
-    { label: 'Blood Group', value: 'B+' },
-    { label: 'House', value: 'Sapphire' },
-    { label: 'Session', value: SCHOOL.session },
-  ],
-  back: [
-    { label: "Father's Name", value: 'Rakesh Patel' },
-    { label: 'Address', value: '12, Civil Lines, Aligarh, UP' },
-    { label: 'Phone', value: '+91 98765 43210' },
-    { label: 'Emergency', value: '+91 91234 56789' },
-    { label: 'Valid Upto', value: '31 Mar 2027' },
-  ],
-};
-
-const TEACHER_CARD = {
-  name: 'Ravi Sharma',
-  photo: 'https://randomuser.me/api/portraits/men/32.jpg',
-  idNo: 'EMP-2019-0142',
-  grid: [
-    { label: 'Designation', value: 'Sr. Teacher' },
-    { label: 'Subject', value: 'Physics' },
-    { label: 'Joining Date', value: '01 Apr 2019' },
-    { label: 'Blood Group', value: 'O+' },
-    { label: 'Department', value: 'Science' },
-    { label: 'Session', value: SCHOOL.session },
-  ],
-  back: [
-    { label: 'Qualification', value: 'M.Sc. Physics, B.Ed.' },
-    { label: 'Address', value: '7, Ramghat Road, Aligarh, UP' },
-    { label: 'Phone', value: '+91 99887 76655' },
-    { label: 'Emergency', value: '+91 90909 80808' },
-    { label: 'Valid Upto', value: '31 Mar 2027' },
-  ],
-};
+// Decorative branding line (not part of the ID-card data model).
+const TAGLINE = 'Learn · Grow · Succeed';
 
 // Fake barcode — fixed stripe pattern
 const BARCODE = [
@@ -102,7 +61,29 @@ const BackInfoRow = ({ label, value }: { label: string; value: string }) => (
 const IDCardScreen = ({ navigation, route }: any) => {
   const role: DrawerRole =
     route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
-  const card = role === 'teacher' ? TEACHER_CARD : STUDENT_CARD;
+
+  const [data, setData] = useState<IdCardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const card = await getIdCard(role as IdRole);
+      setData(card);
+    } catch (e: any) {
+      console.log('[getIdCard] Error:', e?.response?.status, e?.message);
+      setError(idCardErrorMessage(e));
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [role]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const [flipped, setFlipped] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
@@ -131,6 +112,34 @@ const IDCardScreen = ({ navigation, route }: any) => {
     inputRange: [0, 90, 180],
     outputRange: [1, 0.93, 1],
   });
+
+  if (loading || !data) {
+    return (
+      <View style={s.root}>
+        <Header title="ID Card" onBackPress={() => navigation.goBack()} />
+        {error ? (
+          <View style={s.stateBox}>
+            <View style={s.errorIconRing}>
+              <VectorIcon iconSet="Ionicons" iconName="card-outline" size={32} color={theme.colors.danger} />
+            </View>
+            <Text style={s.errorTitle}>Couldn’t load ID card</Text>
+            <Text style={s.errorSubtitle}>{error}</Text>
+            <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
+              <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={theme.colors.primary} />
+              <Text style={s.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={s.stateBox}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  const card = data;
+  const school = data.school;
 
   return (
     <View style={s.root}>
@@ -188,9 +197,9 @@ const IDCardScreen = ({ navigation, route }: any) => {
                   </View>
                   <View style={s.bandTextWrap}>
                     <Text style={s.schoolName} numberOfLines={2}>
-                      {SCHOOL.name}
+                      {school.name}
                     </Text>
-                    <Text style={s.schoolTagline}>{SCHOOL.tagline}</Text>
+                    <Text style={s.schoolTagline}>{TAGLINE}</Text>
                   </View>
                 </View>
               </LinearGradient>
@@ -254,7 +263,7 @@ const IDCardScreen = ({ navigation, route }: any) => {
               >
                 <Text style={s.backBandTitle}>IDENTITY CARD</Text>
                 <View style={s.sessionChip}>
-                  <Text style={s.sessionChipText}>Session {SCHOOL.session}</Text>
+                  <Text style={s.sessionChipText}>Valid upto {card.validUpto}</Text>
                 </View>
               </LinearGradient>
 
@@ -292,8 +301,9 @@ const IDCardScreen = ({ navigation, route }: any) => {
               {/* Found note */}
               <View style={s.foundStrip}>
                 <Text style={s.foundNote} numberOfLines={3}>
-                  If found, please return to {SCHOOL.name}, {SCHOOL.address} ·{' '}
-                  {SCHOOL.phone}
+                  If found, please return to {school.name}
+                  {school.address ? `, ${school.address}` : ''}
+                  {school.phone ? ` · ${school.phone}` : ''}
                 </Text>
               </View>
             </Animated.View>
@@ -319,6 +329,22 @@ export default IDCardScreen;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   content: { flex: 1, alignItems: 'center', paddingTop: 14 },
+
+  // Loading / error states
+  stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  errorSubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: theme.colors.primary, borderRadius: theme.radius.full,
+    paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   // Toggle
   toggleRow: {
