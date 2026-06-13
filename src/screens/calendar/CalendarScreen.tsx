@@ -568,6 +568,7 @@ const s = StyleSheet.create({
     width: CELL_SIZE - 8,
     height: CELL_SIZE - 8,
     borderRadius: 10,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
