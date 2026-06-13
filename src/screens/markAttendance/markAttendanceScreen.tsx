@@ -1,5 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
@@ -11,25 +12,20 @@ import {
   View,
 } from 'react-native';
 import {
-  AttendanceRecord,
   AttendanceStatus,
-  CLASS_TEACHER_OF,
-  CLASSES,
-  ClassItem,
   DateItem,
-  EDIT_WINDOW_DAYS,
-  Student,
   STATUS_CONFIG,
   STATUS_ORDER,
-  canEdit,
-  daysSince,
   formatLong,
-  getCounts,
-  getDefaultStudents,
   getRecentDates,
-  getRecord,
-  saveRecord,
 } from './markAttendanceData';
+import {
+  attendanceErrorMessage,
+  getStudentsForAttendance,
+  submitAttendance,
+  type AttendanceClass,
+  type AttendanceStudent,
+} from '../../api/attendanceApi';
 import { theme } from '../../utils/theme';
 import VectorIcon from '../../components/VectorIcon';
 import Header from '../../components/Header';
@@ -37,17 +33,40 @@ import Header from '../../components/Header';
 type Step = 'setup' | 'mark' | 'summary';
 type Filter = 'all' | AttendanceStatus;
 
+interface MarkStudent {
+  id: number; // student_detail_id
+  rollNo: string;
+  name: string;
+  status: AttendanceStatus;
+}
+
 const RECENT_DATES = getRecentDates(7);
+
+// Map the server's per-student attendance into the UI's P/A/L model.
+// Leave is stored on a binary backend as absent + a "Leave" remark.
+const mapStatus = (a: AttendanceStudent['attendance']): AttendanceStatus => {
+  const remark = (a?.remarks || '').toLowerCase();
+  if (remark.includes('leave')) return 'leave';
+  if (a?.status === 'absent') return 'absent';
+  return 'present'; // present / not_marked default to present
+};
+
+const countByStatus = (students: MarkStudent[]) =>
+  students.reduce(
+    (acc, s) => {
+      acc[s.status]++;
+      return acc;
+    },
+    { present: 0, absent: 0, leave: 0 } as Record<AttendanceStatus, number>,
+  );
 
 // ── Per-student P / A / L toggle ──
 const StatusButtons = ({
   status,
   onChange,
-  disabled,
 }: {
   status: AttendanceStatus;
   onChange: (s: AttendanceStatus) => void;
-  disabled?: boolean;
 }) => (
   <View style={styles.statusBtns}>
     {STATUS_ORDER.map(st => {
@@ -56,7 +75,6 @@ const StatusButtons = ({
       return (
         <TouchableOpacity
           key={st}
-          disabled={disabled}
           onPress={() => onChange(st)}
           activeOpacity={0.8}
           style={[
@@ -64,7 +82,6 @@ const StatusButtons = ({
             {
               backgroundColor: active ? cfg.bg : theme.colors.background,
               borderColor: active ? cfg.color : theme.colors.border,
-              opacity: disabled && !active ? 0.4 : 1,
             },
           ]}
         >
@@ -83,80 +100,106 @@ const StatusButtons = ({
 );
 
 const MarkAttendanceScreen = () => {
-  const isClassTeacher = !!CLASS_TEACHER_OF;
-
   const [step, setStep] = useState<Step>('setup');
   const [selectedDate, setSelectedDate] = useState<string>(
     RECENT_DATES[RECENT_DATES.length - 1].iso,
   );
-  const [selectedClass, setSelectedClass] = useState<ClassItem>(
-    CLASS_TEACHER_OF ?? CLASSES[0],
-  );
-  const [classDropdown, setClassDropdown] = useState(false);
-  const [students, setStudents] = useState<Student[]>(getDefaultStudents());
+
+  const [classes, setClasses] = useState<AttendanceClass[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [students, setStudents] = useState<MarkStudent[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const dateScrollRef = useRef<ScrollView>(null);
+  const counts = countByStatus(students);
 
-  const editable = canEdit(selectedDate);
-  const counts = getCounts(students);
+  const selectedClass = useMemo(
+    () => classes.find(c => c.assignment_id === selectedClassId) ?? null,
+    [classes, selectedClassId],
+  );
 
-  const editNote = useMemo(() => {
-    if (!editable) return `Edit window closed (after ${EDIT_WINDOW_DAYS} days)`;
-    const left = EDIT_WINDOW_DAYS - daysSince(selectedDate);
-    return `Editable for ${left} more day${left === 1 ? '' : 's'}`;
-  }, [editable, selectedDate]);
+  // ── Load the teacher's classes + students for the chosen date ──
+  const loadClasses = useCallback(async (date: string) => {
+    setLoadingClasses(true);
+    setError(null);
+    try {
+      const res = await getStudentsForAttendance(date);
+      const list = res?.classes ?? [];
+      setClasses(list);
+      setSelectedClassId(prev => {
+        const stillThere = list.some(c => c.assignment_id === prev);
+        return stillThere ? prev : list[0]?.assignment_id ?? null;
+      });
+    } catch (e: any) {
+      console.log('[getStudentsForAttendance] Error:', e?.response?.status, e?.message);
+      setError(attendanceErrorMessage(e));
+      setClasses([]);
+      setSelectedClassId(null);
+    } finally {
+      setLoadingClasses(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadClasses(selectedDate);
+  }, [selectedDate, loadClasses]);
 
   // ── Actions ──
-  const setStatus = (id: string, status: AttendanceStatus) =>
+  const setStatus = (id: number, status: AttendanceStatus) =>
     setStudents(prev => prev.map(s => (s.id === id ? { ...s, status } : s)));
 
   const markAll = (status: AttendanceStatus) =>
     setStudents(prev => prev.map(s => ({ ...s, status })));
 
-  const handleContinue = async () => {
-    const record = await getRecord(selectedDate, selectedClass.id);
-    if (record) {
-      setStudents(
-        getDefaultStudents().map(s => ({
-          ...s,
-          status: record.statuses[s.id] ?? 'present',
-        })),
-      );
-      setSubmitted(true);
-      setFilter('all');
-      setStep('summary');
-    } else {
-      setStudents(getDefaultStudents());
-      setSubmitted(false);
-      setStep('mark');
-    }
+  const handleContinue = () => {
+    if (!selectedClass) return;
+    setStudents(
+      selectedClass.students.map(st => ({
+        id: st.student_id,
+        rollNo: String(st.roll_no ?? ''),
+        name: st.full_name,
+        status: mapStatus(st.attendance),
+      })),
+    );
+    setSubmitted(false);
+    setFilter('all');
+    setStep('mark');
   };
 
   const handleSubmit = async () => {
-    const statuses: Record<string, AttendanceStatus> = {};
-    students.forEach(s => (statuses[s.id] = s.status));
-    const record: AttendanceRecord = {
-      date: selectedDate,
-      classId: selectedClass.id,
-      classLabel: selectedClass.label,
-      statuses,
-      submittedAt: new Date().toISOString(),
-    };
-    await saveRecord(record);
-    setSubmitted(true);
-    Alert.alert(
-      'Attendance Submitted',
-      `${selectedClass.label} · ${formatLong(selectedDate)}\nPresent ${counts.present} · Absent ${counts.absent} · Leave ${counts.leave}`,
-    );
+    if (!students.length) return;
+    setSubmitting(true);
+    try {
+      const attendances = students.map(s => ({
+        student_detail_id: s.id,
+        status: s.status === 'present',
+        remarks: s.status === 'leave' ? 'Leave' : null,
+      }));
+      await submitAttendance(selectedDate, attendances);
+      setSubmitted(true);
+      Alert.alert(
+        'Attendance Submitted',
+        `${selectedClass?.class_info.class_display ?? ''} · ${formatLong(
+          selectedDate,
+        )}\nPresent ${counts.present} · Absent ${counts.absent} · Leave ${counts.leave}`,
+      );
+    } catch (e: any) {
+      Alert.alert('Submit failed', attendanceErrorMessage(e));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const resetToSetup = () => {
     setStep('setup');
     setSubmitted(false);
-    setStudents(getDefaultStudents());
+    setStudents([]);
     setFilter('all');
+    loadClasses(selectedDate);
   };
 
   // ── Info bar shown on mark / summary ──
@@ -173,28 +216,20 @@ const MarkAttendanceScreen = () => {
         </View>
         <View>
           <Text style={styles.infoDate}>{formatLong(selectedDate)}</Text>
-          <Text style={styles.infoClass}>{selectedClass.label}</Text>
+          <Text style={styles.infoClass}>
+            {selectedClass?.class_info.class_display ?? ''}
+          </Text>
         </View>
       </View>
-      <View
-        style={[
-          styles.editChip,
-          { backgroundColor: editable ? '#DCFCE7' : '#FEE2E2' },
-        ]}
-      >
+      <View style={[styles.editChip, { backgroundColor: theme.colors.primaryLight }]}>
         <VectorIcon
           iconSet="Ionicons"
-          iconName={editable ? 'time-outline' : 'lock-closed'}
+          iconName="people-outline"
           size={11}
-          color={editable ? theme.colors.success : theme.colors.danger}
+          color={theme.colors.primary}
         />
-        <Text
-          style={[
-            styles.editChipText,
-            { color: editable ? theme.colors.success : theme.colors.danger },
-          ]}
-        >
-          {editNote}
+        <Text style={[styles.editChipText, { color: theme.colors.primary }]}>
+          {students.length} students
         </Text>
       </View>
     </View>
@@ -208,17 +243,12 @@ const MarkAttendanceScreen = () => {
     >
       <Text style={styles.sectionLabel}>Select Date</Text>
       <ScrollView
-        ref={dateScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.dateStrip}
-        onContentSizeChange={() =>
-          dateScrollRef.current?.scrollToEnd({ animated: false })
-        }
       >
         {RECENT_DATES.map((d: DateItem) => {
           const active = d.iso === selectedDate;
-          const within = canEdit(d.iso);
           return (
             <TouchableOpacity
               key={d.iso}
@@ -226,111 +256,110 @@ const MarkAttendanceScreen = () => {
               onPress={() => setSelectedDate(d.iso)}
               style={[styles.dateCard, active && styles.dateCardActive]}
             >
-              <Text
-                style={[styles.dateWeekday, active && styles.dateTextActive]}
-              >
+              <Text style={[styles.dateWeekday, active && styles.dateTextActive]}>
                 {d.weekday}
               </Text>
               <Text style={[styles.dateDay, active && styles.dateTextActive]}>
                 {d.day}
               </Text>
-              <Text
-                style={[styles.dateMonth, active && styles.dateTextActive]}
-              >
+              <Text style={[styles.dateMonth, active && styles.dateTextActive]}>
                 {d.isToday ? 'Today' : d.month}
               </Text>
-              {within && <View style={styles.dateDot} />}
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
       <Text style={styles.sectionLabel}>Class & Section</Text>
-      {isClassTeacher ? (
-        <View style={styles.assignedCard}>
-          <View style={styles.assignedIcon}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="ribbon-outline"
-              size={18}
-              color={theme.colors.primary}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.assignedLabel}>You are the class teacher of</Text>
-            <Text style={styles.assignedClass}>{CLASS_TEACHER_OF!.label}</Text>
-          </View>
-          <View style={styles.assignedBadge}>
-            <Text style={styles.assignedBadgeText}>Assigned</Text>
-          </View>
+
+      {loadingClasses ? (
+        <View style={styles.centerBox}>
+          <ActivityIndicator color={theme.colors.primary} />
         </View>
-      ) : (
-        <>
+      ) : error ? (
+        <View style={styles.errorBox}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="cloud-offline-outline"
+            size={26}
+            color={theme.colors.danger}
+          />
+          <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
-            style={styles.classSelector}
-            onPress={() => setClassDropdown(v => !v)}
+            style={styles.retryBtn}
+            onPress={() => loadClasses(selectedDate)}
             activeOpacity={0.85}
           >
-            <View style={styles.classSelectorLeft}>
-              <View style={styles.infoIcon}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="people-outline"
-                  size={16}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <Text style={styles.classSelectorText}>
-                {selectedClass.label}
-              </Text>
-            </View>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={classDropdown ? 'chevron-up' : 'chevron-down'}
-              size={18}
-              color={theme.colors.primary}
-            />
+            <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
-          {classDropdown && (
-            <View style={styles.dropdown}>
-              {CLASSES.map(c => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[
-                    styles.dropdownItem,
-                    c.id === selectedClass.id && styles.dropdownItemActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedClass(c);
-                    setClassDropdown(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      c.id === selectedClass.id && styles.dropdownTextActive,
-                    ]}
-                  >
-                    {c.label}
-                  </Text>
-                  {c.id === selectedClass.id && (
+        </View>
+      ) : classes.length === 0 ? (
+        <View style={styles.errorBox}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="people-outline"
+            size={26}
+            color={theme.colors.textMuted}
+          />
+          <Text style={styles.errorText}>
+            No classes are assigned to you. Please contact the administrator.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.dropdown}>
+          {classes.map(c => {
+            const active = c.assignment_id === selectedClassId;
+            return (
+              <TouchableOpacity
+                key={c.assignment_id}
+                style={[styles.dropdownItem, active && styles.dropdownItemActive]}
+                activeOpacity={0.8}
+                onPress={() => setSelectedClassId(c.assignment_id)}
+              >
+                <View style={styles.classRowLeft}>
+                  <View style={styles.infoIcon}>
                     <VectorIcon
                       iconSet="Ionicons"
-                      iconName="checkmark"
-                      size={15}
+                      iconName="people-outline"
+                      size={16}
                       color={theme.colors.primary}
                     />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </>
+                  </View>
+                  <View>
+                    <Text
+                      style={[
+                        styles.dropdownText,
+                        active && styles.dropdownTextActive,
+                      ]}
+                    >
+                      {c.class_info.class_display}
+                    </Text>
+                    <Text style={styles.classMeta}>
+                      {c.total_students} students
+                    </Text>
+                  </View>
+                </View>
+                {active && (
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="checkmark-circle"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
 
       <TouchableOpacity
-        style={styles.primaryBtn}
+        style={[
+          styles.primaryBtn,
+          (!selectedClass || loadingClasses) && styles.primaryBtnDisabled,
+        ]}
         activeOpacity={0.85}
+        disabled={!selectedClass || loadingClasses}
         onPress={handleContinue}
       >
         <Text style={styles.primaryBtnText}>Load Students</Text>
@@ -348,7 +377,7 @@ const MarkAttendanceScreen = () => {
   const renderMark = () => (
     <FlatList
       data={students}
-      keyExtractor={i => i.id}
+      keyExtractor={i => String(i.id)}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.list}
       renderItem={({ item }) => (
@@ -386,10 +415,7 @@ const MarkAttendanceScreen = () => {
                 onPress={() => markAll(st)}
               >
                 <Text
-                  style={[
-                    styles.markAllBtnText,
-                    { color: STATUS_CONFIG[st].color },
-                  ]}
+                  style={[styles.markAllBtnText, { color: STATUS_CONFIG[st].color }]}
                 >
                   {STATUS_CONFIG[st].full}
                 </Text>
@@ -401,6 +427,9 @@ const MarkAttendanceScreen = () => {
             <Text style={styles.listHeaderText}>P / A / L</Text>
           </View>
         </>
+      }
+      ListEmptyComponent={
+        <Text style={styles.empty}>No students in this class.</Text>
       }
       ListFooterComponent={
         <TouchableOpacity
@@ -423,7 +452,7 @@ const MarkAttendanceScreen = () => {
     />
   );
 
-  // ── Step 3: Summary / review (+ edit within window) ──
+  // ── Step 3: Summary / review ──
   const FILTERS: { key: Filter; label: string; count: number }[] = [
     { key: 'all', label: 'All', count: students.length },
     { key: 'present', label: 'Present', count: counts.present },
@@ -437,37 +466,26 @@ const MarkAttendanceScreen = () => {
   const renderSummary = () => (
     <FlatList
       data={filtered}
-      keyExtractor={i => i.id}
+      keyExtractor={i => String(i.id)}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.list}
-      renderItem={({ item }) => {
-        const cfg = STATUS_CONFIG[item.status];
-        return (
-          <View style={styles.row}>
-            <View style={styles.rowLeft}>
-              <Text style={styles.rollNo}>{item.rollNo}</Text>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-              </View>
-              <Text style={styles.studentName} numberOfLines={1}>
-                {item.name}
-              </Text>
+      renderItem={({ item }) => (
+        <View style={styles.row}>
+          <View style={styles.rowLeft}>
+            <Text style={styles.rollNo}>{item.rollNo}</Text>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
             </View>
-            {editable ? (
-              <StatusButtons
-                status={item.status}
-                onChange={s => setStatus(item.id, s)}
-              />
-            ) : (
-              <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-                <Text style={[styles.statusBadgeText, { color: cfg.color }]}>
-                  {cfg.full}
-                </Text>
-              </View>
-            )}
+            <Text style={styles.studentName} numberOfLines={1}>
+              {item.name}
+            </Text>
           </View>
-        );
-      }}
+          <StatusButtons
+            status={item.status}
+            onChange={s => setStatus(item.id, s)}
+          />
+        </View>
+      )}
       ListHeaderComponent={
         <>
           {submitted && (
@@ -479,7 +497,7 @@ const MarkAttendanceScreen = () => {
                 color={theme.colors.success}
               />
               <Text style={styles.successText}>
-                Attendance submitted{editable ? ' · you can still edit' : ''}
+                Attendance submitted · you can still edit
               </Text>
             </View>
           )}
@@ -492,14 +510,10 @@ const MarkAttendanceScreen = () => {
                 key={st}
                 style={[styles.statCard, { backgroundColor: STATUS_CONFIG[st].bg }]}
               >
-                <Text
-                  style={[styles.statNum, { color: STATUS_CONFIG[st].color }]}
-                >
+                <Text style={[styles.statNum, { color: STATUS_CONFIG[st].color }]}>
                   {counts[st]}
                 </Text>
-                <Text
-                  style={[styles.statLabel, { color: STATUS_CONFIG[st].color }]}
-                >
+                <Text style={[styles.statLabel, { color: STATUS_CONFIG[st].color }]}>
                   {STATUS_CONFIG[st].full}
                 </Text>
               </View>
@@ -536,35 +550,34 @@ const MarkAttendanceScreen = () => {
       }
       ListFooterComponent={
         <View style={styles.footerCol}>
-          {editable ? (
-            <TouchableOpacity
-              style={[styles.primaryBtn, submitted && styles.primaryBtnDone]}
-              activeOpacity={0.85}
-              onPress={handleSubmit}
-            >
+          <TouchableOpacity
+            style={[
+              styles.primaryBtn,
+              submitted && styles.primaryBtnDone,
+              submitting && styles.primaryBtnDisabled,
+            ]}
+            activeOpacity={0.85}
+            disabled={submitting}
+            onPress={handleSubmit}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
               <VectorIcon
                 iconSet="Ionicons"
                 iconName={submitted ? 'checkmark-done' : 'send'}
                 size={18}
                 color="#fff"
               />
-              <Text style={styles.primaryBtnText}>
-                {submitted ? 'Update Attendance' : 'Submit Attendance'}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.lockedBox}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="lock-closed-outline"
-                size={16}
-                color={theme.colors.textMuted}
-              />
-              <Text style={styles.lockedText}>
-                This attendance can no longer be edited.
-              </Text>
-            </View>
-          )}
+            )}
+            <Text style={styles.primaryBtnText}>
+              {submitting
+                ? 'Submitting…'
+                : submitted
+                ? 'Update Attendance'
+                : 'Submit Attendance'}
+            </Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryBtn}
@@ -623,19 +636,12 @@ const MarkAttendanceScreen = () => {
                       color="#fff"
                     />
                   ) : (
-                    <Text
-                      style={[
-                        styles.stepNum,
-                        active && styles.stepNumActive,
-                      ]}
-                    >
+                    <Text style={[styles.stepNum, active && styles.stepNumActive]}>
                       {i + 1}
                     </Text>
                   )}
                 </View>
-                <Text
-                  style={[styles.stepLabel, active && styles.stepLabelActive]}
-                >
+                <Text style={[styles.stepLabel, active && styles.stepLabelActive]}>
                   {stp.label}
                 </Text>
               </View>
@@ -732,64 +738,30 @@ const styles = StyleSheet.create({
   dateDay: { fontSize: 20, fontWeight: '900', color: theme.colors.textPrimary },
   dateMonth: { fontSize: 10, fontWeight: '700', color: theme.colors.textSecondary },
   dateTextActive: { color: '#fff' },
-  dateDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: theme.colors.success,
+
+  centerBox: { paddingVertical: 30, alignItems: 'center' },
+  errorBox: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  errorText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  retryBtn: {
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     marginTop: 2,
   },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
-  assignedCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryLight,
-    padding: 14,
-  },
-  assignedIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  assignedLabel: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500' },
-  assignedClass: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginTop: 1,
-  },
-  assignedBadge: {
-    backgroundColor: '#DCFCE7',
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  assignedBadgeText: { fontSize: 10, fontWeight: '800', color: theme.colors.success },
-
-  classSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  classSelectorLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  classSelectorText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
   dropdown: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.radius.md,
@@ -808,7 +780,9 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   dropdownItemActive: { backgroundColor: theme.colors.primaryLight },
-  dropdownText: { fontSize: 14, color: theme.colors.textSecondary },
+  classRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  classMeta: { fontSize: 11, color: theme.colors.textMuted, marginTop: 1 },
+  dropdownText: { fontSize: 14, fontWeight: '600', color: theme.colors.textSecondary },
   dropdownTextActive: { color: theme.colors.primary, fontWeight: '700' },
 
   // Info bar
@@ -914,13 +888,6 @@ const styles = StyleSheet.create({
   },
   statusBtnText: { fontSize: 12, fontWeight: '700' },
 
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.radius.full,
-  },
-  statusBadgeText: { fontSize: 12, fontWeight: '700' },
-
   // Summary
   successBanner: {
     flexDirection: 'row',
@@ -979,6 +946,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     marginTop: theme.spacing.lg,
   },
+  primaryBtnDisabled: { opacity: 0.5 },
   primaryBtnDone: { backgroundColor: theme.colors.success },
   primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
@@ -993,17 +961,4 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   secondaryBtnText: { color: theme.colors.primary, fontWeight: '700', fontSize: 14 },
-
-  lockedBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingVertical: 13,
-  },
-  lockedText: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '600' },
 });

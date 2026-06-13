@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -11,7 +12,11 @@ import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { ATTENDANCE_DATA, STATUS_META, computeStats } from './attendanceTypes';
+import { STATUS_META } from './attendanceTypes';
+import { getMyAttendance } from '../../api/attendanceApi';
+
+// How many months back the analytics view aggregates.
+const MONTHS_BACK = 6;
 
 // Same banding as the performance screen
 const getAttendanceLabel = (pct: number) => {
@@ -59,35 +64,52 @@ interface Props {
 }
 
 const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
-  const months: MonthAnalytics[] = useMemo(() => {
-    return Object.keys(ATTENDANCE_DATA)
-      .sort()
-      .reverse()
-      .map(key => {
-        const stats = computeStats(key);
-        const holidayDays = Object.values(ATTENDANCE_DATA[key]).filter(
-          v => v === 'holiday',
-        ).length;
-        const pct =
-          stats.workDays > 0
-            ? Math.round((stats.presentDays / stats.workDays) * 100)
-            : 0;
-        return {
-          key,
-          label: moment(key, 'YYYY-MM').format('MMMM YYYY'),
-          workDays: stats.workDays,
-          presentDays: stats.presentDays,
-          absentDays: stats.absentDays,
-          leaveDays: stats.leaveDays,
-          holidayDays,
-          pct,
-        };
-      });
-  }, []);
+  const [loading, setLoading] = useState(false);
+  const [months, setMonths] = useState<MonthAnalytics[]>([]);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
-  const [expandedKey, setExpandedKey] = useState<string | null>(
-    months[0]?.key ?? null,
-  );
+  useEffect(() => {
+    if (!visible) return;
+    let active = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const keys = Array.from({ length: MONTHS_BACK }, (_, i) =>
+          moment().subtract(i, 'month').format('YYYY-MM'),
+        );
+        const results = await Promise.all(
+          keys.map(k => getMyAttendance(k).catch(() => null)),
+        );
+        if (!active) return;
+        const ms: MonthAnalytics[] = results.map((r, idx) => {
+          const key = keys[idx];
+          const s = r?.summary;
+          const holidayDays = r ? r.days.filter(d => d.status === 'holiday').length : 0;
+          const workDays = s?.working_days ?? 0;
+          const presentDays = s?.present_days ?? 0;
+          const absentDays = s?.absent_days ?? 0;
+          const pct = workDays > 0 ? Math.round((presentDays / workDays) * 100) : 0;
+          return {
+            key,
+            label: moment(key, 'YYYY-MM').format('MMMM YYYY'),
+            workDays,
+            presentDays,
+            absentDays,
+            leaveDays: 0,
+            holidayDays,
+            pct,
+          };
+        });
+        setMonths(ms);
+        setExpandedKey(ms[0]?.key ?? null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [visible]);
 
   const overall = months.reduce(
     (acc, m) => ({
@@ -109,6 +131,11 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
       <View style={s.root}>
         <Header title="Attendance Analytics" onBackPress={onClose} />
 
+        {loading && months.length === 0 ? (
+          <View style={s.loadingBox}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.container}
@@ -296,6 +323,7 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
             })}
           </View>
         </ScrollView>
+        )}
       </View>
     </Modal>
   );
@@ -306,6 +334,7 @@ export default AttendanceAnalyticsModal;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: theme.spacing.lg, gap: 16, paddingBottom: 30 },
+  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   // Progress bar
   barBg: {
