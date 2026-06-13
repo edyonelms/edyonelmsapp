@@ -67,15 +67,29 @@ const TransportScreen = ({ navigation }: any) => {
       }
     } catch (e: any) {
       const status = e?.response?.status;
+      const serverMsg = e?.response?.data?.message;
+      console.log(
+        '[getMyTransport] Error status:',
+        status,
+        '| message:',
+        serverMsg || e?.message,
+      );
+
       if (status === 404) {
         // No transport route assigned to this student.
         setNotUsing(true);
+      } else if (status === 401) {
+        setError('Your session has expired. Please log in again.');
       } else if (status === 403) {
         setError('You are not allowed to view transport details.');
       } else if (e?.message === 'Network Error' || !e?.response) {
         setError('No internet connection. Check your network and try again.');
+      } else if (status >= 500) {
+        setError(
+          serverMsg || 'The server ran into a problem. Please try again shortly.',
+        );
       } else {
-        setError('Unable to load transport details. Please try again.');
+        setError(serverMsg || 'Unable to load transport details. Please try again.');
       }
       setData(null);
     } finally {
