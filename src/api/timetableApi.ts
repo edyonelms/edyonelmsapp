@@ -128,9 +128,13 @@ export const subjectVisual = (subject: string): { icon: string; color: string; b
 
 export const timetableErrorMessage = (e: any): string => {
   const status = e?.response?.status;
-  const serverMsg = e?.response?.data?.message;
+  const serverMsg: string | undefined = e?.response?.data?.message;
   if (status === 401) return 'Your session has expired. Please log in again.';
-  if (status === 404) return serverMsg || 'No timetable found.';
+  if (status === 404) {
+    // Never surface raw "route could not be found" / technical 404s to users.
+    if (serverMsg && !/route|not be found/i.test(serverMsg)) return serverMsg;
+    return 'Timetable is not available right now. Please try again in a moment.';
+  }
   if (e?.message === 'Network Error' || !e?.response) {
     return 'No internet connection. Check your network and try again.';
   }
