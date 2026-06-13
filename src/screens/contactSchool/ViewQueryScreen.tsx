@@ -12,6 +12,8 @@ import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { STATUS_META } from './queryTypes';
 import type { Query } from './queryTypes';
 import AttachmentPreviewModal from '../announcement/AttachmentPreviewModal';
@@ -29,6 +31,9 @@ const resolveFileUrl = (url?: string | null): string | undefined => {
 const ViewQueryScreen = ({ navigation, route }: any) => {
   const item: Query = route.params?.item;
   const [imageVisible, setImageVisible] = useState(false);
+
+  // TODO: wire to the query-detail API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   if (!item) {
     return (
@@ -70,6 +75,9 @@ const ViewQueryScreen = ({ navigation, route }: any) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* ── Single detail card ── */}
         <View style={s.card}>

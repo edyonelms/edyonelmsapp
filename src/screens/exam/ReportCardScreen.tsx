@@ -11,6 +11,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import {
   GRADE_META,
   REPORT_CARDS,
@@ -155,6 +157,9 @@ const ReportCardScreen = ({ navigation }: any) => {
     </View>
   );
 
+  // TODO: wire to the report-card API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   return (
     <View style={s.root}>
       <Header title="Report Card" onBackPress={() => navigation.goBack()} />
@@ -196,6 +201,9 @@ const ReportCardScreen = ({ navigation }: any) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.listContent}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Academic year details card */}
         <View style={s.card}>

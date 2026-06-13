@@ -19,9 +19,10 @@ const AppRefreshControl = (props: Partial<RefreshControlProps> & {
 }) => {
   return (
     <RefreshControl
-      // Android (circular spinner)
+      // Android (circular spinner) — `large` reads a few px bigger & cleaner
       colors={[theme.colors.primary, theme.colors.secondary]}
       progressBackgroundColor={theme.colors.white}
+      size="large"
       // iOS (elastic spinner)
       tintColor={theme.colors.primary}
       title="Refreshing…"

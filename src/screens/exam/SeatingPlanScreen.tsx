@@ -7,6 +7,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   EXAMS,
@@ -100,6 +102,9 @@ const SeatingPlanScreen = ({ navigation }: any) => {
   const [exam, setExam] = useState<Exam>(EXAMS[0]);
   const seats = SEATING_DATA[exam.id] ?? [];
 
+  // TODO: wire to the seating-plan API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   return (
     <View style={s.root}>
       <Header title="Seating Plan" onBackPress={() => navigation.goBack()} />
@@ -107,6 +112,9 @@ const SeatingPlanScreen = ({ navigation }: any) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.listContent}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <ExamDropdown selected={exam} onSelect={setExam} />
 

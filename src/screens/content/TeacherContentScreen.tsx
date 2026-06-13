@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   addContent, ContentItem, CONTENT_STORE, ContentType,
@@ -263,10 +265,20 @@ const TeacherContentScreen = ({ navigation }: any) => {
   const [selectedSub, setSelectedSub] = useState<Subject>(SUBJECTS[0]);
   const [, forceUpdate] = useState(0);
 
+  // TODO: wire to the content API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Header title="Content Management" onBackPress={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
 
         <SubjectDropdown selected={selectedSub} onSelect={sub => setSelectedSub(sub)} />
 

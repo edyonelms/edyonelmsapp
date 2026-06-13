@@ -13,6 +13,8 @@ import {
 
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 
 type DrawerRole = 'student' | 'teacher';
 
@@ -234,6 +236,9 @@ const ChatsListScreen = ({ navigation, route }: any) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // TODO: wire to the chats API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   const selectionMode = selectedIds.length > 0;
 
   const filteredChats = searchText.trim()
@@ -364,6 +369,9 @@ const ChatsListScreen = ({ navigation, route }: any) => {
         data={filteredChats}
         keyExtractor={i => i.id}
         contentContainerStyle={s.list}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         ItemSeparatorComponent={() => <View style={s.separator} />}
         ListEmptyComponent={
           <View style={s.emptyBox}>

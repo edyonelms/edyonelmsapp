@@ -11,6 +11,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { ContentItem, TYPE_META } from './contentData';
 import AttachmentPreviewModal from '../announcement/AttachmentPreviewModal';
 
@@ -49,6 +51,9 @@ const ViewContentScreen = ({ navigation, route }: any) => {
     }
   };
 
+  // TODO: wire to the content-detail API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   return (
     <View style={s.root}>
       <Header title="Study Content" onBackPress={() => navigation.goBack()} />
@@ -56,6 +61,9 @@ const ViewContentScreen = ({ navigation, route }: any) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* ── Single detail card ── */}
         <View style={s.card}>

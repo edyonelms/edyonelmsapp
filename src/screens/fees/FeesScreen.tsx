@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   CATEGORIES,
@@ -530,6 +532,9 @@ const FeesScreen = ({ navigation }: any) => {
   const [activeTab, setActiveTab] = useState<Category>('Overall');
   const tabScrollRef = useRef<ScrollView>(null);
 
+  // TODO: wire to the fees API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   return (
     <View style={s.root}>
       <Header title="Fee" onBackPress={() => navigation.goBack()} />
@@ -590,6 +595,9 @@ const FeesScreen = ({ navigation }: any) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {activeTab === 'Overall' ? (
           <OverallTab />

@@ -9,6 +9,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { CONTENT_STORE, SUBJECTS } from './contentData';
 import type { Subject } from '../subjects/subjectsData';
 
@@ -107,6 +109,9 @@ const StudentContentScreen = ({ navigation }: any) => {
         c.topicId === topicId,
     );
 
+  // TODO: wire to the study-content API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
+
   return (
     <View style={s.root}>
       <Header title="Study Content" onBackPress={() => navigation.goBack()} />
@@ -114,6 +119,9 @@ const StudentContentScreen = ({ navigation }: any) => {
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <SubjectDropdown selected={selectedSub} onSelect={selectSubject} />
 

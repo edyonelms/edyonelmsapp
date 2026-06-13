@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   EXAMS,
@@ -29,6 +31,9 @@ const AdmitCardScreen = ({ navigation }: any) => {
   const [exam, setExam] = useState<Exam>(EXAMS[0]);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
+
+  // TODO: wire to the admit-card API loader once integrated.
+  const { refreshing, onRefresh } = useRefresh(() => {});
 
   const schedule = SEATING_DATA[exam.id] ?? [];
   const status = STATUS_CONFIG[exam.status];
@@ -59,6 +64,9 @@ const AdmitCardScreen = ({ navigation }: any) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.listContent}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <ExamDropdown selected={exam} onSelect={chooseExam} />
 
