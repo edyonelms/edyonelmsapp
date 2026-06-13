@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Dimensions,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,6 +12,10 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+
+const { width } = Dimensions.get('window');
+// 4 columns: 16px page padding each side + 14px card padding each side + 3 gaps
+const ITEM_SIZE = (width - 32 - 28 - 18) / 4;
 
 type Role = 'student' | 'teacher';
 
@@ -199,93 +204,54 @@ const QuickLinksScreen = () => {
 
   const activeOrder = ORDER_OPTIONS.find(o => o.key === order)!;
 
-  // ── Card (announcement style) ──
-  const LinkCard = ({
-    item,
-    showCategory,
-  }: {
-    item: FlatLink;
-    showCategory: boolean;
-  }) => (
+  // ── Grid tile ──
+  const LinkTile = ({ item }: { item: QuickLink }) => (
     <TouchableOpacity
-      style={s.card}
-      activeOpacity={0.85}
+      style={[s.item, { width: ITEM_SIZE }]}
+      activeOpacity={0.75}
       onPress={() => navigate(item.route)}
     >
-      <View style={[s.accent, { backgroundColor: item.color }]} />
-      <View style={s.cardInner}>
-        <View style={[s.iconBox, { backgroundColor: item.bg }]}>
+      <View style={[s.itemIconWrap, { backgroundColor: item.bg }]}>
+        <View style={[s.itemIconInner, { backgroundColor: item.color + '22' }]}>
           <VectorIcon
             iconSet="Ionicons"
             iconName={item.icon}
-            size={20}
+            size={22}
             color={item.color}
           />
         </View>
-        <View style={s.cardMeta}>
-          <Text style={s.cardTitle} numberOfLines={1}>
-            {item.label}
-          </Text>
-          {showCategory && (
-            <View style={[s.catPill, { backgroundColor: item.categoryBg }]}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName={item.categoryIcon}
-                size={10}
-                color={item.categoryAccent}
-              />
-              <Text style={[s.catPillText, { color: item.categoryAccent }]}>
-                {item.categoryTitle}
-              </Text>
-            </View>
-          )}
-        </View>
-        <VectorIcon
-          iconSet="Ionicons"
-          iconName="chevron-forward"
-          size={18}
-          color={theme.colors.textMuted}
-        />
       </View>
+      <Text style={s.itemLabel} numberOfLines={2}>
+        {item.label}
+      </Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E1B4B" />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.white} />
 
-      {/* ── Hero Header ── */}
-      <View style={s.hero}>
-        <View style={s.heroTop}>
-          <View>
-            <Text style={s.heroLabel}>EDYONE LMS</Text>
-            <Text style={s.heroTitle}>Quick Links</Text>
-            <Text style={s.heroSub}>
-              {role === 'teacher' ? '👨‍🏫 Teacher Portal' : '🎓 Student Portal'} · All features
-            </Text>
-          </View>
-          <View style={s.heroBadge}>
-            <VectorIcon iconSet="Ionicons" iconName="flash" size={22} color="#fff" />
-          </View>
-        </View>
+      {/* ── Heading ── */}
+      <View style={s.header}>
+        <Text style={s.headerTitle}>Quick Links</Text>
+      </View>
 
-        {/* Search */}
-        <View style={s.searchWrap}>
-          <VectorIcon iconSet="Ionicons" iconName="search-outline" size={17} color={theme.colors.textMuted} />
-          <TextInput
-            style={s.searchInput}
-            placeholder="Search anything..."
-            placeholderTextColor={theme.colors.textMuted}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-              <VectorIcon iconSet="Ionicons" iconName="close-circle" size={17} color={theme.colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* Search */}
+      <View style={s.searchWrap}>
+        <VectorIcon iconSet="Ionicons" iconName="search-outline" size={17} color={theme.colors.textMuted} />
+        <TextInput
+          style={s.searchInput}
+          placeholder="Search anything..."
+          placeholderTextColor={theme.colors.textMuted}
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+            <VectorIcon iconSet="Ionicons" iconName="close-circle" size={17} color={theme.colors.textMuted} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* ── Order dropdown ── */}
@@ -377,10 +343,12 @@ const QuickLinksScreen = () => {
                 <Text style={s.emptySubtitle}>Try a different keyword</Text>
               </View>
             ) : (
-              <View style={s.cardList}>
-                {searchResults.map(item => (
-                  <LinkCard key={item.route} item={item} showCategory />
-                ))}
+              <View style={s.gridCard}>
+                <View style={s.grid}>
+                  {searchResults.map(item => (
+                    <LinkTile key={item.route} item={item} />
+                  ))}
+                </View>
               </View>
             )}
           </View>
@@ -398,24 +366,26 @@ const QuickLinksScreen = () => {
                   </View>
                   <View style={[s.sectionLine, { backgroundColor: cat.accent + '30' }]} />
                 </View>
-                <View style={s.cardList}>
-                  {links.map(item => (
-                    <LinkCard
-                      key={item.route}
-                      item={item as FlatLink}
-                      showCategory={false}
-                    />
-                  ))}
+                <View style={[s.gridCard, { borderTopColor: cat.accent, borderTopWidth: 3 }]}>
+                  <View style={s.grid}>
+                    {links.map(item => (
+                      <LinkTile key={item.route} item={item} />
+                    ))}
+                  </View>
                 </View>
               </View>
             );
           })
         ) : (
-          // ── Sidebar / Ascending (flat list) ──
-          <View style={[s.section, s.cardList]}>
-            {orderedLinks.map(item => (
-              <LinkCard key={item.route} item={item} showCategory />
-            ))}
+          // ── Sidebar / Ascending (flat grid) ──
+          <View style={s.section}>
+            <View style={s.gridCard}>
+              <View style={s.grid}>
+                {orderedLinks.map(item => (
+                  <LinkTile key={item.route} item={item} />
+                ))}
+              </View>
+            </View>
           </View>
         )}
 
@@ -430,29 +400,31 @@ export default QuickLinksScreen;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F1F5F9' },
 
-  // Hero
-  hero: {
-    backgroundColor: '#1E1B4B',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    overflow: 'hidden',
+  // Heading
+  header: {
+    backgroundColor: theme.colors.white,
+    paddingHorizontal: 16,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
+    height: 60,
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
-  heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
-  heroLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(165,180,252,0.8)', letterSpacing: 2, marginBottom: 4 },
-  heroTitle: { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  heroBadge: {
-    width: 48, height: 48, borderRadius: 16,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)',
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
   },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: 16,
+    marginTop: 14,
     backgroundColor: '#fff',
     borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   searchInput: { flex: 1, fontSize: 14, color: theme.colors.textPrimary, padding: 0 },
 
@@ -525,47 +497,50 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
   sectionLine: { flex: 1, height: 1.5, borderRadius: 1 },
 
-  cardList: { gap: 12 },
-
-  // Card (announcement style)
-  card: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.lg,
-    flexDirection: 'row',
+  // Grid card
+  gridCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
     shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  accent: { width: 4, alignSelf: 'stretch' },
-  cardInner: {
-    flex: 1,
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flexWrap: 'wrap',
     padding: 14,
+    rowGap: 8,
   },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: theme.radius.md,
+
+  // Grid tile
+  item: {
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 7,
   },
-  cardMeta: { flex: 1, gap: 6 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
-  catPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  itemIconWrap: {
+    width: 54, height: 54,
+    borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
-  catPillText: { fontSize: 10, fontWeight: '700' },
+  itemIconInner: {
+    width: 44, height: 44,
+    borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  itemLabel: {
+    fontSize: 10.5, fontWeight: '700',
+    color: theme.colors.textSecondary,
+    textAlign: 'center', lineHeight: 14,
+  },
 
   // Empty
   emptyBox: {
