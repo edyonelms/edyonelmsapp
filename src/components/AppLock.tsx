@@ -5,20 +5,33 @@ import { theme } from '../utils/theme';
 
 /**
  * Wraps the app and dims the dashboard while the system biometric prompt is
- * showing. No lock UI of its own — the dashboard underneath drops to ~10%
- * visibility and the OS biometric sheet does all the work, exactly like
+ * showing. No lock UI of its own — the dashboard underneath shows at ~92%
+ * (a thin white veil) and the OS biometric sheet does all the work, like
  * banking / WhatsApp.
  *
- * Locks on cold start and whenever the app returns from the background; if
- * the user dismisses the sheet without authenticating, they can tap the
- * dim overlay to re-trigger it.
+ * The lock only activates after the user has crossed the splash / auth
+ * screens (controlled by the `active` prop), so the biometric prompt fires
+ * the moment the dashboard appears — not during splash.
+ *
+ * Locks on first arrival to the main app and whenever the app returns from
+ * the background. If the user dismisses the sheet, tapping the dim overlay
+ * re-fires it.
  */
-const AppLock = ({ children }: { children: React.ReactNode }) => {
+const AppLock = ({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+}) => {
   const [locked, setLocked] = useState(false);
   // True while the system biometric sheet is open. The sheet (or the
   // device-credential fallback screen) can briefly background the app on
   // some devices, which must not re-trigger the lock.
   const promptActive = useRef(false);
+  // Remember the first time the user reaches the main app, so we don't keep
+  // re-locking every time they navigate around.
+  const firstArrivalDone = useRef(false);
 
   const promptUnlock = useCallback(async () => {
     if (promptActive.current) return;
@@ -38,8 +51,12 @@ const AppLock = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Cold start: lock + prompt if the feature is on
+  // Fire the lock the moment we first land on the main app (after splash /
+  // auth). The same moment the dashboard mounts, the biometric sheet shows
+  // and the dashboard underneath is dimmed.
   useEffect(() => {
+    if (!active || firstArrivalDone.current) return;
+    firstArrivalDone.current = true;
     let cancelled = false;
     Biometrics.isEnabled().then(enabled => {
       if (cancelled || !enabled) return;
@@ -49,13 +66,15 @@ const AppLock = ({ children }: { children: React.ReactNode }) => {
     return () => {
       cancelled = true;
     };
-  }, [promptUnlock]);
+  }, [active, promptUnlock]);
 
-  // Re-lock when the app goes to background
+  // Re-lock when the app goes to background (only if we're already in the
+  // main app — never lock the splash / login screens).
   useEffect(() => {
     const sub = AppState.addEventListener('change', state => {
       if (
         state === 'background' &&
+        active &&
         !promptActive.current &&
         !isPromptInProgress()
       ) {
@@ -65,10 +84,11 @@ const AppLock = ({ children }: { children: React.ReactNode }) => {
       }
     });
     return () => sub.remove();
-  }, []);
+  }, [active]);
 
-  // Re-fire the prompt when we come back to the foreground while still locked
-  // (covers the case where the user dismissed the sheet by going home).
+  // Re-fire the prompt when we come back to the foreground while still
+  // locked (covers the case where the user dismissed the sheet by going
+  // home).
   useEffect(() => {
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active' && locked && !promptActive.current) {
@@ -82,9 +102,9 @@ const AppLock = ({ children }: { children: React.ReactNode }) => {
     <View style={s.flex}>
       {children}
       {locked && (
-        // Dim layer: dashboard underneath shows at ~10% visibility (90%
-        // opaque white). Tapping anywhere re-fires the biometric prompt
-        // in case the user dismissed it.
+        // Thin dim veil: dashboard shows at ~92% (a very light white wash).
+        // Tapping it re-fires the biometric prompt in case the user
+        // dismissed the system sheet.
         <TouchableOpacity
           activeOpacity={1}
           onPress={promptUnlock}
@@ -106,7 +126,9 @@ const s = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: theme.colors.white,
-    opacity: 0.9,
+    // 5-10% opacity = a barely-there veil over the dashboard; the system
+    // biometric sheet draws on top.
+    opacity: 0.08,
     zIndex: 999,
     elevation: 999,
   },
