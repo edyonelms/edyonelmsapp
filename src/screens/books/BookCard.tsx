@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { subjectMetaFor } from './bookData';
@@ -15,7 +15,6 @@ interface Props {
 const BookCard = ({ item, showClass, onViewPress }: Props) => {
   const subjectName = item.subject?.name ?? '—';
   const meta = subjectMetaFor(subjectName);
-  const cover = item.cover_url ?? item.logo_url;
   const classLine = item.standard?.name
     ? `${item.standard.name}${item.section?.name ? ' · ' + item.section.name : ''}`
     : null;
@@ -28,11 +27,7 @@ const BookCard = ({ item, showClass, onViewPress }: Props) => {
       <View style={s.cardInner}>
         <View style={s.cardTop}>
           <View style={[s.iconWrap, { backgroundColor: meta.bg }]}>
-            {cover ? (
-              <Image source={{ uri: cover }} style={s.coverImg} resizeMode="cover" />
-            ) : (
-              <VectorIcon iconSet="Ionicons" iconName="book" size={20} color={meta.color} />
-            )}
+            <VectorIcon iconSet="Ionicons" iconName="book" size={22} color={meta.color} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
@@ -96,9 +91,7 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  coverImg: { width: '100%', height: '100%' },
   cardTitle: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary, lineHeight: 20 },
   cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
   chevronWrap: {

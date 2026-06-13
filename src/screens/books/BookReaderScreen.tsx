@@ -29,10 +29,14 @@ const BookReaderScreen = ({ navigation, route }: any) => {
   const url: string | undefined = route?.params?.url;
   const title: string = route?.params?.title ?? 'Book';
 
-  // `page` is the controlled page the Pdf should show. We update it both when
-  // the user scrolls (onPageChanged) and when they use "Go to page", so typing
-  // a number re-renders the Pdf with a new page prop → it jumps there.
-  const [page, setPage] = useState(1);
+  // IMPORTANT: keep two separate values to avoid a feedback loop that crashes
+  // the native Pdf view on fast scrolling.
+  //   • currentPage – display only (the page badge); updated as the user scrolls
+  //   • targetPage  – fed to <Pdf page={…}>; changed ONLY by "Go to page"
+  // If we fed onPageChanged back into the page prop, every scroll frame would
+  // re-render the Pdf and re-trigger navigation → crash + flickering badge.
+  const [currentPage, setCurrentPage] = useState(1);
+  const [targetPage, setTargetPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [pageInput, setPageInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -42,8 +46,9 @@ const BookReaderScreen = ({ navigation, route }: any) => {
     Keyboard.dismiss();
     const n = parseInt(pageInput, 10);
     if (!Number.isFinite(n)) return;
-    if (totalPages > 0 && (n < 1 || n > totalPages)) return;
-    setPage(Math.max(1, n));
+    const clamped = totalPages > 0 ? Math.min(Math.max(1, n), totalPages) : Math.max(1, n);
+    setTargetPage(clamped);
+    setCurrentPage(clamped);
     setPageInput('');
   }, [pageInput, totalPages]);
 
@@ -75,7 +80,7 @@ const BookReaderScreen = ({ navigation, route }: any) => {
             value={pageInput}
             onChangeText={t => setPageInput(t.replace(/[^0-9]/g, ''))}
             keyboardType="number-pad"
-            placeholder={String(page)}
+            placeholder={String(currentPage)}
             placeholderTextColor={theme.colors.textMuted}
             style={s.gotoInput}
             returnKeyType="go"
@@ -89,7 +94,7 @@ const BookReaderScreen = ({ navigation, route }: any) => {
 
         <View style={s.pageBadge}>
           <Text style={s.pageBadgeText}>
-            {totalPages ? `${page} / ${totalPages}` : page}
+            {totalPages ? `${currentPage} / ${totalPages}` : currentPage}
           </Text>
         </View>
       </View>
@@ -105,13 +110,15 @@ const BookReaderScreen = ({ navigation, route }: any) => {
           <>
             <Pdf
               source={{ uri: url, cache: true }}
-              page={page}
+              page={targetPage}
               trustAllCerts={false}
+              enablePaging={false}
               onLoadComplete={(numberOfPages: number) => {
                 setTotalPages(numberOfPages);
                 setLoading(false);
               }}
-              onPageChanged={(p: number) => setPage(p)}
+              // Display-only: never feed this back into the page prop.
+              onPageChanged={(p: number) => setCurrentPage(p)}
               onError={(e: any) => {
                 console.log('[BookReader] PDF error:', e);
                 setError('Failed to open this PDF. Please try again.');
