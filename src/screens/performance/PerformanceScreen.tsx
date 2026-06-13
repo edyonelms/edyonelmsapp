@@ -11,7 +11,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { getStudentMarks, marksErrorMessage } from '../../api/marksApi';
 
@@ -165,9 +165,7 @@ const PerformanceScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(load);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   // Overall stats across all exams
   const allSubjectTotals: Record<

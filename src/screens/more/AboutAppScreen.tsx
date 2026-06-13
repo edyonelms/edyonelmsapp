@@ -14,7 +14,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getAboutApp } from '../../api/authApi';
 import { theme } from '../../utils/theme';
 
@@ -66,7 +66,7 @@ const AboutAppScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(fetchData);
 
-  useEffect(() => { fetchData(); }, []);
+  useFocusLoad(fetchData);
 
   if (loading) {
     return (

@@ -12,7 +12,7 @@ import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import Header from '../../components/Header';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import {
   getChapters,
   contentErrorMessage,
@@ -48,9 +48,7 @@ const SubjectDetailsScreen = ({ route }: any) => {
 
   const { refreshing, onRefresh } = useRefresh(load);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   const totalTopics = chapters.reduce((sum, c) => sum + c.topics.length, 0);
   const activeChapters = chapters.filter(c => c.topics.length > 0).length;

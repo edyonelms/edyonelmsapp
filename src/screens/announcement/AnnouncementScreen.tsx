@@ -11,7 +11,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { FILTERS, mapApiItem, TAG_META } from './announcementData';
 import type {
@@ -73,9 +73,7 @@ const AnnouncementScreen = ({ navigation, route }: any) => {
 
   const { refreshing, onRefresh } = useRefresh(fetchAnnouncements);
 
-  useEffect(() => {
-    fetchAnnouncements();
-  }, [fetchAnnouncements]);
+  useFocusLoad(fetchAnnouncements);
 
   // ── Filter by date window + role ────────────────────────────────────────────
   const allowedTags = ROLE_TAGS[role.toLowerCase()] ?? ROLE_TAGS.student;

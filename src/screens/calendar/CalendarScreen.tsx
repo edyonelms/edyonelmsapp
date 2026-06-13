@@ -24,7 +24,7 @@ import MonthYearPicker from './MonthYearPicker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getCalendarEvents, mapApiEventToCalEvent } from '../../api/calendarApi';
 
 const { width } = Dimensions.get('window');
@@ -64,9 +64,7 @@ const CalendarScreen = ({ navigation }: any) => {
 
   const { refreshing, onRefresh } = useRefresh(fetchEvents);
 
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+  useFocusLoad(fetchEvents);
 
   const eventsByDate = useMemo(() => groupEventsByDate(allEvents), [allEvents]);
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
@@ -13,7 +13,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import constant from '../../utils/constant';
 import {
   getMyTransport,
@@ -112,9 +112,7 @@ const TransportScreen = ({ navigation }: any) => {
 
   const { refreshing, onRefresh } = useRefresh(load);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   const renderBody = () => {
     if (loading) {
@@ -126,9 +124,16 @@ const TransportScreen = ({ navigation }: any) => {
     }
 
     // Student is not using school transport — friendly, no retry.
+    // Wrapped in a refreshable ScrollView so a pull still re-checks the API.
     if (notUsing) {
       return (
-        <View style={s.center}>
+        <ScrollView
+          contentContainerStyle={s.centerScroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           <View style={s.emptyIconWrap}>
             <VectorIcon
               iconSet="Ionicons"
@@ -142,14 +147,20 @@ const TransportScreen = ({ navigation }: any) => {
             You are not using the school transport service. If you'd like to
             opt in, please contact the school office.
           </Text>
-        </View>
+        </ScrollView>
       );
     }
 
-    // Real failure (network / server) — retryable.
+    // Real failure (network / server) — retryable + pull-to-refresh.
     if (error || !data) {
       return (
-        <View style={s.center}>
+        <ScrollView
+          contentContainerStyle={s.centerScroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           <View style={[s.emptyIconWrap, { backgroundColor: '#FEE2E2' }]}>
             <VectorIcon
               iconSet="Ionicons"
@@ -171,7 +182,7 @@ const TransportScreen = ({ navigation }: any) => {
             />
             <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       );
     }
 
@@ -420,6 +431,14 @@ const s = StyleSheet.create({
   // States
   center: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: 10,
+  },
+  // Fills the viewport but stays pull-to-refreshable for the empty/error states.
+  centerScroll: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: theme.spacing.xl,

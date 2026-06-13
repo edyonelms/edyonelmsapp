@@ -11,7 +11,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   getStudentSubjects,
@@ -115,9 +115,7 @@ const SubjectsScreen = ({ navigation }: any) => {
 
   const { refreshing, onRefresh } = useRefresh(load);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   return (
     <View style={s.root}>

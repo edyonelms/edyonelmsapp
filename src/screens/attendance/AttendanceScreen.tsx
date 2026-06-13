@@ -12,7 +12,7 @@ import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { STATUS_META } from './attendanceTypes';
 import type { AttendanceStatus } from './attendanceTypes';
@@ -54,9 +54,7 @@ const AttendanceScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(load);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   // Map fetched days (YYYY-MM-DD → status) for quick lookup
   const statusByDate = useMemo(() => {

@@ -14,6 +14,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import { useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   getIdCard,
@@ -82,9 +83,7 @@ const IDCardScreen = ({ navigation, route }: any) => {
     }
   }, [role]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   const [flipped, setFlipped] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;

@@ -12,7 +12,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import {
   getStudentSubjects,
   getChapters,
@@ -141,9 +141,7 @@ const StudentSyllabusScreen = ({ navigation }: any) => {
 
   const { refreshing, onRefresh } = useRefresh(loadSubjects);
 
-  useEffect(() => {
-    loadSubjects();
-  }, [loadSubjects]);
+  useFocusLoad(loadSubjects);
 
   const selectSubject = (sub: StudentSubject) => {
     setSelectedSub(sub);

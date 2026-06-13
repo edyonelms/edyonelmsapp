@@ -15,7 +15,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getInstructors, getInstructorDetails } from '../../api/instructorApi';
 import InstructorDetailModal from './InstructorDetailModal';
 
@@ -160,9 +160,7 @@ const InstructorScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(fetchInstructors);
 
-  useEffect(() => {
-    fetchInstructors();
-  }, [fetchInstructors]);
+  useFocusLoad(fetchInstructors);
 
   // Handle instructor press - fetch details
   const handleInstructorPress = async (instructor: any) => {

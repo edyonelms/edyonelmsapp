@@ -15,7 +15,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import {
   getTeacherSubjects,
   getChapters,
@@ -364,9 +364,7 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
 
   const { refreshing, onRefresh } = useRefresh(loadCombos);
 
-  useEffect(() => {
-    loadCombos();
-  }, [loadCombos]);
+  useFocusLoad(loadCombos);
 
   const selectCombo = (c: TeacherCombo) => {
     setSelected(c);

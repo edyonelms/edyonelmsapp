@@ -14,6 +14,7 @@ import { useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
+import { useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { Chip } from '../../components/Charts';
 import {
@@ -182,9 +183,7 @@ const StudentAnalytics = () => {
     }
   }, [loadMonth]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   const selectMonth = (i: number) => {
     setActiveMonth(i);
@@ -322,9 +321,7 @@ const TeacherAnalytics = () => {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   if (loading) return <Loading />;
   if (error || !dash) return <ErrorState message={error ?? 'No data.'} onRetry={load} />;

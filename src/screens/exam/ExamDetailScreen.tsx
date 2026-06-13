@@ -13,7 +13,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { Exam, STATUS_CONFIG, iconForType } from './examData';
 import { getExamDetail, examErrorMessage } from '../../api/examApi';
 
@@ -74,9 +74,7 @@ const ExamDetailScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(load);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   if (loading || !exam) {
     return (

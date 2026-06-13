@@ -15,7 +15,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { FILTERS, STATUS_CONFIG, iconForType, Exam, ExamStatus } from './examData';
 import { getExams, examErrorMessage } from '../../api/examApi';
 
@@ -44,9 +44,7 @@ const ExamsScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(load);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusLoad(load);
 
   const filtered = exams.filter(e => {
     const matchFilter = activeFilter === 'All' || e.status === activeFilter;

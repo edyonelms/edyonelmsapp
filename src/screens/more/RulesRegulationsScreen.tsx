@@ -12,7 +12,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { getRulesRegulations } from '../../api/authApi';
 
@@ -49,7 +49,7 @@ const RulesRegulationsScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(fetchData);
 
-  useEffect(() => { fetchData(); }, []);
+  useFocusLoad(fetchData);
 
   if (loading) {
     return (

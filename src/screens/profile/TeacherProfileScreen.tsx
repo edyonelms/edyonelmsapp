@@ -15,7 +15,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getTeacherProfile } from '../../api/teacherApi';
 
 const { width } = Dimensions.get('window');
@@ -78,7 +78,7 @@ const TeacherProfileScreen = () => {
 
   const { refreshing, onRefresh } = useRefresh(fetchProfile);
 
-  useEffect(() => { fetchProfile(); }, []);
+  useFocusLoad(fetchProfile);
 
   if (loading) {
     return (
