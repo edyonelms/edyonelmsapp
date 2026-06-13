@@ -11,6 +11,7 @@ import {
   DocBody,
   DocRow,
   DocPeople,
+  DocNoData,
   DocLoading,
   DocError,
   docStyles,
@@ -80,6 +81,8 @@ const AboutAppScreen = () => {
   const contacts = info.contact_details ?? [];
   const team = info.core_team ?? [];
   const socials = info.social_media ?? [];
+  const hasAnyBody =
+    content.length > 0 || contacts.length > 0 || team.length > 0 || socials.length > 0;
 
   return (
     <View style={docStyles.root}>
@@ -95,6 +98,15 @@ const AboutAppScreen = () => {
           title={info.heading}
           subtitle={info.sub_heading}
         />
+
+        {!hasAnyBody && (
+          <DocNoData
+            accent={ACCENT}
+            icon="information-circle-outline"
+            title="No information yet"
+            subtitle="The app info hasn’t been added yet. Pull down to refresh."
+          />
+        )}
 
         {content.map((item, i) => (
           <DocCard key={i} accent={ACCENT} label={item.title}>
@@ -146,7 +158,7 @@ const AboutAppScreen = () => {
           </DocCard>
         )}
 
-        <Text style={cs.copyright}>© 2026 · All rights reserved</Text>
+        {hasAnyBody && <Text style={cs.copyright}>© 2026 · All rights reserved</Text>}
       </ScrollView>
     </View>
   );

@@ -10,7 +10,7 @@ import {
   DocBody,
   DocRow,
   DocFooter,
-  DocEmpty,
+  DocNoData,
   DocLoading,
   DocError,
   docStyles,
@@ -63,6 +63,7 @@ const RulesRegulationsScreen = () => {
   const sections = data.sections ?? [];
   const files = data.files ?? [];
   const additional = data.additional_info ?? [];
+  const isEmpty = sections.length === 0 && files.length === 0 && additional.length === 0;
   const formattedDate = data.last_updated
     ? new Date(data.last_updated).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     : '';
@@ -83,10 +84,13 @@ const RulesRegulationsScreen = () => {
           subtitle="Please read and follow all rules and regulations carefully."
         />
 
-        {sections.length === 0 ? (
-          <DocCard accent={ACCENT}>
-            <DocEmpty text="No rules & regulations available." />
-          </DocCard>
+        {isEmpty ? (
+          <DocNoData
+            accent={ACCENT}
+            icon="shield-checkmark-outline"
+            title="No rules & regulations yet"
+            subtitle="Nothing has been added yet. Pull down to refresh."
+          />
         ) : (
           sections.map((sec, i) => (
             <DocCard key={i} accent={ACCENT} label={sec.head}>
@@ -132,7 +136,9 @@ const RulesRegulationsScreen = () => {
           </DocCard>
         )}
 
-        {!!formattedDate && <DocFooter accent={ACCENT} text={`Last updated: ${formattedDate}`} />}
+        {!!formattedDate && !isEmpty && (
+          <DocFooter accent={ACCENT} text={`Last updated: ${formattedDate}`} />
+        )}
       </ScrollView>
     </View>
   );

@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Header from '../../components/Header';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getPrivacyPolicy } from '../../api/authApi';
 import {
   DocHero,
   DocCard,
   DocBody,
   DocFooter,
-  DocEmpty,
+  DocNoData,
   DocLoading,
   DocError,
   docStyles,
@@ -39,7 +41,8 @@ const PrivacyPolicyScreen = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const { refreshing, onRefresh } = useRefresh(fetchData);
+  useFocusLoad(fetchData);
 
   if (loading) return <DocLoading title={TITLE} />;
   if (error || !data) return <DocError title={TITLE} message={error || 'Something went wrong.'} onRetry={fetchData} />;
@@ -52,7 +55,11 @@ const PrivacyPolicyScreen = () => {
   return (
     <View style={docStyles.root}>
       <Header title={TITLE} />
-      <ScrollView contentContainerStyle={docStyles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={docStyles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <DocHero
           accent={ACCENT}
           iconSet="Ionicons"
@@ -62,9 +69,12 @@ const PrivacyPolicyScreen = () => {
         />
 
         {sections.length === 0 ? (
-          <DocCard accent={ACCENT}>
-            <DocEmpty text="No content available." />
-          </DocCard>
+          <DocNoData
+            accent={ACCENT}
+            icon="lock-closed-outline"
+            title="No privacy policy yet"
+            subtitle="The privacy policy hasn’t been added yet. Pull down to refresh."
+          />
         ) : (
           sections.map((sec, i) => (
             <DocCard key={i} accent={ACCENT} label={sec.head}>
@@ -73,7 +83,9 @@ const PrivacyPolicyScreen = () => {
           ))
         )}
 
-        {!!formattedDate && <DocFooter accent={ACCENT} text={`Last updated: ${formattedDate}`} />}
+        {!!formattedDate && sections.length > 0 && (
+          <DocFooter accent={ACCENT} text={`Last updated: ${formattedDate}`} />
+        )}
       </ScrollView>
     </View>
   );

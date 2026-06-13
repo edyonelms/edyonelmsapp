@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 import Header from '../../components/Header';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getTermsConditions } from '../../api/authApi';
 import {
   DocHero,
@@ -8,6 +10,7 @@ import {
   DocBody,
   DocRow,
   DocFooter,
+  DocNoData,
   DocLoading,
   DocError,
   docStyles,
@@ -57,7 +60,8 @@ const TermsConditionsScreen = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const { refreshing, onRefresh } = useRefresh(fetchData);
+  useFocusLoad(fetchData);
 
   if (loading) return <DocLoading title={TITLE} />;
   if (error || !data) return <DocError title={TITLE} message={error || 'Something went wrong.'} onRetry={fetchData} />;
@@ -67,6 +71,7 @@ const TermsConditionsScreen = () => {
   const files = metadata?.files ?? [];
   const additional = metadata?.additional_info ?? [];
 
+  const isEmpty = sections.length === 0 && files.length === 0 && additional.length === 0;
   const subtitleParts = [company_name, company_cin ? `CIN: ${company_cin}` : ''].filter(Boolean);
   const formattedDate = last_updated
     ? new Date(last_updated).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -75,7 +80,11 @@ const TermsConditionsScreen = () => {
   return (
     <View style={docStyles.root}>
       <Header title={TITLE} />
-      <ScrollView contentContainerStyle={docStyles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={docStyles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <DocHero
           accent={ACCENT}
           logoUrl={platform_logo}
@@ -84,50 +93,63 @@ const TermsConditionsScreen = () => {
           subtitle={subtitleParts.join('  ·  ') || 'Please read these terms carefully before using our services.'}
         />
 
-        {sections.map((sec, i) => (
-          <DocCard key={i} accent={ACCENT} label={sec.head}>
-            <DocBody>{sec.desc}</DocBody>
-          </DocCard>
-        ))}
-
-        {files.length > 0 && (
-          <DocCard accent={ACCENT} label="Documents">
-            {files.map((file, i) => (
-              <DocRow
-                key={i}
-                iconBg="#EF4444"
-                icon="file-text"
-                title={file.title}
-                sub={file.file_type?.toUpperCase()}
-                trailingIcon="download-outline"
-                trailingColor={ACCENT}
-                onPress={() => Linking.openURL(file.file_path)}
-                isLast={i === files.length - 1}
-              />
+        {isEmpty ? (
+          <DocNoData
+            accent={ACCENT}
+            icon="document-text-outline"
+            title="No terms & conditions yet"
+            subtitle="The terms & conditions haven’t been added yet. Pull down to refresh."
+          />
+        ) : (
+          <>
+            {sections.map((sec, i) => (
+              <DocCard key={i} accent={ACCENT} label={sec.head}>
+                <DocBody>{sec.desc}</DocBody>
+              </DocCard>
             ))}
-          </DocCard>
+
+            {files.length > 0 && (
+              <DocCard accent={ACCENT} label="Documents">
+                {files.map((file, i) => (
+                  <DocRow
+                    key={i}
+                    iconBg="#EF4444"
+                    icon="file-text"
+                    title={file.title}
+                    sub={file.file_type?.toUpperCase()}
+                    trailingIcon="download-outline"
+                    trailingColor={ACCENT}
+                    onPress={() => Linking.openURL(file.file_path)}
+                    isLast={i === files.length - 1}
+                  />
+                ))}
+              </DocCard>
+            )}
+
+            {additional.length > 0 && (
+              <DocCard accent={ACCENT} label="Contact">
+                {additional.map((item, i) => {
+                  const cfg = contactCfg(item.key);
+                  return (
+                    <DocRow
+                      key={i}
+                      iconBg={cfg.bg}
+                      icon={cfg.icon}
+                      title={item.value}
+                      trailingIcon={cfg.action ? 'chevron-forward' : undefined}
+                      onPress={cfg.action ? () => cfg.action!(item.value) : undefined}
+                      isLast={i === additional.length - 1}
+                    />
+                  );
+                })}
+              </DocCard>
+            )}
+          </>
         )}
 
-        {additional.length > 0 && (
-          <DocCard accent={ACCENT} label="Contact">
-            {additional.map((item, i) => {
-              const cfg = contactCfg(item.key);
-              return (
-                <DocRow
-                  key={i}
-                  iconBg={cfg.bg}
-                  icon={cfg.icon}
-                  title={item.value}
-                  trailingIcon={cfg.action ? 'chevron-forward' : undefined}
-                  onPress={cfg.action ? () => cfg.action!(item.value) : undefined}
-                  isLast={i === additional.length - 1}
-                />
-              );
-            })}
-          </DocCard>
+        {!!formattedDate && !isEmpty && (
+          <DocFooter accent={ACCENT} text={`Last updated: ${formattedDate}`} />
         )}
-
-        {!!formattedDate && <DocFooter accent={ACCENT} text={`Last updated: ${formattedDate}`} />}
       </ScrollView>
     </View>
   );

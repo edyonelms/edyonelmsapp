@@ -168,6 +168,30 @@ export const DocEmpty = ({ text }: { text: string }) => (
   </View>
 );
 
+// Full "no data found" state (books / instructor style) shown inside the
+// scroll so pull-to-refresh keeps working.
+export const DocNoData = ({
+  accent,
+  icon = 'document-text-outline',
+  iconSet = 'Ionicons',
+  title = 'No data found',
+  subtitle,
+}: {
+  accent: string;
+  icon?: string;
+  iconSet?: IconSet;
+  title?: string;
+  subtitle?: string;
+}) => (
+  <View style={s.noDataBox}>
+    <View style={[s.noDataRing, { backgroundColor: accent + '18' }]}>
+      <VectorIcon iconSet={iconSet as any} iconName={icon} size={38} color={accent} />
+    </View>
+    <Text style={s.noDataTitle}>{title}</Text>
+    {!!subtitle && <Text style={s.noDataSub}>{subtitle}</Text>}
+  </View>
+);
+
 // ── Shared loading / error full-screen states (include the Header) ─────────────
 export const DocLoading = ({ title }: { title: string }) => (
   <View style={s.root}>
@@ -289,7 +313,20 @@ const s = StyleSheet.create({
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 },
   footerText: { fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary },
 
-  // Empty
+  // Empty (inline, inside a card)
   emptyBox: { alignItems: 'center', paddingVertical: 20, gap: 10 },
   emptyText: { fontSize: 14, color: theme.colors.textMuted },
+
+  // No data (full state inside scroll)
+  noDataBox: { alignItems: 'center', justifyContent: 'center', paddingTop: 80, paddingHorizontal: 24 },
+  noDataRing: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  noDataTitle: { fontSize: 17, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 6 },
+  noDataSub: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
 });

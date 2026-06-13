@@ -10,6 +10,7 @@ import {
   DocBody,
   DocRow,
   DocPeople,
+  DocNoData,
   DocLoading,
   DocError,
   docStyles,
@@ -76,6 +77,9 @@ const SchoolInfoScreen = () => {
 
   const team = info.management_team ?? [];
   const documents = info.documents ?? [];
+  const hasContact = !!(info.website_url || info.school_mobile || info.school_email || info.school_address);
+  const isEmpty =
+    sections.length === 0 && team.length === 0 && documents.length === 0 && !hasContact;
 
   return (
     <View style={docStyles.root}>
@@ -92,6 +96,15 @@ const SchoolInfoScreen = () => {
           title={info.organization?.name || TITLE}
           subtitle="Everything about our school in one place."
         />
+
+        {isEmpty && (
+          <DocNoData
+            accent={ACCENT}
+            icon="school-outline"
+            title="No school info yet"
+            subtitle="The school info hasn’t been added yet. Pull down to refresh."
+          />
+        )}
 
         {sections.map((sec, i) => (
           <DocCard key={i} accent={ACCENT} label={sec.title}>
@@ -122,6 +135,7 @@ const SchoolInfoScreen = () => {
           </DocCard>
         )}
 
+        {hasContact && (
         <DocCard accent={ACCENT} label="Contact Information">
           {!!info.website_url && (
             <DocRow
@@ -163,6 +177,7 @@ const SchoolInfoScreen = () => {
             />
           )}
         </DocCard>
+        )}
       </ScrollView>
     </View>
   );
