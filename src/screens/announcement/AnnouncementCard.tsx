@@ -88,7 +88,7 @@ export default AnnouncementCard;
 const s = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.white,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.md,
     flexDirection: 'row',
     overflow: 'hidden',
     shadowColor: theme.colors.shadow,

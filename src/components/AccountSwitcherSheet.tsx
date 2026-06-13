@@ -552,7 +552,7 @@ const s = StyleSheet.create({
   },
   handle: {
     alignSelf: 'center',
-    width: 44, height: 5, borderRadius: 3,
+    width: 34, height: 4, borderRadius: 2,
     backgroundColor: '#E2E8F0',
     marginTop: 10, marginBottom: 4,
   },
@@ -562,7 +562,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
   },
-  title: { fontSize: 17, fontWeight: '800', color: theme.colors.textPrimary },
+  title: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
 
   loadingBox: { paddingVertical: 48, alignItems: 'center' },
 
@@ -570,23 +570,23 @@ const s = StyleSheet.create({
   listContent: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4 },
   row: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 10, paddingVertical: 12,
+    paddingHorizontal: 10, paddingVertical: 8,
     borderRadius: 14,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   rowActive: { backgroundColor: '#EEF2FF' },
   rowMain: { flex: 1, marginLeft: 12 },
-  rowNameLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rowNameLine: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   rowName: {
-    fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary,
+    fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary,
     flexShrink: 1,
   },
   typeBadge: {
     backgroundColor: '#EEF2FF',
     borderRadius: 999,
-    paddingHorizontal: 8, paddingVertical: 2,
+    paddingHorizontal: 7, paddingVertical: 2,
   },
-  typeBadgeText: { fontSize: 11, fontWeight: '600', color: theme.colors.primary },
+  typeBadgeText: { fontSize: 10, fontWeight: '600', color: theme.colors.primary },
 
   checkBadge: {
     width: 24, height: 24, borderRadius: 12,
@@ -679,7 +679,7 @@ const s = StyleSheet.create({
     backgroundColor: theme.colors.primaryLight,
     alignItems: 'center', justifyContent: 'center',
   },
-  addText: { marginLeft: 12, fontSize: 15, fontWeight: '700', color: theme.colors.primary },
+  addText: { marginLeft: 12, fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   // ─── Add form ──
   addContent: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
@@ -725,7 +725,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginTop: 6,
   },
-  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   hint: { fontSize: 11, color: theme.colors.textMuted, textAlign: 'center', marginTop: 14 },
 });

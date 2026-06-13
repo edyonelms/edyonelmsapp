@@ -82,9 +82,9 @@ const StudentHomeScreen = () => {
   }));
   const week = (att?.week ?? []).map(d => ({ label: d.label, ...weekDotStyle(d.status) }));
   const profileSubtitle = data
-    ? [data.profile.standard && data.profile.section ? `${data.profile.standard}${data.profile.section}` : data.profile.standard, data.profile.roll_no ? `Roll No. ${data.profile.roll_no}` : null]
-        .filter(Boolean)
-        .join(' · ')
+    ? data.profile.standard && data.profile.section
+      ? `${data.profile.standard}${data.profile.section}`
+      : data.profile.standard ?? ''
     : '';
 
   if (loading) {

@@ -569,7 +569,7 @@ const s = StyleSheet.create({
   dayInner: {
     width: CELL_SIZE - 8,
     height: CELL_SIZE - 8,
-    borderRadius: theme.radius.sm,
+    borderRadius: (CELL_SIZE - 8) / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -585,6 +585,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     gap: 3,
     height: 6,
+    marginTop: 2,
     alignItems: 'center',
   },
   dot: { width: 5, height: 5, borderRadius: 99 },

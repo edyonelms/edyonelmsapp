@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  TextInput,
   Image,
 } from 'react-native';
 import {
@@ -25,8 +24,6 @@ interface TopBarProps {
   userName?: string;
   subtitle?: string;
   subtitleIcon?: string;
-  searchValue?: string;
-  onSearchChange?: (text: string) => void;
   onBellPress?: () => void;
   onAvatarPress?: () => void;
 }
@@ -44,10 +41,6 @@ const getGreeting = () => {
 
 const TopBar = ({
   userName,
-  subtitle,
-  subtitleIcon = 'sparkles',
-  searchValue,
-  onSearchChange,
   onBellPress,
   onAvatarPress,
 }: TopBarProps) => {
@@ -189,34 +182,6 @@ const TopBar = ({
         </TouchableOpacity>
       </View>
 
-      {/* Subtitle pill (class / role) */}
-      {!!subtitle && (
-        <View style={styles.subtitlePill}>
-          <VectorIcon iconSet="Ionicons" iconName={subtitleIcon} size={12} color={theme.colors.primary} />
-          <Text style={styles.subtitleText} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        </View>
-      )}
-
-      {/* Search */}
-      <View style={styles.searchWrap}>
-        <VectorIcon
-          iconSet="Feather"
-          iconName="search"
-          size={17}
-          color={theme.colors.textMuted}
-          style={{ marginRight: 8 }}
-        />
-        <TextInput
-          placeholder="Search here..."
-          placeholderTextColor={theme.colors.textMuted}
-          value={searchValue}
-          onChangeText={onSearchChange}
-          style={styles.input}
-        />
-      </View>
-
       <AccountSwitcherSheet visible={switcherOpen} onClose={onSwitcherClose} />
     </View>
   );
@@ -234,16 +199,11 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: HEADER_BG,
     paddingTop: theme.spacing.md,
-    paddingBottom: 18,
-    borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26,
+    paddingBottom: 14,
+    // Flat header: a 1px divider below the status bar and below the bar itself.
+    borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: theme.colors.border,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
   },
   wrap: {
     flexDirection: 'row',
@@ -280,37 +240,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: theme.colors.textPrimary,
     flexShrink: 1,
-  },
-  subtitlePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 5,
-    marginTop: 10,
-    marginLeft: theme.spacing.lg,
-    backgroundColor: theme.colors.primaryLight,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: theme.radius.full,
-  },
-  subtitleText: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
-  searchWrap: {
-    marginTop: 12,
-    marginHorizontal: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 16,
-    height: 44,
-  },
-  input: {
-    flex: 1,
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-    paddingVertical: 0,
   },
   iconBtn: {
     width: 40,
