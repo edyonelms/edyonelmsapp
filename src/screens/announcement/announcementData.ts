@@ -14,6 +14,7 @@ export type Announcement = {
   pdfUrl?: string;
   creatorName?: string;
   creatorEmail?: string;
+  creatorAvatar?: string;
 };
 
 export type FilterKey = 'Today' | '7 Days' | '15 Days' | '30 Days';
@@ -59,6 +60,7 @@ export const mapApiItem = (apiItem: any): Announcement => {
     pdfUrl: apiItem.announcement_pdf,
     creatorName: apiItem.creator_name,
     creatorEmail: apiItem.creator_email,
+    creatorAvatar: apiItem.creator_avatar,
   };
 };
 

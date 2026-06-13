@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import {
   Alert,
+  Image,
   Linking,
   ScrollView,
   StyleSheet,
@@ -43,6 +44,7 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
 
   const imageUrl = resolveFileUrl(item?.imageUrl);
   const pdfUrl = resolveFileUrl(item?.pdfUrl);
+  const creatorAvatar = resolveFileUrl(item?.creatorAvatar);
 
   // Fetch full announcement details by ID
   const fetchAnnouncementDetails = async () => {
@@ -66,6 +68,7 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
           hasPdf: !!(announcementData.announcement_pdf || prev.pdfUrl),
           creatorName: announcementData.creator_name || prev.creatorName,
           creatorEmail: announcementData.creator_email || prev.creatorEmail,
+          creatorAvatar: announcementData.creator_avatar || prev.creatorAvatar,
         }));
       }
     } catch (err: any) {
@@ -244,11 +247,18 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
                   <View style={s.divider} />
                   <Text style={s.sectionLabel}>Posted By</Text>
                   <View style={s.creatorRow}>
-                    <View style={[s.creatorAvatar, { backgroundColor: tag.bgColor }]}>
-                      <Text style={[s.creatorInitial, { color: tag.color }]}>
-                        {item.creatorName.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
+                    {creatorAvatar ? (
+                      <Image
+                        source={{ uri: creatorAvatar }}
+                        style={s.creatorAvatar}
+                      />
+                    ) : (
+                      <View style={[s.creatorAvatar, { backgroundColor: tag.bgColor }]}>
+                        <Text style={[s.creatorInitial, { color: tag.color }]}>
+                          {item.creatorName.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
                     <View style={s.creatorInfo}>
                       <Text style={s.creatorName}>{item.creatorName}</Text>
                       {!!item.creatorEmail && (
