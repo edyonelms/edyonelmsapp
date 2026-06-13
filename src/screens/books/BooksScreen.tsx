@@ -5,7 +5,6 @@ import {
   Alert,
   FlatList,
   Linking,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
 import { theme } from '../../utils/theme';
 import BookCard from './BookCard';
 import { subjectMetaFor } from './bookData';
@@ -175,12 +175,7 @@ const BooksScreen = ({ navigation, route }: any) => {
         columnWrapperStyle={s.row}
         contentContainerStyle={s.listContent}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-          />
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         renderItem={({ item }) => (
           <BookCard item={item} showClass={role === 'teacher'} onViewPress={openBook} />

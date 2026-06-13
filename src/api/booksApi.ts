@@ -42,18 +42,25 @@ export const getBooks = async (
 ): Promise<{ items: ApiBook[]; meta: BooksPageMeta | null }> => {
   const { data } = await apiClient.get('/books', { params });
 
-  // The endpoint may respond with a plain array, { data: [...] }, or a
-  // Laravel paginator { data: { data: [...], current_page, ... } }.
-  // Always normalise to an array so the screen never crashes on .forEach.
+  // The endpoint may respond in several shapes; normalise to an array so the
+  // screen never crashes on .map:
+  //   • plain array                              → [...]
+  //   • { data: [...] }                          → data:[...]
+  //   • { data: { data: [...], current_page } }  → Laravel paginator
+  //   • { data: { items: [...], pagination } }   → this API's paginated()
   const raw = data?.data ?? data;
   const items: ApiBook[] = Array.isArray(raw)
     ? raw
+    : Array.isArray(raw?.items)
+    ? raw.items
     : Array.isArray(raw?.data)
     ? raw.data
     : [];
 
   const metaSrc =
-    data?.meta ?? (raw && !Array.isArray(raw) && raw.current_page != null ? raw : null);
+    raw?.pagination ??
+    data?.meta ??
+    (raw && !Array.isArray(raw) && raw.current_page != null ? raw : null);
   const meta: BooksPageMeta | null = metaSrc
     ? {
         current_page: Number(metaSrc.current_page ?? 1),

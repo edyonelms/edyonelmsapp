@@ -226,14 +226,33 @@ const InstructorScreen = () => {
         data={instructors}
         keyExtractor={(item) => String(item.id)}
         numColumns={2}
-        contentContainerStyle={styles.list}
-        columnWrapperStyle={styles.row}
+        contentContainerStyle={[
+          styles.list,
+          instructors.length === 0 && styles.listEmpty,
+        ]}
+        columnWrapperStyle={instructors.length > 0 ? styles.row : undefined}
         renderItem={({ item }) => (
           <InstructorCard item={item} onPress={() => handleInstructorPress(item)} />
         )}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyBox}>
+            <View style={styles.emptyIconRing}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="people-outline"
+                size={36}
+                color={theme.colors.primary}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>No instructors found</Text>
+            <Text style={styles.emptySubtitle}>
+              No instructors have been added yet.
+            </Text>
+          </View>
         }
       />
       
@@ -252,7 +271,16 @@ export default InstructorScreen;
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F1F5F9' },
   list: { padding: 12, paddingBottom: 30 },
+  listEmpty: { flexGrow: 1 },
   row: { justifyContent: 'space-between', marginBottom: 0 },
+  emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingTop: 80 },
+  emptyIconRing: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
+  emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center' },
   centeredBox: {
     flex: 1,
     alignItems: 'center',
