@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,27 +10,30 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import {
+  getMyTransport,
+  type FeeStatus,
+  type TransportRoute,
+} from '../../api/transportApi';
 
-const FEES = [
-  { period: 'March', amount: '₹ 1,000', status: 'Paid' },
-  { period: 'April', amount: '₹ 1,000', status: 'Paid' },
-  { period: 'May', amount: '₹ 1,000', status: 'Paid' },
-  { period: 'June', amount: '–', status: 'No Transport' },
-  { period: 'July', amount: '₹ 1,000', status: 'Pending' },
-  { period: 'August', amount: '–', status: '–' },
-  { period: 'September', amount: '–', status: '–' },
-  { period: 'October', amount: '–', status: '–' },
-  { period: 'November', amount: '–', status: '–' },
-  { period: 'December', amount: '–', status: '–' },
-  { period: 'January', amount: '–', status: '–' },
-  { period: 'February', amount: '–', status: '–' },
-];
-
-const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
-  Paid: { color: '#16A34A', bg: '#DCFCE7' },
-  Pending: { color: '#D97706', bg: '#FEF3C7' },
-  'No Transport': { color: '#6B7280', bg: '#F3F4F6' },
+// Status key → label + colors (matches backend `fees.schedule[].status`)
+const STATUS_CONFIG: Record<FeeStatus, { label: string; color: string; bg: string }> = {
+  paid: { label: 'Paid', color: '#16A34A', bg: '#DCFCE7' },
+  partial: { label: 'Partial', color: '#0284C7', bg: '#E0F2FE' },
+  pending: { label: 'Pending', color: '#D97706', bg: '#FEF3C7' },
+  no_transport: { label: 'No Transport', color: '#6B7280', bg: '#F3F4F6' },
 };
+
+const formatINR = (n: number) => `₹ ${Number(n || 0).toLocaleString('en-IN')}`;
+
+const initialsOf = (name?: string | null) =>
+  (name || '?')
+    .trim()
+    .split(/\s+/)
+    .map(p => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
 // ─── Label / value row ────────────────────────────────────────────────────────
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
@@ -41,11 +45,69 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
 
 const TransportScreen = ({ navigation }: any) => {
   const [driverExpanded, setDriverExpanded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<TransportRoute | null>(null);
 
-  return (
-    <View style={s.root}>
-      <Header title="Transport" onBackPress={() => navigation.goBack()} />
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getMyTransport();
+      setData(res);
+    } catch (e: any) {
+      const status = e?.response?.status;
+      if (status === 404) {
+        setError(e?.response?.data?.message || 'No transport route assigned to you.');
+      } else {
+        setError('Unable to load transport details. Please try again.');
+      }
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const renderBody = () => {
+    if (loading) {
+      return (
+        <View style={s.center}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      );
+    }
+
+    if (error || !data) {
+      return (
+        <View style={s.center}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="bus-outline"
+            size={40}
+            color={theme.colors.textMuted}
+          />
+          <Text style={s.emptyText}>{error || 'No transport details found.'}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="refresh"
+              size={15}
+              color={theme.colors.primary}
+            />
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const { driver, fees } = data;
+    const schedule = fees?.schedule ?? [];
+
+    return (
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
@@ -64,171 +126,206 @@ const TransportScreen = ({ navigation }: any) => {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.cardTitle}>Jafari</Text>
+                <Text style={s.cardTitle}>{data.route_name}</Text>
                 <Text style={s.cardSubtitle}>School Transport</Text>
               </View>
               <View style={s.fareBadge}>
-                <Text style={s.fareBadgeText}>₹ 1000/pm</Text>
+                <Text style={s.fareBadgeText}>
+                  {formatINR(data.monthly_fee)}/pm
+                </Text>
               </View>
             </View>
 
-            <View style={s.pillsRow}>
-              <View style={s.pill}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="log-in-outline"
-                  size={12}
-                  color={theme.colors.primary}
-                />
-                <Text style={s.pillText}>Arrival 08:00 AM</Text>
+            {(data.pickup_location || data.pickup_time) && (
+              <View style={s.pillsRow}>
+                {!!data.pickup_location && (
+                  <View style={s.pill}>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="location-outline"
+                      size={12}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={s.pillText}>{data.pickup_location}</Text>
+                  </View>
+                )}
+                {!!data.pickup_time && (
+                  <View style={s.pill}>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="time-outline"
+                      size={12}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={s.pillText}>Pickup {data.pickup_time}</Text>
+                  </View>
+                )}
               </View>
-              <View style={s.pill}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="log-out-outline"
-                  size={12}
-                  color={theme.colors.primary}
-                />
-                <Text style={s.pillText}>Departure 02:00 PM</Text>
-              </View>
-            </View>
+            )}
 
             <View style={s.divider} />
 
-            <InfoRow label="Vehicle Number" value="UP81 XX XXXX" />
-            <InfoRow label="Capacity" value="40 Seats" />
-            <InfoRow label="Arrival Time" value="08:00 AM" />
-            <InfoRow label="Departure Time" value="02:00 PM" />
+            <InfoRow label="Vehicle Number" value={data.vehicle_no || '–'} />
+            <InfoRow
+              label="Capacity"
+              value={data.capacity ? `${data.capacity} Seats` : '–'}
+            />
+            <InfoRow label="Pickup Time" value={data.pickup_time || '–'} />
+            <InfoRow label="Pickup Point" value={data.pickup_location || '–'} />
+            <InfoRow label="Drop Point" value={data.drop_location || '–'} />
 
             {/* Driver Details accordion */}
-            <TouchableOpacity
-              style={s.driverHeader}
-              onPress={() => setDriverExpanded(v => !v)}
-              activeOpacity={0.8}
-            >
-              <View style={s.driverHeaderLeft}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="person-outline"
-                  size={14}
-                  color={theme.colors.primary}
-                />
-                <Text style={s.driverHeaderText}>Driver Details</Text>
-              </View>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName={driverExpanded ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={theme.colors.textSecondary}
-              />
-            </TouchableOpacity>
-
-            {driverExpanded && (
-              <View style={s.driverBody}>
-                <View style={s.driverTop}>
-                  <View style={s.driverAvatar}>
-                    <Text style={s.driverInitial}>R</Text>
+            {driver && (
+              <>
+                <TouchableOpacity
+                  style={s.driverHeader}
+                  onPress={() => setDriverExpanded(v => !v)}
+                  activeOpacity={0.8}
+                >
+                  <View style={s.driverHeaderLeft}>
+                    <VectorIcon
+                      iconSet="Ionicons"
+                      iconName="person-outline"
+                      size={14}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={s.driverHeaderText}>Driver Details</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.driverName}>Ramesh Kumar</Text>
-                    <Text style={s.driverEmail}>driver@school.com</Text>
-                  </View>
-                </View>
-                <View style={s.driverPhoneRow}>
                   <VectorIcon
                     iconSet="Ionicons"
-                    iconName="call-outline"
-                    size={13}
-                    color={theme.colors.primary}
+                    iconName={driverExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={theme.colors.textSecondary}
                   />
-                  <Text style={s.driverPhone}>+91 98765 43210</Text>
-                </View>
-              </View>
+                </TouchableOpacity>
+
+                {driverExpanded && (
+                  <View style={s.driverBody}>
+                    <View style={s.driverTop}>
+                      <View style={s.driverAvatar}>
+                        <Text style={s.driverInitial}>
+                          {initialsOf(driver.name)}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.driverName}>{driver.name || '–'}</Text>
+                        {!!driver.email && (
+                          <Text style={s.driverEmail}>{driver.email}</Text>
+                        )}
+                      </View>
+                    </View>
+                    {!!driver.phone && (
+                      <View style={s.driverPhoneRow}>
+                        <VectorIcon
+                          iconSet="Ionicons"
+                          iconName="call-outline"
+                          size={13}
+                          color={theme.colors.primary}
+                        />
+                        <Text style={s.driverPhone}>{driver.phone}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </>
             )}
           </View>
         </View>
 
         {/* ── Transport Fees Card ── */}
-        <View style={s.card}>
-          <View style={[s.accentBar, { backgroundColor: '#16A34A' }]} />
-          <View style={s.cardInner}>
-            <View style={s.cardTop}>
-              <View style={s.iconWrap}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="wallet-outline"
-                  size={20}
-                  color={theme.colors.primary}
-                />
+        {!!fees && (
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: '#16A34A' }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={s.iconWrap}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="wallet-outline"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>Transport Fees</Text>
+                  <Text style={s.cardSubtitle}>Monthly payments</Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.cardTitle}>Transport Fees</Text>
-                <Text style={s.cardSubtitle}>Monthly payments</Text>
+
+              {/* Table header */}
+              <View style={[s.tableRow, s.tableHead]}>
+                <Text style={[s.tableHeadText, { flex: 1.4 }]}>Month</Text>
+                <Text style={[s.tableHeadText, { flex: 1, textAlign: 'center' }]}>
+                  Amount
+                </Text>
+                <Text style={[s.tableHeadText, { flex: 1.6, textAlign: 'right' }]}>
+                  Status
+                </Text>
               </View>
-            </View>
 
-            {/* Table header */}
-            <View style={[s.tableRow, s.tableHead]}>
-              <Text style={[s.tableHeadText, { flex: 1.4 }]}>Month</Text>
-              <Text style={[s.tableHeadText, { flex: 1, textAlign: 'center' }]}>
-                Amount
-              </Text>
-              <Text style={[s.tableHeadText, { flex: 1.6, textAlign: 'right' }]}>
-                Status
-              </Text>
-            </View>
-
-            {FEES.map((row, i) => {
-              const sc = STATUS_CONFIG[row.status];
-              return (
-                <View
-                  key={i}
-                  style={[s.tableRow, i < FEES.length - 1 && s.tableRowBorder]}
-                >
-                  <Text style={[s.tableCellText, { flex: 1.4 }]}>{row.period}</Text>
-                  <Text
+              {schedule.map((row, i) => {
+                const sc = STATUS_CONFIG[row.status];
+                return (
+                  <View
+                    key={row.key}
                     style={[
-                      s.tableCellText,
-                      { flex: 1, textAlign: 'center' },
+                      s.tableRow,
+                      i < schedule.length - 1 && s.tableRowBorder,
                     ]}
                   >
-                    {row.amount}
-                  </Text>
-                  <View style={{ flex: 1.6, alignItems: 'flex-end' }}>
-                    {sc ? (
-                      <View style={[s.badge, { backgroundColor: sc.bg }]}>
-                        <View style={[s.badgeDot, { backgroundColor: sc.color }]} />
-                        <Text style={[s.badgeText, { color: sc.color }]}>
-                          {row.status}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text style={s.tableCellText}>–</Text>
-                    )}
+                    <Text style={[s.tableCellText, { flex: 1.4 }]}>
+                      {row.month}
+                    </Text>
+                    <Text
+                      style={[s.tableCellText, { flex: 1, textAlign: 'center' }]}
+                    >
+                      {row.amount > 0 ? formatINR(row.amount) : '–'}
+                    </Text>
+                    <View style={{ flex: 1.6, alignItems: 'flex-end' }}>
+                      {sc ? (
+                        <View style={[s.badge, { backgroundColor: sc.bg }]}>
+                          <View
+                            style={[s.badgeDot, { backgroundColor: sc.color }]}
+                          />
+                          <Text style={[s.badgeText, { color: sc.color }]}>
+                            {sc.label}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={s.tableCellText}>–</Text>
+                      )}
+                    </View>
                   </View>
-                </View>
-              );
-            })}
+                );
+              })}
 
-            {/* Footer totals */}
-            <View style={s.tableFooter}>
-              <View style={s.footerItem}>
-                <Text style={s.footerLabel}>Total Paid</Text>
-                <Text style={[s.footerValue, { color: '#16A34A' }]}>
-                  ₹ 3,000
-                </Text>
-              </View>
-              <View style={s.footerDivider} />
-              <View style={s.footerItem}>
-                <Text style={s.footerLabel}>Total Due</Text>
-                <Text style={[s.footerValue, { color: theme.colors.danger }]}>
-                  ₹ 8,000
-                </Text>
+              {/* Footer totals */}
+              <View style={s.tableFooter}>
+                <View style={s.footerItem}>
+                  <Text style={s.footerLabel}>Total Paid</Text>
+                  <Text style={[s.footerValue, { color: '#16A34A' }]}>
+                    {formatINR(fees.total_paid)}
+                  </Text>
+                </View>
+                <View style={s.footerDivider} />
+                <View style={s.footerItem}>
+                  <Text style={s.footerLabel}>Total Due</Text>
+                  <Text style={[s.footerValue, { color: theme.colors.danger }]}>
+                    {formatINR(fees.total_due)}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        )}
       </ScrollView>
+    );
+  };
+
+  return (
+    <View style={s.root}>
+      <Header title="Transport" onBackPress={() => navigation.goBack()} />
+      {renderBody()}
     </View>
   );
 };
@@ -238,6 +335,32 @@ export default TransportScreen;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, paddingBottom: 36, gap: 14 },
+
+  // States
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   // Card (exam style)
   card: {
