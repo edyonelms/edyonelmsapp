@@ -11,6 +11,8 @@ import {
 import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { STATUS_META } from './attendanceTypes';
 import type { AttendanceStatus } from './attendanceTypes';
@@ -49,6 +51,8 @@ const AttendanceScreen = () => {
       setLoading(false);
     }
   }, [monthKey]);
+
+  const { refreshing, onRefresh } = useRefresh(load);
 
   useEffect(() => {
     load();
@@ -186,6 +190,9 @@ const AttendanceScreen = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {/* ── Single month card ── */}
           <View style={s.card}>

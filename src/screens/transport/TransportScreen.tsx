@@ -11,6 +11,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import {
   getMyTransport,
   type FeeStatus,
@@ -98,6 +100,8 @@ const TransportScreen = ({ navigation }: any) => {
     }
   }, []);
 
+  const { refreshing, onRefresh } = useRefresh(load);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -168,6 +172,9 @@ const TransportScreen = ({ navigation }: any) => {
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* ── School & Bus Card ── */}
         <View style={s.card}>

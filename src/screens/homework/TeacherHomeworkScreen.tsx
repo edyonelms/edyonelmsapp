@@ -13,6 +13,8 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   getTeacherHomework,
@@ -111,6 +113,8 @@ const TeacherHomeworkScreen = ({ navigation }: any) => {
       setLoading(false);
     }
   }, []);
+
+  const { refreshing, onRefresh } = useRefresh(load);
 
   // Refetch whenever the screen gains focus (e.g. returning from Add).
   useFocusEffect(
@@ -214,7 +218,13 @@ const TeacherHomeworkScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           <View style={s.listHeader}>
             <Text style={s.listTitle}>{listTitle}</Text>
             <View style={s.countBadge}>

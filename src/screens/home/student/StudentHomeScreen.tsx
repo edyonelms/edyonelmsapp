@@ -12,6 +12,8 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/TopBar';
 import VectorIcon from '../../../components/VectorIcon';
+import AppRefreshControl from '../../../components/AppRefreshControl';
+import { useRefresh } from '../../../hooks/useRefresh';
 import { theme } from '../../../utils/theme';
 import { Chip, ChartCard, Donut, HBar, WeekDots } from '../../../components/Charts';
 import {
@@ -51,6 +53,8 @@ const StudentHomeScreen = () => {
       setLoading(false);
     }
   }, []);
+
+  const { refreshing, onRefresh } = useRefresh(load);
 
   useEffect(() => {
     load();
@@ -128,7 +132,13 @@ const StudentHomeScreen = () => {
         onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
 
         {/* ── Quick chips ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>

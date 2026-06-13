@@ -10,6 +10,8 @@ import {
 import { useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -252,6 +254,12 @@ const NotificationScreen = () => {
   );
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const { refreshing, onRefresh } = useRefresh(() => {
+    setNotifications(
+      ALL_NOTIFICATIONS.filter(n => n.role === role || n.role === 'both'),
+    );
+  });
+
   const markAllRead = () =>
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   const markRead = (id: string) =>
@@ -385,6 +393,9 @@ const NotificationScreen = () => {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         ListEmptyComponent={
           <View style={styles.emptyBox}>
             <View style={styles.emptyIconRing}>

@@ -23,6 +23,8 @@ import type { FilterType, CalEvent } from './calendarTypes';
 import MonthYearPicker from './MonthYearPicker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { getCalendarEvents, mapApiEventToCalEvent } from '../../api/calendarApi';
 
 const { width } = Dimensions.get('window');
@@ -59,6 +61,8 @@ const CalendarScreen = ({ navigation }: any) => {
       setLoading(false);
     }
   }, [currentMonth]);
+
+  const { refreshing, onRefresh } = useRefresh(fetchEvents);
 
   useEffect(() => {
     fetchEvents();
@@ -167,6 +171,9 @@ const CalendarScreen = ({ navigation }: any) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {/* ── Calendar grid card ── */}
           <View style={s.card}>

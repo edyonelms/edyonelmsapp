@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { FILTERS, mapApiItem, TAG_META } from './announcementData';
 import type {
@@ -68,6 +70,8 @@ const AnnouncementScreen = ({ navigation, route }: any) => {
       setLoading(false);
     }
   }, []);
+
+  const { refreshing, onRefresh } = useRefresh(fetchAnnouncements);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -150,6 +154,9 @@ const AnnouncementScreen = ({ navigation, route }: any) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.listContent}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {filtered.length === 0 ? (
             <View style={s.emptyBox}>

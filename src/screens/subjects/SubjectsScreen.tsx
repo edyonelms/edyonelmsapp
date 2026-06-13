@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import {
   getStudentSubjects,
@@ -111,6 +113,8 @@ const SubjectsScreen = ({ navigation }: any) => {
     }
   }, []);
 
+  const { refreshing, onRefresh } = useRefresh(load);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -141,6 +145,9 @@ const SubjectsScreen = ({ navigation }: any) => {
           keyExtractor={i => String(i.id)}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           ListHeaderComponent={
             <>
               <Text style={s.sectionTitle}>All Subjects</Text>

@@ -14,6 +14,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import {
   getTeacherSubjects,
   getChapters,
@@ -360,6 +362,8 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
     }
   }, [loadChapters]);
 
+  const { refreshing, onRefresh } = useRefresh(loadCombos);
+
   useEffect(() => {
     loadCombos();
   }, [loadCombos]);
@@ -520,7 +524,13 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
 
     return (
       <>
-        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           <ComboDropdown combos={combos} selected={selected} onSelect={selectCombo} />
 
           <View style={s.chapterCountRow}>

@@ -11,6 +11,8 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import {
   getStudentSubjects,
   getChapters,
@@ -137,6 +139,8 @@ const StudentSyllabusScreen = ({ navigation }: any) => {
     }
   }, [loadChapters]);
 
+  const { refreshing, onRefresh } = useRefresh(loadSubjects);
+
   useEffect(() => {
     loadSubjects();
   }, [loadSubjects]);
@@ -178,6 +182,9 @@ const StudentSyllabusScreen = ({ navigation }: any) => {
         <ScrollView
           contentContainerStyle={s.scroll}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <SubjectDropdown subjects={subjects} selected={selectedSub} onSelect={selectSubject} />
 

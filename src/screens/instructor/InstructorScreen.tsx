@@ -14,6 +14,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh } from '../../hooks/useRefresh';
 import { getInstructors, getInstructorDetails } from '../../api/instructorApi';
 import InstructorDetailModal from './InstructorDetailModal';
 
@@ -156,6 +158,8 @@ const InstructorScreen = () => {
     }
   }, []);
 
+  const { refreshing, onRefresh } = useRefresh(fetchInstructors);
+
   useEffect(() => {
     fetchInstructors();
   }, [fetchInstructors]);
@@ -230,6 +234,9 @@ const InstructorScreen = () => {
           <InstructorCard item={item} onPress={() => handleInstructorPress(item)} />
         )}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       />
       
       <InstructorDetailModal

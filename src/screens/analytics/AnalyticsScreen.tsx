@@ -13,6 +13,7 @@ import {
 import { useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AppRefreshControl from '../../components/AppRefreshControl';
 import { theme } from '../../utils/theme';
 import { Chip } from '../../components/Charts';
 import {
@@ -425,12 +426,28 @@ const AnalyticsScreen = () => {
   const route = useRoute<any>();
   const role: Role = route?.params?.userRole === 'teacher' ? 'teacher' : 'student';
 
+  // The analytics data is fetched inside the child views, so pull-to-refresh
+  // remounts them (via a changing key) to re-run their loaders.
+  const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setReloadKey(k => k + 1);
+    setTimeout(() => setRefreshing(false), 900);
+  }, []);
+
   return (
     <View style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       <Header title="Analytics" />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        refreshControl={
+          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
 
         {/* Hero */}
         <View style={s.hero}>
@@ -448,7 +465,11 @@ const AnalyticsScreen = () => {
           </View>
         </View>
 
-        {role === 'student' ? <StudentAnalytics /> : <TeacherAnalytics />}
+        {role === 'student' ? (
+          <StudentAnalytics key={reloadKey} />
+        ) : (
+          <TeacherAnalytics key={reloadKey} />
+        )}
 
         <View style={{ height: 30 }} />
       </ScrollView>
