@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Alert,
@@ -109,7 +110,7 @@ const BooksScreen = ({ navigation, route }: any) => {
       <View style={s.root}>
         <Header title="Books" onBackPress={() => navigation.goBack()} />
         <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="list" />
           <Text style={s.loadingText}>Loading books…</Text>
         </View>
       </View>

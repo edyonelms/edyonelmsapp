@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Dimensions,
@@ -68,7 +69,7 @@ const AboutAppScreen = () => {
       <View style={s.root}>
         <Header title="About App" />
         <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="doc" />
           <Text style={s.loadingText}>Loading...</Text>
         </View>
       </View>

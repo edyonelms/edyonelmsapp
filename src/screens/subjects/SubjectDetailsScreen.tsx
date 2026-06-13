@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -56,7 +57,7 @@ const SubjectDetailsScreen = ({ route }: any) => {
 
       {loading ? (
         <View style={s.stateBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="detail" />
         </View>
       ) : error ? (
         <View style={s.stateBox}>

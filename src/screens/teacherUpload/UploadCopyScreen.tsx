@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Alert,
@@ -212,7 +213,7 @@ const UploadCopyScreen = ({ navigation }: any) => {
               </View>
             ) : loadingStudents ? (
               <View style={s.promptBox}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <ScreenSkeleton variant="list" />
               </View>
             ) : studentsError ? (
               <View style={s.promptBox}>

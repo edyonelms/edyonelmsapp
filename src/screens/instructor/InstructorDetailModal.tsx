@@ -1,4 +1,5 @@
 import React from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   Modal,
   View,
@@ -91,7 +92,7 @@ const InstructorDetailModal = ({ visible, instructor, loading, onClose }: Instru
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {loading ? (
               <View style={styles.loaderContainer}>
-                <ActivityIndicator size="large" color={gradient[0]} />
+                <ScreenSkeleton variant="detail" />
                 <Text style={styles.loaderText}>Loading details...</Text>
               </View>
             ) : (

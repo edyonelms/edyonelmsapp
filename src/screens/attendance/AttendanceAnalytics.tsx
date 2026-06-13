@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Modal,
@@ -133,7 +134,7 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
 
         {loading && months.length === 0 ? (
           <View style={s.loadingBox}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ScreenSkeleton variant="dashboard" />
           </View>
         ) : (
         <ScrollView

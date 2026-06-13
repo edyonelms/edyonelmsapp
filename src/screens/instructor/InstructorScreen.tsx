@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   Dimensions,
   FlatList,
@@ -195,7 +196,7 @@ const InstructorScreen = () => {
       <View style={styles.screen}>
         <Header title="Instructors" />
         <View style={styles.centeredBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="list" />
         </View>
       </View>
     );

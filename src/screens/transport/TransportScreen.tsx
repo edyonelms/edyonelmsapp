@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -105,7 +106,7 @@ const TransportScreen = ({ navigation }: any) => {
     if (loading) {
       return (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="list" />
         </View>
       );
     }

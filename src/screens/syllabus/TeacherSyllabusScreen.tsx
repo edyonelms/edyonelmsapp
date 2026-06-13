@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Alert,
@@ -488,7 +489,7 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
     if (loading) {
       return (
         <View style={s.stateBox}>
-          <ActivityIndicator size="large" color={PRIMARY} />
+          <ScreenSkeleton variant="list" />
         </View>
       );
     }

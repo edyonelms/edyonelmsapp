@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../../components/Skeleton';
 import {
   ActivityIndicator,
   Dimensions,
@@ -90,7 +91,7 @@ const StudentHomeScreen = () => {
           onBellPress={() => navigation.navigate('Notifications', { role: 'student' })}
         />
         <View style={s.stateBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="dashboard" />
         </View>
       </View>
     );

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Dimensions,
@@ -31,7 +32,7 @@ type Role = 'student' | 'teacher';
 // ─── Shared state views ────────────────────────────────────────────────────────
 const Loading = () => (
   <View style={s.stateBox}>
-    <ActivityIndicator size="large" color={theme.colors.primary} />
+    <ScreenSkeleton variant="dashboard" />
   </View>
 );
 

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -194,7 +195,7 @@ const PerformanceScreen = () => {
       <View style={styles.safeArea}>
         <Header title="My Performance" />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="dashboard" />
         </View>
       </View>
     );

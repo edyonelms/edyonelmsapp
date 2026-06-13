@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Dimensions,
@@ -152,7 +153,7 @@ const CalendarScreen = ({ navigation }: any) => {
 
       {loading ? (
         <View style={s.centeredBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="list" />
           <Text style={s.loaderText}>Loading events...</Text>
         </View>
       ) : error ? (

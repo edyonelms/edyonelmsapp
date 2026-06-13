@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -130,7 +131,7 @@ const AnnouncementScreen = ({ navigation, route }: any) => {
       {/* Body */}
       {loading ? (
         <View style={s.centeredBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="list" />
         </View>
       ) : error ? (
         <View style={s.centeredBox}>

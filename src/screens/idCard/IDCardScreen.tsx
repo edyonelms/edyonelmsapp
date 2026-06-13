@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Animated,
@@ -131,7 +132,7 @@ const IDCardScreen = ({ navigation, route }: any) => {
           </View>
         ) : (
           <View style={s.stateBox}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ScreenSkeleton variant="profile" />
           </View>
         )}
       </View>

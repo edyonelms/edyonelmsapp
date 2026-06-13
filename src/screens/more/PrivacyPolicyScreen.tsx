@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -43,7 +44,7 @@ const PrivacyPolicyScreen = () => {
       <View style={s.root}>
         <Header title="Privacy Policy" />
         <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="doc" />
           <Text style={s.loadingText}>Loading...</Text>
         </View>
       </View>

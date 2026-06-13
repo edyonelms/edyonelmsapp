@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -91,7 +92,7 @@ const ExamDetailScreen = () => {
           </View>
         ) : (
           <View style={styles.stateBox}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ScreenSkeleton variant="detail" />
           </View>
         )}
       </View>

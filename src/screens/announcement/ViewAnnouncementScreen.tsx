@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   Alert,
   Linking,
@@ -112,7 +113,7 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
 
       {loading ? (
         <View style={s.centeredBox}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="detail" />
         </View>
       ) : (
         <ScrollView

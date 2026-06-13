@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Alert,
@@ -202,7 +203,7 @@ const TeacherHomeworkScreen = ({ navigation }: any) => {
 
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={PRIMARY} />
+          <ScreenSkeleton variant="list" />
         </View>
       ) : error ? (
         <View style={s.center}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -216,7 +217,7 @@ const PastQueriesScreen = () => {
         {/* Body */}
         {loading ? (
           <View style={s.centeredBox}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ScreenSkeleton variant="list" />
           </View>
         ) : error ? (
           <View style={s.centeredBox}>

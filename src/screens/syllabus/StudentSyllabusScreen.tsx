@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -153,7 +154,7 @@ const StudentSyllabusScreen = ({ navigation }: any) => {
 
       {loading ? (
         <View style={s.stateBox}>
-          <ActivityIndicator size="large" color={PRIMARY} />
+          <ScreenSkeleton variant="list" />
         </View>
       ) : error ? (
         <View style={s.stateBox}>

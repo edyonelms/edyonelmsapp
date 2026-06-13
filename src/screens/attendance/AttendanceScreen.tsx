@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   ScrollView,
@@ -157,7 +158,7 @@ const AttendanceScreen = () => {
 
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="dashboard" />
         </View>
       ) : error ? (
         <View style={s.center}>

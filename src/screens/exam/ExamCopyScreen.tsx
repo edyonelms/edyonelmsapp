@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Alert,
@@ -193,7 +194,7 @@ const ExamCopyScreen = ({ navigation }: any) => {
 
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="list" />
         </View>
       ) : error ? (
         <View style={s.center}>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
   Linking,
@@ -51,7 +52,7 @@ const RulesRegulationsScreen = () => {
       <View style={s.root}>
         <Header title="Rules & Regulations" />
         <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScreenSkeleton variant="doc" />
           <Text style={s.loadingText}>Loading...</Text>
         </View>
       </View>

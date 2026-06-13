@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView,
 } from 'react-native';
@@ -343,7 +344,7 @@ const StudentHomeworkScreen = ({ navigation }: any) => {
 
         {loading ? (
           <View style={s.empty}>
-            <ActivityIndicator size="large" color={PRIMARY} />
+            <ScreenSkeleton variant="list" />
           </View>
         ) : error ? (
           <View style={s.empty}>
