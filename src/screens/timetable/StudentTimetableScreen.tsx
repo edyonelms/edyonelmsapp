@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,68 +10,60 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
-import { DAYS, STUDENT_TIMETABLE } from './timetableData';
-import type { Day, StudentPeriod } from './timetableData';
+import { DAYS } from './timetableData';
+import type { Day } from './timetableData';
+import {
+  getStudentTimetable,
+  buildDayMap,
+  subjectVisual,
+  fmtTime,
+  timetableErrorMessage,
+  type TimetablePeriod,
+} from '../../api/timetableApi';
 
 // ─── Period Row ───────────────────────────────────────────────────────────────
 const PeriodRow = ({
   period,
   isLast,
 }: {
-  period: StudentPeriod;
+  period: TimetablePeriod;
   isLast: boolean;
 }) => {
-  if (period.type === 'break') {
-    return (
-      <View style={[s.breakRow, !isLast && s.rowBorder]}>
-        <Text style={s.breakEmoji}>{period.icon}</Text>
-        <Text style={s.breakText}>{period.subject}</Text>
-        <Text style={s.breakTime}>
-          {period.time} – {period.endTime}
-        </Text>
-      </View>
-    );
-  }
-
-  const isFree = period.type === 'free';
+  const v = subjectVisual(period.subject);
+  const teacherName = period.has_substitute
+    ? period.substitute_details?.substitute_teacher_name ?? period.teacher
+    : period.teacher;
 
   return (
     <View style={[s.periodRow, !isLast && s.rowBorder]}>
-      <View style={[s.periodIcon, { backgroundColor: period.bg }]}>
-        <Text style={s.periodEmoji}>{period.icon}</Text>
+      <View style={[s.periodIcon, { backgroundColor: v.bg }]}>
+        <Text style={s.periodEmoji}>{v.icon}</Text>
       </View>
 
       <View style={s.periodInfo}>
         <Text style={s.periodSubject}>{period.subject}</Text>
-        {isFree ? (
-          <Text style={s.periodMeta}>Free Period</Text>
-        ) : (
-          <View style={s.metaRow}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="person-outline"
-              size={11}
-              color={theme.colors.textMuted}
-            />
-            <Text style={s.periodMeta}>{period.teacher}</Text>
-            <Text style={s.metaDot}>·</Text>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="location-outline"
-              size={11}
-              color={theme.colors.textMuted}
-            />
-            <Text style={s.periodMeta}>{period.room}</Text>
-          </View>
-        )}
+        <View style={s.metaRow}>
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="person-outline"
+            size={11}
+            color={theme.colors.textMuted}
+          />
+          <Text style={s.periodMeta}>{teacherName}</Text>
+          {period.has_substitute && (
+            <View style={s.subChip}>
+              <Text style={s.subChipText}>Substitute</Text>
+            </View>
+          )}
+        </View>
       </View>
 
-      <View style={[s.timeBadge, { backgroundColor: period.color + '18' }]}>
-        <Text style={[s.timeBadgeText, { color: period.color }]}>
-          {period.time}
+      <View style={[s.timeBadge, { backgroundColor: v.color + '18' }]}>
+        <Text style={[s.timeBadgeText, { color: v.color }]}>
+          {fmtTime(period.start_time)}
         </Text>
-        <Text style={[s.timeBadgeSub, { color: period.color }]}>
-          {period.endTime}
+        <Text style={[s.timeBadgeSub, { color: v.color }]}>
+          {fmtTime(period.end_time)}
         </Text>
       </View>
     </View>
@@ -87,8 +80,32 @@ const StudentTimetableScreen = ({ navigation }: any) => {
     : 'Monday';
   const [selectedDay, setSelectedDay] = useState<Day>(defaultDay);
 
-  const periods = STUDENT_TIMETABLE[selectedDay];
-  const classPeriods = periods.filter(p => p.type === 'class').length;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dayMap, setDayMap] = useState<Record<Day, TimetablePeriod[]> | null>(
+    null,
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getStudentTimetable();
+      setDayMap(buildDayMap(res?.timetable_by_day));
+    } catch (e: any) {
+      console.log('[getStudentTimetable] Error:', e?.response?.status, e?.message);
+      setError(timetableErrorMessage(e));
+      setDayMap(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const periods = useMemo(() => dayMap?.[selectedDay] ?? [], [dayMap, selectedDay]);
 
   return (
     <View style={s.root}>
@@ -119,44 +136,79 @@ const StudentTimetableScreen = ({ navigation }: any) => {
         </ScrollView>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-      >
-        {/* ── Single day card ── */}
-        <View style={s.card}>
-          <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
-          <View style={s.cardInner}>
-            <View style={s.cardTop}>
-              <View style={s.iconWrap}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="calendar-outline"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.cardTitle}>{selectedDay}</Text>
-                <Text style={s.cardSubtitle}>
-                  {classPeriods} class{classPeriods !== 1 ? 'es' : ''} ·{' '}
-                  {periods.length} periods
-                </Text>
-              </View>
-            </View>
-
-            <View style={s.divider} />
-
-            {periods.map((period, i) => (
-              <PeriodRow
-                key={period.id}
-                period={period}
-                isLast={i === periods.length - 1}
-              />
-            ))}
-          </View>
+      {loading ? (
+        <View style={s.center}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </ScrollView>
+      ) : error ? (
+        <View style={s.center}>
+          <View style={s.stateIconWrap}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="cloud-offline-outline"
+              size={30}
+              color={theme.colors.danger}
+            />
+          </View>
+          <Text style={s.stateTitle}>Couldn't load timetable</Text>
+          <Text style={s.stateText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={load} activeOpacity={0.85}>
+            <VectorIcon
+              iconSet="Ionicons"
+              iconName="refresh"
+              size={15}
+              color={theme.colors.primary}
+            />
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+        >
+          {/* ── Single day card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: theme.colors.primary }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={s.iconWrap}>
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="calendar-outline"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>{selectedDay}</Text>
+                  <Text style={s.cardSubtitle}>
+                    {periods.length} period{periods.length !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={s.divider} />
+
+              {periods.length === 0 ? (
+                <View style={s.empty}>
+                  <Text style={{ fontSize: 40 }}>🎉</Text>
+                  <Text style={s.emptyTitle}>No Classes</Text>
+                  <Text style={s.emptySub}>Nothing scheduled for {selectedDay}.</Text>
+                </View>
+              ) : (
+                periods.map((period, i) => (
+                  <PeriodRow
+                    key={period.id}
+                    period={period}
+                    isLast={i === periods.length - 1}
+                  />
+                ))
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -166,6 +218,59 @@ export default StudentTimetableScreen;
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, paddingBottom: 32 },
+
+  // States
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: 10,
+  },
+  stateIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  stateTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
+  stateText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 12,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
+
+  // Substitute chip
+  subChip: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: theme.radius.full,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    marginLeft: 4,
+  },
+  subChipText: { fontSize: 9, fontWeight: '700', color: '#D97706' },
+
+  // Empty
+  empty: { alignItems: 'center', paddingVertical: 32, gap: 6 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  emptySub: { fontSize: 13, color: theme.colors.textMuted },
 
   // Day selector (exam-style filter chips)
   filterWrapper: {
