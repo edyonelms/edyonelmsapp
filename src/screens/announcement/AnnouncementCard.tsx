@@ -78,34 +78,6 @@ const AnnouncementCard = ({ item, onPress }: Props) => {
             {item.content}
           </Text>
         )}
-
-        {/* Attachments hint */}
-        {(item.hasImage || item.hasPdf) && (
-          <View style={s.attachRow}>
-            {item.hasImage && (
-              <View style={s.attachChip}>
-                <VectorIcon
-                  iconSet="Feather"
-                  iconName="image"
-                  size={11}
-                  color={tag.color}
-                />
-                <Text style={[s.attachText, { color: tag.color }]}>Image</Text>
-              </View>
-            )}
-            {item.hasPdf && (
-              <View style={s.attachChip}>
-                <VectorIcon
-                  iconSet="Feather"
-                  iconName="file-text"
-                  size={11}
-                  color={tag.color}
-                />
-                <Text style={[s.attachText, { color: tag.color }]}>PDF</Text>
-              </View>
-            )}
-          </View>
-        )}
       </View>
     </TouchableOpacity>
   );
@@ -178,17 +150,4 @@ const s = StyleSheet.create({
     lineHeight: 20,
     marginTop: 10,
   },
-  attachRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  attachChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.white,
-  },
-  attachText: { fontSize: 11, fontWeight: '600' },
 });
