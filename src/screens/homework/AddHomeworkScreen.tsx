@@ -134,7 +134,15 @@ const AddHomeworkScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
               </View>
             ) : triples.length === 0 ? (
-              <Text style={s.helpText}>No classes are assigned to you.</Text>
+              <View style={s.emptyBox}>
+                <View style={s.emptyIconRing}>
+                  <VectorIcon iconSet="Ionicons" iconName="book-outline" size={34} color={theme.colors.primary} />
+                </View>
+                <Text style={s.emptyTitle}>No subject assigned</Text>
+                <Text style={s.emptySubtitle}>
+                  No classes or subjects are assigned to you in the timetable yet.
+                </Text>
+              </View>
             ) : (
               <View style={dropOpen ? { zIndex: 30 } : undefined}>
                 <TouchableOpacity style={s.dropBtn} activeOpacity={0.8} onPress={() => setDropOpen(o => !o)}>
@@ -170,6 +178,8 @@ const AddHomeworkScreen = ({ navigation }: any) => {
               </View>
             )}
 
+            {triples.length > 0 && (
+            <>
             <Text style={s.label}>Title</Text>
             <TextInput
               style={s.input}
@@ -221,6 +231,8 @@ const AddHomeworkScreen = ({ navigation }: any) => {
               )}
               <Text style={s.submitText}>{submitting ? 'Posting…' : 'Post Homework'}</Text>
             </TouchableOpacity>
+            </>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -269,6 +281,20 @@ const s = StyleSheet.create({
   },
   inputMulti: { minHeight: 100 },
   helpText: { fontSize: 13, color: theme.colors.textMuted, paddingVertical: 8 },
+
+  // Books-style empty state (no assigned subjects)
+  emptyBox: { alignItems: 'center', paddingTop: 24, paddingBottom: 12, paddingHorizontal: 12 },
+  emptyIconRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
+  emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
 
   inlineLoad: { paddingVertical: 16, alignItems: 'center' },
   inlineError: { gap: 8, paddingVertical: 10, alignItems: 'flex-start' },

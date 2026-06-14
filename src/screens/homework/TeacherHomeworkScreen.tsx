@@ -23,6 +23,7 @@ import {
   homeworkErrorMessage,
   type HomeworkItem,
 } from '../../api/homeworkApi';
+import { getTeacherClassesSubjects } from '../../api/marksApi';
 
 const PRIMARY = theme.colors.primary;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -98,13 +99,18 @@ const TeacherHomeworkScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<HomeworkItem[]>([]);
+  const [noSubjects, setNoSubjects] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await getTeacherHomework(15);
+      const [res, subs] = await Promise.all([
+        getTeacherHomework(15),
+        getTeacherClassesSubjects().catch(() => []),
+      ]);
       setItems(res?.homeworks ?? []);
+      setNoSubjects((subs?.length ?? 0) === 0);
     } catch (e: any) {
       console.log('[getTeacherHomework] Error:', e?.response?.status, e?.message);
       setError(homeworkErrorMessage(e));
@@ -165,6 +171,23 @@ const TeacherHomeworkScreen = ({ navigation }: any) => {
   return (
     <View style={s.root}>
       <Header title="Homework" onBackPress={() => navigation.goBack()} />
+
+      {noSubjects && !loading && !error ? (
+        <ScrollView
+          contentContainerStyle={s.noSubjScroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <View style={s.emptyRing}>
+            <VectorIcon iconSet="Ionicons" iconName="book-outline" size={36} color={PRIMARY} />
+          </View>
+          <Text style={s.bigEmptyTitle}>No subject assigned</Text>
+          <Text style={s.bigEmptySub}>
+            No classes or subjects are assigned to you in the timetable yet.
+          </Text>
+        </ScrollView>
+      ) : (
+      <>
 
       {/* Date strip */}
       <View style={s.dateStripWrap}>
@@ -262,6 +285,8 @@ const TeacherHomeworkScreen = ({ navigation }: any) => {
       >
         <VectorIcon iconSet="Ionicons" iconName="add" size={26} color="#fff" />
       </TouchableOpacity>
+      </>
+      )}
     </View>
   );
 };
@@ -366,6 +391,20 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 50, gap: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '900', color: theme.colors.textPrimary },
   emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center' },
+
+  // No-subject-assigned (books style)
+  noSubjScroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingTop: 80 },
+  emptyRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  bigEmptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
+  bigEmptySub: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
 
   // FAB
   fab: {
