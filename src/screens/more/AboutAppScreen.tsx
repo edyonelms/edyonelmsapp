@@ -20,7 +20,8 @@ import {
 interface ContentItem  { title: string; description: string; }
 interface ContactItem  { type: string; value: string; }
 interface SocialItem   { platform: string; url: string; icon: string; }
-interface TeamMember   { id: number; name: string; designation: string; photo_url: string | null; }
+interface TeamMember   { id: number; name: string; designation: string; photo_url: string | null; url?: string | null; }
+interface DocItem      { id?: number; title: string; file_path: string | null; file_type?: string | null; }
 
 interface AboutData {
   heading: string;
@@ -31,6 +32,7 @@ interface AboutData {
   address: string;
   core_team: TeamMember[];
   social_media: SocialItem[];
+  documents: DocItem[];
 }
 
 const ACCENT = theme.colors.primary;
@@ -65,7 +67,12 @@ const AboutAppScreen = () => {
     try {
       setInfo(await getAboutApp());
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to load app info.');
+      // No record yet → show the "No Data found" empty state, not an error.
+      if (e?.response?.status === 404) {
+        setInfo({} as AboutData);
+      } else {
+        setError(e?.response?.data?.message ?? 'Failed to load app info.');
+      }
     } finally {
       setLoading(false);
     }
@@ -81,8 +88,15 @@ const AboutAppScreen = () => {
   const contacts = info.contact_details ?? [];
   const team = info.core_team ?? [];
   const socials = info.social_media ?? [];
+  const documents = info.documents ?? [];
+  const address = (info.address ?? '').trim();
+  const hasContact = contacts.length > 0 || !!address;
   const hasAnyBody =
-    content.length > 0 || contacts.length > 0 || team.length > 0 || socials.length > 0;
+    content.length > 0 ||
+    hasContact ||
+    team.length > 0 ||
+    socials.length > 0 ||
+    documents.length > 0;
 
   return (
     <View style={docStyles.root}>
@@ -95,7 +109,7 @@ const AboutAppScreen = () => {
         <DocHero
           accent={ACCENT}
           logoUrl={info.logo}
-          title={info.heading}
+          title={info.heading || TITLE}
           subtitle={info.sub_heading}
         />
 
@@ -103,7 +117,7 @@ const AboutAppScreen = () => {
           <DocNoData
             accent={ACCENT}
             icon="information-circle-outline"
-            title="No information yet"
+            title="No Data found"
             subtitle="The app info hasn’t been added yet. Pull down to refresh."
           />
         )}
@@ -114,7 +128,7 @@ const AboutAppScreen = () => {
           </DocCard>
         ))}
 
-        {contacts.length > 0 && (
+        {hasContact && (
           <DocCard accent={ACCENT} label="Contact Details">
             {contacts.map((item, i) => {
               const cfg = contactCfg(item.type);
@@ -127,16 +141,50 @@ const AboutAppScreen = () => {
                   sub={item.type.toUpperCase()}
                   trailingIcon={cfg.action ? 'chevron-forward' : undefined}
                   onPress={cfg.action ? () => cfg.action!(item.value) : undefined}
-                  isLast={i === contacts.length - 1}
+                  isLast={!address && i === contacts.length - 1}
                 />
               );
             })}
+            {!!address && (
+              <DocRow
+                iconBg="#8E54E9"
+                icon="map-pin"
+                title={address}
+                sub="ADDRESS"
+                isLast
+              />
+            )}
           </DocCard>
         )}
 
         {team.length > 0 && (
           <DocCard accent={ACCENT} label="Core Team">
-            <DocPeople accent={ACCENT} people={team} />
+            <DocPeople
+              accent={ACCENT}
+              people={team}
+              onPressPerson={p => {
+                const link = p.url || p.photo_url;
+                if (link) Linking.openURL(link);
+              }}
+            />
+          </DocCard>
+        )}
+
+        {documents.length > 0 && (
+          <DocCard accent={ACCENT} label="Documents">
+            {documents.map((doc, i) => (
+              <DocRow
+                key={doc.id ?? i}
+                iconBg="#EF4444"
+                icon="file-text"
+                title={doc.title || `Document ${i + 1}`}
+                sub={doc.file_type ? doc.file_type.toUpperCase() : undefined}
+                trailingIcon={doc.file_path ? 'download-outline' : undefined}
+                trailingColor={ACCENT}
+                onPress={doc.file_path ? () => Linking.openURL(doc.file_path!) : undefined}
+                isLast={i === documents.length - 1}
+              />
+            ))}
           </DocCard>
         )}
 

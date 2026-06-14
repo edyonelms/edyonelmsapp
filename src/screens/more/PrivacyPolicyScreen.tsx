@@ -35,7 +35,11 @@ const PrivacyPolicyScreen = () => {
     try {
       setData(await getPrivacyPolicy());
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to load privacy policy.');
+      if (e?.response?.status === 404) {
+        setData({} as PrivacyData);
+      } else {
+        setError(e?.response?.data?.message ?? 'Failed to load privacy policy.');
+      }
     } finally {
       setLoading(false);
     }
@@ -72,7 +76,7 @@ const PrivacyPolicyScreen = () => {
           <DocNoData
             accent={ACCENT}
             icon="lock-closed-outline"
-            title="No privacy policy yet"
+            title="No Data found"
             subtitle="The privacy policy hasn’t been added yet. Pull down to refresh."
           />
         ) : (

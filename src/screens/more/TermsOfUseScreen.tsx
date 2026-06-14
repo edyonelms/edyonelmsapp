@@ -35,7 +35,11 @@ const TermsOfUseScreen = () => {
     try {
       setData(await getTermsOfUse());
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to load terms of use.');
+      if (e?.response?.status === 404) {
+        setData({} as TermsOfUseData);
+      } else {
+        setError(e?.response?.data?.message ?? 'Failed to load terms of use.');
+      }
     } finally {
       setLoading(false);
     }
@@ -72,7 +76,7 @@ const TermsOfUseScreen = () => {
           <DocNoData
             accent={ACCENT}
             icon="document-text-outline"
-            title="No terms of use yet"
+            title="No Data found"
             subtitle="The terms of use haven’t been added yet. Pull down to refresh."
           />
         ) : (

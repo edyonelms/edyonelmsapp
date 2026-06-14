@@ -48,7 +48,11 @@ const RulesRegulationsScreen = () => {
     try {
       setData(await getRulesRegulations());
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to load rules & regulations.');
+      if (e?.response?.status === 404) {
+        setData({} as RulesData);
+      } else {
+        setError(e?.response?.data?.message ?? 'Failed to load rules & regulations.');
+      }
     } finally {
       setLoading(false);
     }
@@ -88,7 +92,7 @@ const RulesRegulationsScreen = () => {
           <DocNoData
             accent={ACCENT}
             icon="shield-checkmark-outline"
-            title="No rules & regulations yet"
+            title="No Data found"
             subtitle="Nothing has been added yet. Pull down to refresh."
           />
         ) : (

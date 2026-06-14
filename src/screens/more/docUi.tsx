@@ -128,29 +128,50 @@ export const DocRow = ({
 );
 
 // ── Horizontal people strip (core team / management) ───────────────────────────
+export interface DocPerson {
+  id: number;
+  name: string;
+  designation: string;
+  photo_url: string | null;
+  url?: string | null;
+}
+
 export const DocPeople = ({
   accent,
   people,
+  onPressPerson,
 }: {
   accent: string;
-  people: { id: number; name: string; designation: string; photo_url: string | null }[];
+  people: DocPerson[];
+  onPressPerson?: (p: DocPerson) => void;
 }) => (
   <View style={s.peopleRow}>
-    {people.map(p => (
-      <View key={p.id} style={s.personCard}>
-        {p.photo_url ? (
-          <Image source={{ uri: p.photo_url }} style={[s.personAvatar, { borderColor: accent }]} />
-        ) : (
-          <View style={[s.personAvatar, s.personAvatarFallback, { borderColor: accent, backgroundColor: accent + '18' }]}>
-            <Text style={[s.personInitial, { color: accent }]}>{p.name.charAt(0).toUpperCase()}</Text>
-          </View>
-        )}
-        <Text style={s.personName} numberOfLines={2}>{p.name}</Text>
-        <View style={[s.personChip, { backgroundColor: accent + '18' }]}>
-          <Text style={[s.personChipText, { color: accent }]} numberOfLines={1}>{p.designation}</Text>
-        </View>
-      </View>
-    ))}
+    {people.map(p => {
+      const tappable = !!onPressPerson && !!(p.url || p.photo_url);
+      return (
+        <TouchableOpacity
+          key={p.id}
+          style={s.personCard}
+          activeOpacity={tappable ? 0.7 : 1}
+          disabled={!tappable}
+          onPress={tappable ? () => onPressPerson!(p) : undefined}
+        >
+          {p.photo_url ? (
+            <Image source={{ uri: p.photo_url }} style={[s.personAvatar, { borderColor: accent }]} />
+          ) : (
+            <View style={[s.personAvatar, s.personAvatarFallback, { borderColor: accent, backgroundColor: accent + '18' }]}>
+              <Text style={[s.personInitial, { color: accent }]}>{p.name.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
+          <Text style={s.personName} numberOfLines={2}>{p.name}</Text>
+          {!!p.designation && (
+            <View style={[s.personChip, { backgroundColor: accent + '18' }]}>
+              <Text style={[s.personChipText, { color: accent }]} numberOfLines={1}>{p.designation}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    })}
   </View>
 );
 
@@ -183,7 +204,7 @@ export const DocNoData = ({
   title?: string;
   subtitle?: string;
 }) => (
-  <View style={s.noDataBox}>
+  <View style={s.noDataBox} /* transport-style empty state */>
     <View style={[s.noDataRing, { backgroundColor: accent + '18' }]}>
       <VectorIcon iconSet={iconSet as any} iconName={icon} size={38} color={accent} />
     </View>

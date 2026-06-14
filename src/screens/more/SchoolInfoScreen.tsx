@@ -54,7 +54,12 @@ const SchoolInfoScreen = () => {
       setInfo(await getSchoolInfo());
       setError('');
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to load school info.');
+      if (e?.response?.status === 404) {
+        setInfo({} as SchoolInfo);
+        setError('');
+      } else {
+        setError(e?.response?.data?.message ?? 'Failed to load school info.');
+      }
     } finally {
       setLoading(false);
     }
@@ -101,7 +106,7 @@ const SchoolInfoScreen = () => {
           <DocNoData
             accent={ACCENT}
             icon="school-outline"
-            title="No school info yet"
+            title="No Data found"
             subtitle="The school info hasn’t been added yet. Pull down to refresh."
           />
         )}
@@ -120,18 +125,22 @@ const SchoolInfoScreen = () => {
 
         {documents.length > 0 && (
           <DocCard accent={ACCENT} label="School Documents">
-            {documents.map((doc: any, i: number) => (
-              <DocRow
-                key={i}
-                iconBg="#EF4444"
-                icon="file-text"
-                title={doc.name ?? `Document ${i + 1}`}
-                trailingIcon={doc.file_path ? 'download-outline' : undefined}
-                trailingColor={ACCENT}
-                onPress={doc.file_path ? () => Linking.openURL(doc.file_path) : undefined}
-                isLast={i === documents.length - 1}
-              />
-            ))}
+            {documents.map((doc: any, i: number) => {
+              const fileUrl = doc.file_url ?? doc.file_path ?? null;
+              return (
+                <DocRow
+                  key={doc.id ?? i}
+                  iconBg="#EF4444"
+                  icon="file-text"
+                  title={doc.title ?? doc.name ?? `Document ${i + 1}`}
+                  sub={doc.file_type ? String(doc.file_type).toUpperCase() : undefined}
+                  trailingIcon={fileUrl ? 'download-outline' : undefined}
+                  trailingColor={ACCENT}
+                  onPress={fileUrl ? () => Linking.openURL(fileUrl) : undefined}
+                  isLast={i === documents.length - 1}
+                />
+              );
+            })}
           </DocCard>
         )}
 

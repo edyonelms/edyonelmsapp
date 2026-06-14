@@ -54,7 +54,11 @@ const TermsConditionsScreen = () => {
     try {
       setData(await getTermsConditions());
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to load terms.');
+      if (e?.response?.status === 404) {
+        setData({} as TermsData);
+      } else {
+        setError(e?.response?.data?.message ?? 'Failed to load terms.');
+      }
     } finally {
       setLoading(false);
     }
@@ -97,7 +101,7 @@ const TermsConditionsScreen = () => {
           <DocNoData
             accent={ACCENT}
             icon="document-text-outline"
-            title="No terms & conditions yet"
+            title="No Data found"
             subtitle="The terms & conditions haven’t been added yet. Pull down to refresh."
           />
         ) : (
