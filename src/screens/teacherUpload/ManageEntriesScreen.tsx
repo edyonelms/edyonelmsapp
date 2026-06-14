@@ -18,7 +18,15 @@ import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import SelectionCard from './SelectionCard';
 import { Selection, UploadEntry } from './uploadData';
-import { upsertMark, upsertExamCopy, marksErrorMessage } from '../../api/marksApi';
+import {
+  upsertMark,
+  upsertExamCopy,
+  deleteMark,
+  deleteExamCopy,
+  marksErrorMessage,
+  MAX_COPY_BYTES,
+  MAX_COPY_LABEL,
+} from '../../api/marksApi';
 
 type Mode = 'copy' | 'marks';
 
@@ -70,6 +78,8 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
           });
         } else {
           if (!e.uri) {
+            // Already-uploaded copy with no new file picked — nothing to send.
+            if (e.pdfUrl) { ok++; continue; }
             failed.push(`${e.name} (no file)`);
             continue;
           }
@@ -103,27 +113,49 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
     onSave?.(next);
   };
 
+  const removeLocally = (entry: UploadEntry) =>
+    sync(entries.filter(e => e.studentId !== entry.studentId));
+
   const handleDelete = (entry: UploadEntry) => {
+    const saved = entry.serverId != null;
     Alert.alert(
       'Delete Entry',
-      `Remove ${mode === 'copy' ? 'copy' : 'marks'} for ${entry.name}?`,
+      `Remove ${mode === 'copy' ? 'copy' : 'marks'} for ${entry.name}?${
+        saved ? '\n\nThis will also remove it for the student.' : ''
+      }`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () =>
-            sync(entries.filter(e => e.studentId !== entry.studentId)),
+          onPress: async () => {
+            // Already saved on the server → delete there too so the student no
+            // longer sees it; otherwise it's just a local (unsaved) entry.
+            if (saved) {
+              try {
+                if (mode === 'marks') await deleteMark(entry.serverId!);
+                else await deleteExamCopy(entry.serverId!);
+              } catch (err: any) {
+                Alert.alert('Delete failed', marksErrorMessage(err));
+                return;
+              }
+            }
+            removeLocally(entry);
+          },
         },
       ],
     );
   };
 
   const reUploadCopy = (entry: UploadEntry) => {
-    launchImageLibrary({ mediaType: 'mixed', quality: 0.8 }, response => {
+    launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, response => {
       if (response.didCancel || response.errorCode) return;
       const asset = response.assets?.[0];
       if (!asset) return;
+      if (asset.fileSize != null && asset.fileSize > MAX_COPY_BYTES) {
+        Alert.alert('File too large', `Each copy must be ${MAX_COPY_LABEL} or smaller.`);
+        return;
+      }
       sync(
         entries.map(e =>
           e.studentId === entry.studentId
@@ -135,6 +167,7 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
                     (asset.type ?? 'image/jpeg').split('/')[1]
                   }`,
                 uri: asset.uri ?? '',
+                fileType: asset.type,
               }
             : e,
         ),

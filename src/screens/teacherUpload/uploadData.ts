@@ -49,7 +49,9 @@ export interface UploadEntry {
   rollNo: string;
   name: string;
   fileName?: string; // copy mode
-  uri?: string; // copy mode
+  uri?: string; // copy mode (local file picked this session)
   fileType?: string; // copy mode
+  pdfUrl?: string; // copy mode (already-uploaded copy from the server)
   marks?: number; // marks mode
+  serverId?: number; // id of the saved row, if it already exists (enables delete/update)
 }

@@ -20,27 +20,34 @@ import { useRefresh } from '../../hooks/useRefresh';
 import SelectionWizard from './SelectionWizard';
 import SelectionCard from './SelectionCard';
 import { emptySelection, isComplete, Selection, UploadEntry, UploadStudent } from './uploadData';
-import { getMarksStudents, marksErrorMessage } from '../../api/marksApi';
+import { getMarksStudents, getTeacherMarks, marksErrorMessage } from '../../api/marksApi';
 
 const UploadMarksScreen = ({ navigation }: any) => {
   const [selection, setSelection] = useState<Selection>(emptySelection());
   const [marks, setMarks] = useState<Record<string, string>>({});
+  const [serverIds, setServerIds] = useState<Record<string, number>>({});
   const [students, setStudents] = useState<UploadStudent[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentsError, setStudentsError] = useState<string | null>(null);
-
-  // TODO: wire to the student-load API loader once integrated.
-  const { refreshing, onRefresh } = useRefresh(() => {});
 
   const ready = isComplete(selection);
   const maxMarks = selection.exam?.totalMarks ?? 100;
 
   const loadRoster = useCallback(async (sel: Selection) => {
-    if (!sel.cls) return;
+    if (!sel.cls || !sel.exam || !sel.subject) return;
     setLoadingStudents(true);
     setStudentsError(null);
     try {
-      const roster = await getMarksStudents(sel.cls.standardId, sel.cls.sectionId);
+      const [roster, existing] = await Promise.all([
+        getMarksStudents(sel.cls.standardId, sel.cls.sectionId),
+        // Pre-fill marks already saved for this exam+class+subject (CRUD: read/update).
+        getTeacherMarks({
+          exam_id: sel.exam.examId,
+          standard_id: sel.cls.standardId,
+          section_id: sel.cls.sectionId,
+          subject_id: sel.subject.subjectId,
+        }).catch(() => ({} as Record<number, any>)),
+      ]);
       setStudents(
         roster.map(r => ({
           id: String(r.student_detail_id),
@@ -49,6 +56,17 @@ const UploadMarksScreen = ({ navigation }: any) => {
           name: r.name,
         })),
       );
+      const prefill: Record<string, string> = {};
+      const ids: Record<string, number> = {};
+      roster.forEach(r => {
+        const row = existing[r.student_detail_id];
+        if (row) {
+          if (row.marks_obtained != null) prefill[String(r.student_detail_id)] = String(row.marks_obtained);
+          ids[String(r.student_detail_id)] = row.id;
+        }
+      });
+      setMarks(prefill);
+      setServerIds(ids);
     } catch (e: any) {
       setStudentsError(marksErrorMessage(e));
       setStudents([]);
@@ -57,6 +75,11 @@ const UploadMarksScreen = ({ navigation }: any) => {
     }
   }, []);
 
+  // useRefresh re-pulls the roster + saved marks for the current selection.
+  const { refreshing, onRefresh } = useRefresh(() => {
+    if (isComplete(selection)) return loadRoster(selection);
+  });
+
   useEffect(() => {
     if (isComplete(selection)) loadRoster(selection);
   }, [selection, loadRoster]);
@@ -64,6 +87,7 @@ const UploadMarksScreen = ({ navigation }: any) => {
   const onSelect = (next: Selection) => {
     setSelection(next);
     setMarks({}); // fresh context → start over
+    setServerIds({});
     setStudents([]);
   };
 
@@ -113,6 +137,7 @@ const UploadMarksScreen = ({ navigation }: any) => {
         rollNo: st.rollNo,
         name: st.name,
         marks: parseInt(marks[st.id], 10),
+        serverId: serverIds[st.id],
       }));
     navigation.navigate('ManageEntries', {
       mode: 'marks',

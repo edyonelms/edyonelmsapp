@@ -130,6 +130,70 @@ export const getMarksStudents = async (
   return unwrapList(data);
 };
 
+// Max exam-copy file size accepted by the API (2 MB). Enforced client-side
+// too so the user gets an instant, friendly message instead of a 422.
+export const MAX_COPY_BYTES = 2 * 1024 * 1024;
+export const MAX_COPY_LABEL = '2 MB';
+
+// ─── Existing teacher rows (used to pre-fill the upload screens for CRUD) ─────
+export interface TeacherMarkRow {
+  id: number;
+  student: { id: number; name: string; roll_no: string | null } | null;
+  marks_obtained: number | null;
+  max_marks: number | null;
+  grade: string | null;
+  is_absent: boolean;
+}
+
+export interface ExistingFilter {
+  exam_id: number;
+  standard_id: number;
+  section_id: number;
+  subject_id: number;
+}
+
+// Marks already saved for an exam+class+subject, keyed by student_detail_id.
+export const getTeacherMarks = async (
+  filter: ExistingFilter,
+): Promise<Record<number, TeacherMarkRow>> => {
+  const { data } = await apiClient.get('/teacher/marks', {
+    params: { ...filter, per_page: 200 },
+  });
+  const map: Record<number, TeacherMarkRow> = {};
+  unwrapList(data).forEach((r: any) => {
+    if (r?.student?.id != null) map[r.student.id] = r;
+  });
+  return map;
+};
+
+export interface TeacherCopyRow {
+  id: number;
+  student: { id: number; name: string; roll_no: string | null } | null;
+  pdf_url: string | null;
+}
+
+// Exam copies already uploaded for an exam+class+subject, keyed by student_detail_id.
+export const getTeacherExamCopies = async (
+  filter: ExistingFilter,
+): Promise<Record<number, TeacherCopyRow>> => {
+  const { data } = await apiClient.get('/teacher/exam-copies', {
+    params: { ...filter, per_page: 200 },
+  });
+  const map: Record<number, TeacherCopyRow> = {};
+  unwrapList(data).forEach((r: any) => {
+    if (r?.student?.id != null) map[r.student.id] = r;
+  });
+  return map;
+};
+
+export const deleteMark = async (id: number): Promise<void> => {
+  await apiClient.delete(`/teacher/marks/${id}`);
+};
+
+export const deleteExamCopy = async (id: number): Promise<void> => {
+  await apiClient.delete(`/teacher/exam-copies/${id}`);
+};
+
 export interface MarkPayload {
   exam_id: number;
   student_detail_id: number;

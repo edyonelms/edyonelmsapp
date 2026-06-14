@@ -18,12 +18,20 @@ import { useRefresh } from '../../hooks/useRefresh';
 import SelectionWizard from './SelectionWizard';
 import SelectionCard from './SelectionCard';
 import { emptySelection, isComplete, Selection, UploadEntry, UploadStudent } from './uploadData';
-import { getMarksStudents, marksErrorMessage } from '../../api/marksApi';
+import {
+  getMarksStudents,
+  getTeacherExamCopies,
+  marksErrorMessage,
+  MAX_COPY_BYTES,
+  MAX_COPY_LABEL,
+} from '../../api/marksApi';
 
 interface UploadedCopy {
   fileName: string;
   uri: string;
   fileType?: string;
+  pdfUrl?: string; // set when the copy is already saved on the server
+  serverId?: number;
 }
 
 const UploadCopyScreen = ({ navigation }: any) => {
@@ -33,18 +41,24 @@ const UploadCopyScreen = ({ navigation }: any) => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentsError, setStudentsError] = useState<string | null>(null);
 
-  // TODO: wire to the student-load API loader once integrated.
-  const { refreshing, onRefresh } = useRefresh(() => {});
-
   const ready = isComplete(selection);
   const uploadedCount = Object.keys(uploads).length;
 
   const loadRoster = useCallback(async (sel: Selection) => {
-    if (!sel.cls) return;
+    if (!sel.cls || !sel.exam || !sel.subject) return;
     setLoadingStudents(true);
     setStudentsError(null);
     try {
-      const roster = await getMarksStudents(sel.cls.standardId, sel.cls.sectionId);
+      const [roster, existing] = await Promise.all([
+        getMarksStudents(sel.cls.standardId, sel.cls.sectionId),
+        // Pre-fill copies already uploaded for this exam+class+subject (CRUD: read/update).
+        getTeacherExamCopies({
+          exam_id: sel.exam.examId,
+          standard_id: sel.cls.standardId,
+          section_id: sel.cls.sectionId,
+          subject_id: sel.subject.subjectId,
+        }).catch(() => ({} as Record<number, any>)),
+      ]);
       setStudents(
         roster.map(r => ({
           id: String(r.student_detail_id),
@@ -53,6 +67,19 @@ const UploadCopyScreen = ({ navigation }: any) => {
           name: r.name,
         })),
       );
+      const prefill: Record<string, UploadedCopy> = {};
+      roster.forEach(r => {
+        const row = existing[r.student_detail_id];
+        if (row?.pdf_url) {
+          prefill[String(r.student_detail_id)] = {
+            fileName: 'Uploaded copy',
+            uri: '',
+            pdfUrl: row.pdf_url,
+            serverId: row.id,
+          };
+        }
+      });
+      setUploads(prefill);
     } catch (e: any) {
       setStudentsError(marksErrorMessage(e));
       setStudents([]);
@@ -60,6 +87,11 @@ const UploadCopyScreen = ({ navigation }: any) => {
       setLoadingStudents(false);
     }
   }, []);
+
+  // useRefresh re-pulls the roster + saved copies for the current selection.
+  const { refreshing, onRefresh } = useRefresh(() => {
+    if (isComplete(selection)) return loadRoster(selection);
+  });
 
   useEffect(() => {
     if (isComplete(selection)) loadRoster(selection);
@@ -72,10 +104,14 @@ const UploadCopyScreen = ({ navigation }: any) => {
   };
 
   const pickCopy = (student: UploadStudent) => {
-    launchImageLibrary({ mediaType: 'mixed', quality: 0.8 }, response => {
+    launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, response => {
       if (response.didCancel || response.errorCode) return;
       const asset = response.assets?.[0];
       if (!asset) return;
+      if (asset.fileSize != null && asset.fileSize > MAX_COPY_BYTES) {
+        Alert.alert('File too large', `Each copy must be ${MAX_COPY_LABEL} or smaller.`);
+        return;
+      }
       setUploads(prev => ({
         ...prev,
         [student.id]: {
@@ -86,6 +122,8 @@ const UploadCopyScreen = ({ navigation }: any) => {
             }`,
           uri: asset.uri ?? '',
           fileType: asset.type,
+          // keep the saved-row id so a re-upload updates the same row
+          serverId: prev[student.id]?.serverId,
         },
       }));
     });
@@ -101,7 +139,15 @@ const UploadCopyScreen = ({ navigation }: any) => {
   const handleManageSave = (entries: UploadEntry[]) => {
     const map: Record<string, UploadedCopy> = {};
     entries.forEach(e => {
-      if (e.fileName) map[e.studentId] = { fileName: e.fileName, uri: e.uri ?? '' };
+      if (e.fileName || e.pdfUrl) {
+        map[e.studentId] = {
+          fileName: e.fileName ?? 'Uploaded copy',
+          uri: e.uri ?? '',
+          fileType: e.fileType,
+          pdfUrl: e.pdfUrl,
+          serverId: e.serverId,
+        };
+      }
     });
     setUploads(map);
   };
@@ -121,6 +167,8 @@ const UploadCopyScreen = ({ navigation }: any) => {
         fileName: uploads[st.id].fileName,
         uri: uploads[st.id].uri,
         fileType: uploads[st.id].fileType,
+        pdfUrl: uploads[st.id].pdfUrl,
+        serverId: uploads[st.id].serverId,
       }));
     navigation.navigate('ManageEntries', {
       mode: 'copy',
