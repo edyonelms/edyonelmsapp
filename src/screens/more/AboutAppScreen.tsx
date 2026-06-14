@@ -4,7 +4,7 @@ import Header from '../../components/Header';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getAboutApp } from '../../api/authApi';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   DocHero,
   DocCard,
@@ -214,6 +214,11 @@ const AboutAppScreen = () => {
 
 export default AboutAppScreen;
 
-const cs = StyleSheet.create({
+const __mk_cs = () => StyleSheet.create({
   copyright: { textAlign: 'center', fontSize: 12, color: theme.colors.textMuted, marginTop: 4 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let cs = __mk_cs();
+onThemeChange(() => { cs = __mk_cs(); });

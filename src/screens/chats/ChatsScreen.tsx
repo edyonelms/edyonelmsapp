@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 type DrawerRole = 'student' | 'teacher';
 
@@ -398,7 +398,7 @@ const ChatsScreen = ({ navigation, route }: any) => {
 
 export default ChatsScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: '#EEF2FF' },
   flex: { flex: 1 },
 
@@ -601,8 +601,13 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   modalBtnText: { fontSize: 15, fontWeight: '700' },
-  modalBtnGhost: { backgroundColor: '#F1F5F9' },
+  modalBtnGhost: { backgroundColor: theme.colors.border },
   modalBtnGhostText: { color: theme.colors.textPrimary },
   modalBtnDanger: { backgroundColor: theme.colors.danger },
   modalBtnDangerText: { color: theme.colors.white },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

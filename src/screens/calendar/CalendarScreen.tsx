@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import moment from 'moment';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   FILTERS,
   TYPE_META,
@@ -437,7 +437,7 @@ const CalendarScreen = ({ navigation }: any) => {
 
 export default CalendarScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
 
@@ -681,3 +681,8 @@ const s = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

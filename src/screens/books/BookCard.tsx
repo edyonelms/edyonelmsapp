@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import constant from '../../utils/constant';
 import { subjectMetaFor } from './bookData';
 import type { ApiBook } from '../../api/booksApi';
@@ -92,7 +92,7 @@ const BookCard = ({ item, showClass, onViewPress }: Props) => {
 
 export default BookCard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   card: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
@@ -150,3 +150,8 @@ const s = StyleSheet.create({
   },
   openBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

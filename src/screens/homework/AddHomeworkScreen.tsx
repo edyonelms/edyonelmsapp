@@ -14,7 +14,7 @@ import {
 import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import { getTeacherClassesSubjects, marksErrorMessage, type ClassSubject } from '../../api/marksApi';
@@ -242,7 +242,7 @@ const AddHomeworkScreen = ({ navigation }: any) => {
 
 export default AddHomeworkScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, paddingBottom: 40 },
 
@@ -388,3 +388,8 @@ const s = StyleSheet.create({
   },
   submitText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

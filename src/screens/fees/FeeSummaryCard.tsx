@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
 import { fmt, PURPLE } from './feesData';
+import { theme, onThemeChange } from '../../utils/theme';
 
 interface Props { paid: number; total: number; category: string }
 
@@ -52,18 +53,18 @@ const FeeSummaryCard = ({ paid, total, category }: Props) => {
 
 export default FeeSummaryCard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   card: {
     marginHorizontal: 16, marginTop: 10, marginBottom: 20,
-    backgroundColor: '#fff', borderRadius: 24, padding: 20,
+    backgroundColor: theme.colors.card, borderRadius: 24, padding: 20,
     shadowColor: PURPLE, shadowOpacity: 0.1, shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 }, elevation: 4,
   },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  catLabel: { fontSize: 12, color: '#64748B', fontWeight: '600', marginBottom: 4 },
-  amount: { fontSize: 26, fontWeight: '900', color: '#1E293B', letterSpacing: -0.5 },
+  catLabel: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: '600', marginBottom: 4 },
+  amount: { fontSize: 26, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: -0.5 },
   slash:  { color: '#CBD5E1', fontWeight: '400' },
-  total:  { fontSize: 18, fontWeight: '600', color: '#94A3B8' },
+  total:  { fontSize: 18, fontWeight: '600', color: theme.colors.textMuted },
   subLabel: { fontSize: 11, color: PURPLE, fontWeight: '700', marginTop: 2 },
 
   pctCircle: {
@@ -72,7 +73,7 @@ const s = StyleSheet.create({
     borderWidth: 3, borderColor: PURPLE + '30',
   },
   pctNum: { fontSize: 16, fontWeight: '900', color: PURPLE },
-  pctSub: { fontSize: 9,  fontWeight: '600', color: '#94A3B8' },
+  pctSub: { fontSize: 9,  fontWeight: '600', color: theme.colors.textMuted },
 
   track: { height: 8, borderRadius: 6, backgroundColor: '#EDE9FE', overflow: 'hidden', marginBottom: 16 },
   fill:  { height: '100%', borderRadius: 6, backgroundColor: PURPLE },
@@ -80,6 +81,11 @@ const s = StyleSheet.create({
   statsRow: { flexDirection: 'row', alignItems: 'center' },
   stat: { flex: 1, alignItems: 'center', gap: 3 },
   statDivider: { width: 1, height: 36, backgroundColor: '#E2E8F0' },
-  statLabel: { fontSize: 11, color: '#94A3B8', fontWeight: '600' },
+  statLabel: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
   statValue: { fontSize: 13, fontWeight: '800' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

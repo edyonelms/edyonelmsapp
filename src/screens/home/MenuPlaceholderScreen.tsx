@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Header from '../../components/Header';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 const MenuPlaceholderScreen = ({ route, navigation }: any) => {
   const title = route?.params?.title || 'Screen';
@@ -21,7 +21,7 @@ const MenuPlaceholderScreen = ({ route, navigation }: any) => {
 
 export default MenuPlaceholderScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -44,3 +44,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

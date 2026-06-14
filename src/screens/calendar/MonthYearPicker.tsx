@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import moment from 'moment';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { MONTHS, YEAR_RANGE } from './calendarTypes';
 
 const { width } = Dimensions.get('window');
@@ -165,14 +165,14 @@ export default MonthYearPicker;
 
 const CELL_W = (width - 40 - 30) / 4;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: '#00000070',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     overflow: 'hidden',
@@ -208,7 +208,7 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -231,7 +231,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 4,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
   },
   yearChipActive: { backgroundColor: theme.colors.primary },
   yearText: { fontSize: 14, fontWeight: '600', color: theme.colors.textSecondary },
@@ -251,7 +251,7 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
   },
   monthCellActive: { backgroundColor: theme.colors.primary },
   monthCellCurrent: {
@@ -267,7 +267,7 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: theme.radius.lg,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
   },
   cancelText: { fontSize: 15, fontWeight: '700', color: theme.colors.textSecondary },
@@ -280,3 +280,8 @@ const s = StyleSheet.create({
   },
   confirmText: { fontSize: 15, fontWeight: '700', color: theme.colors.white },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

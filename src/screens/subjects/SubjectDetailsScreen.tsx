@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import Header from '../../components/Header';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
@@ -209,7 +209,7 @@ const SubjectDetailsScreen = ({ route }: any) => {
 
 export default SubjectDetailsScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
 
@@ -281,3 +281,8 @@ const s = StyleSheet.create({
   },
   retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

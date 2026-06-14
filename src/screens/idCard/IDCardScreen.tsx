@@ -15,7 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { useFocusLoad } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   getIdCard,
   idCardErrorMessage,
@@ -326,7 +326,7 @@ const IDCardScreen = ({ navigation, route }: any) => {
 
 export default IDCardScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   content: { flex: 1, alignItems: 'center', paddingTop: 14 },
 
@@ -438,7 +438,7 @@ const s = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -680,3 +680,8 @@ const s = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

@@ -2,6 +2,7 @@ import React from 'react';
 import {  StyleSheet, Text, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
 import { FEE_DATA, fmt, PURPLE } from './feesData';
+import { theme, onThemeChange } from '../../utils/theme';
 
 
 const CAT_META: Record<
@@ -172,7 +173,7 @@ const OverallTab = () => {
 
 export default OverallTab;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   container: { paddingBottom: 32 },
 
   // Hero
@@ -225,7 +226,7 @@ const s = StyleSheet.create({
   heroStat: { flex: 1, alignItems: 'center' },
   heroStatLabel: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     fontWeight: '600',
     marginBottom: 3,
   },
@@ -243,7 +244,7 @@ const s = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1E293B',
+    color: theme.colors.textPrimary,
     marginHorizontal: 16,
     marginBottom: 10,
   },
@@ -252,7 +253,7 @@ const s = StyleSheet.create({
   catCard: {
     marginHorizontal: 16,
     marginBottom: 10,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 18,
     padding: 14,
     flexDirection: 'row',
@@ -273,15 +274,15 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   catInfo: { flex: 1, gap: 5 },
-  catName: { fontSize: 14, fontWeight: '800', color: '#1E293B' },
+  catName: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
   catBarTrack: {
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     overflow: 'hidden',
   },
   catBarFill: { height: '100%', borderRadius: 3 },
-  catSub: { fontSize: 11, color: '#64748B' },
+  catSub: { fontSize: 11, color: theme.colors.textSecondary },
   pctBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
   pctText: { fontSize: 13, fontWeight: '800' },
 
@@ -295,5 +296,10 @@ const s = StyleSheet.create({
     gap: 5,
   },
   statValue: { fontSize: 22, fontWeight: '900' },
-  statLabel: { fontSize: 11, fontWeight: '600', color: '#64748B' },
+  statLabel: { fontSize: 11, fontWeight: '600', color: theme.colors.textSecondary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

@@ -11,7 +11,7 @@ import {
 import { useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { Exam, STATUS_CONFIG, iconForType } from './examData';
@@ -261,7 +261,7 @@ const ExamDetailScreen = () => {
 
 export default ExamDetailScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: theme.spacing.lg, gap: 16, paddingBottom: 30 },
 
@@ -427,3 +427,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

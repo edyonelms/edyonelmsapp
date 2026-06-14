@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   ClassOption,
   ExamOption,
@@ -220,7 +220,7 @@ const SelectionWizard = ({ value, onChange }: Props) => {
 
 export default SelectionWizard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   wrap: { zIndex: 99 },
   trigger: {
     flexDirection: 'row',
@@ -314,3 +314,8 @@ const s = StyleSheet.create({
   },
   retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import {
@@ -423,7 +423,7 @@ const ReportCardScreen = ({ navigation }: any) => {
 
 export default ReportCardScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   listContent: {
     paddingHorizontal: 16,
@@ -447,7 +447,7 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.full,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderWidth: 1.5,
     borderColor: theme.colors.border,
   },
@@ -464,7 +464,7 @@ const s = StyleSheet.create({
 
   // Details card
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -536,7 +536,7 @@ const s = StyleSheet.create({
     elevation: 3,
   },
   thumb: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.sm,
     padding: 12,
     overflow: 'hidden',
@@ -654,7 +654,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.full,
     borderWidth: 1.5,
     borderColor: theme.colors.primary,
@@ -684,7 +684,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     padding: 16,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
@@ -706,7 +706,7 @@ const s = StyleSheet.create({
 
   // Paper
   paper: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -839,3 +839,8 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

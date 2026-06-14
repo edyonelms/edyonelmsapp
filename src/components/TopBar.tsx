@@ -14,7 +14,7 @@ import {
 } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 import VectorIcon from './VectorIcon';
 import AccountSwitcherSheet from './AccountSwitcherSheet';
 import { getActiveAccount, upsertAccount } from '../utils/accountStore';
@@ -189,7 +189,7 @@ const TopBar = ({
 
 export default TopBar;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   statusBackdrop: {
     position: 'absolute',
     left: 0,
@@ -271,3 +271,8 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

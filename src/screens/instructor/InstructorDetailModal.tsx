@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 interface InstructorDetailModalProps {
   visible: boolean;
@@ -229,14 +229,14 @@ const InstructorDetailModal = ({ visible, instructor, loading, onClose }: Instru
   );
 };
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '90%',
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 3,
     borderColor: '#fff',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     marginBottom: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -416,3 +416,7 @@ const styles = StyleSheet.create({
 });
 
 export default InstructorDetailModal;
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

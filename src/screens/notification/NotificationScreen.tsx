@@ -12,7 +12,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Role = 'student' | 'teacher';
@@ -419,8 +419,8 @@ const NotificationScreen = () => {
 
 export default NotificationScreen;
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: theme.colors.white },
+const __mk_styles = () => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: theme.colors.card },
 
   topBar: {
     flexDirection: 'row',
@@ -552,3 +552,8 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: { fontSize: 13, color: theme.colors.textMuted },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { QUIZ_SUBJECTS, Subject, Quiz, Question } from './quizData';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import VectorIcon from '../../components/VectorIcon';
@@ -686,8 +686,8 @@ const ResultChip = ({
 export default StudentQuizScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
+const __mk_s = () => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16 },
 
   // Dropdown
@@ -696,7 +696,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 13,
@@ -716,7 +716,7 @@ const s = StyleSheet.create({
     color: theme.colors.textPrimary,
   },
   dropList: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     marginTop: 4,
     borderWidth: 1,
@@ -749,7 +749,7 @@ const s = StyleSheet.create({
   // Stats bar
   statsBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     marginBottom: 16,
     padding: 14,
@@ -766,7 +766,7 @@ const s = StyleSheet.create({
 
   // Quiz card
   quizCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     marginBottom: 12,
     padding: 14,
@@ -809,7 +809,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -840,7 +840,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
@@ -853,7 +853,7 @@ const s = StyleSheet.create({
   progressBg: { height: 4, backgroundColor: theme.colors.border },
   progressFill: { height: 4, backgroundColor: PRIMARY, borderRadius: 2 },
   questionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 18,
     marginBottom: 16,
@@ -873,7 +873,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -916,7 +916,7 @@ const s = StyleSheet.create({
     gap: 6,
     paddingVertical: 13,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
   },
   skipText: {
     fontSize: 14,
@@ -938,7 +938,7 @@ const s = StyleSheet.create({
 
   // Result screen
   resultCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
@@ -981,7 +981,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   reviewCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -1028,3 +1028,8 @@ const s = StyleSheet.create({
   },
   homeText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

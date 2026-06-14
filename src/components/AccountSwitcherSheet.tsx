@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import VectorIcon from './VectorIcon';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 import {
   activateAccount,
   bootstrapCurrent,
@@ -528,7 +528,7 @@ const AddBody = (p: AddBodyProps) => (
 );
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-const av = StyleSheet.create({
+const __mk_av = () => StyleSheet.create({
   fallback: {
     backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
@@ -537,14 +537,14 @@ const av = StyleSheet.create({
   fallbackText: { color: theme.colors.primary, fontWeight: '800' },
 });
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 12,
@@ -596,7 +596,7 @@ const s = StyleSheet.create({
   removeBtn: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
   },
 
   // ─── Remove confirmation modal (mirrors the drawer logout modal) ──
@@ -656,7 +656,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
   confirmBtnGhost: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
   },
   confirmBtnGhostText: {
     color: theme.colors.textPrimary,
@@ -684,13 +684,13 @@ const s = StyleSheet.create({
   // ─── Add form ──
   addContent: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
   tabRow: {
-    flexDirection: 'row', backgroundColor: '#F1F5F9',
+    flexDirection: 'row', backgroundColor: theme.colors.border,
     borderRadius: 12, padding: 4, marginBottom: 18,
   },
   tab: {
     flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 8,
   },
-  tabActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 1 }, shadowRadius: 2, elevation: 1 },
+  tabActive: { backgroundColor: theme.colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 1 }, shadowRadius: 2, elevation: 1 },
   tabText: { fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary },
   tabTextActive: { color: theme.colors.textPrimary },
 
@@ -729,3 +729,10 @@ const s = StyleSheet.create({
 
   hint: { fontSize: 11, color: theme.colors.textMuted, textAlign: 'center', marginTop: 14 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let av = __mk_av();
+onThemeChange(() => { av = __mk_av(); });
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

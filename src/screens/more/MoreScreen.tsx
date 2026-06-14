@@ -9,7 +9,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 /**
  * "More" hub — links to the read-only info screens (About App, School Info,
@@ -124,7 +124,7 @@ const MoreScreen = () => {
 
 export default MoreScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16, paddingBottom: 32 },
 
@@ -132,7 +132,7 @@ const s = StyleSheet.create({
   sectionDesc: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 16 },
 
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     overflow: 'hidden',
     marginBottom: 12,
@@ -162,3 +162,8 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

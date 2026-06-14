@@ -13,7 +13,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   EXAMS,
   Exam,
@@ -290,7 +290,7 @@ const AdmitCardScreen = ({ navigation }: any) => {
 
 export default AdmitCardScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   listContent: {
     paddingHorizontal: 16,
@@ -301,7 +301,7 @@ const s = StyleSheet.create({
 
   // Exam card (announcement style)
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -352,7 +352,7 @@ const s = StyleSheet.create({
   // Generate box
   generateBox: {
     alignItems: 'center',
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     paddingVertical: 32,
     paddingHorizontal: 24,
@@ -400,7 +400,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -424,7 +424,7 @@ const s = StyleSheet.create({
 
   // Paper preview
   paper: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -557,7 +557,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.full,
     borderWidth: 1.5,
     borderColor: theme.colors.primary,
@@ -569,3 +569,8 @@ const s = StyleSheet.create({
     color: theme.colors.primary,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 
 // ─── Base shimmering block ─────────────────────────────────────────────────────
 export const Skeleton = ({
@@ -222,7 +222,7 @@ export const ScreenSkeleton = ({
 
 export default ScreenSkeleton;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   fill: { flex: 1, alignSelf: 'stretch', width: '100%', backgroundColor: theme.colors.background },
   container: { padding: 16, gap: 14 },
 
@@ -264,3 +264,8 @@ const s = StyleSheet.create({
   dashLegend: { flexDirection: 'row', gap: 14, marginTop: 12 },
   perfRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

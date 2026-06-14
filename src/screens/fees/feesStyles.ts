@@ -1,15 +1,15 @@
 import { Dimensions, StyleSheet } from 'react-native';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { PURPLE, PINK } from './feesData';
 
 export const CARD_W = Dimensions.get('window').width - 32;
 
-export const shared = StyleSheet.create({
+const __mk_shared = () => StyleSheet.create({
   // Card shell
   card: {
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     padding: 18,
     shadowColor: '#000',
@@ -78,3 +78,8 @@ export const shared = StyleSheet.create({
   penaltyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 2 },
   penaltyNoteText: { fontSize: 11, color: '#EF4444', fontStyle: 'italic', flex: 1, lineHeight: 16 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+export let shared = __mk_shared();
+onThemeChange(() => { shared = __mk_shared(); });

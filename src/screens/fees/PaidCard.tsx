@@ -4,6 +4,7 @@ import VectorIcon from '../../components/VectorIcon';
 import { fmt } from './feesData';
 import FeeRow from './FeeRow';
 import { shared } from './feesStyles';
+import { theme, onThemeChange } from '../../utils/theme';
 
 interface Props {
   item: { installment: string; dueDate: string; penalty: number; paidOn: string; subtotal: number };
@@ -44,10 +45,10 @@ const PaidCard = ({ item }: Props) => (
 
 export default PaidCard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   card: {
     marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: '#fff', borderRadius: 24, overflow: 'hidden',
+    backgroundColor: theme.colors.card, borderRadius: 24, overflow: 'hidden',
     shadowColor: '#10B981', shadowOpacity: 0.1,
     shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 4,
   },
@@ -59,7 +60,7 @@ const s = StyleSheet.create({
   badgeText: { fontSize: 12, fontWeight: '700', color: '#10B981' },
   paidChip: { fontSize: 11, fontWeight: '700', color: '#10B981', backgroundColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
 
-  installmentTitle: { fontSize: 17, fontWeight: '900', color: '#1E293B', marginBottom: 12 },
+  installmentTitle: { fontSize: 17, fontWeight: '900', color: theme.colors.textPrimary, marginBottom: 12 },
 
   amountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F0FDF4', borderRadius: 14, padding: 14, marginBottom: 12 },
   amountLabel: { fontSize: 13, color: '#10B981', fontWeight: '600' },
@@ -73,3 +74,8 @@ const s = StyleSheet.create({
   },
   receiptBtnText: { fontSize: 14, fontWeight: '700', color: '#10B981' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

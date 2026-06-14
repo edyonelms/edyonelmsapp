@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import VectorIcon from '../components/VectorIcon';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 
 import StudentHomeScreen from '../screens/home/student/StudentHomeScreen';
 import TeacherHomeScreen from '../screens/home/teacher/TeacherHomeScreen';
@@ -155,7 +155,7 @@ const TabNavigator = ({ route }: any) => {
 
 export default TabNavigator;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   quickLinkWrapper: {
     flex: 1,
     alignItems: 'center',
@@ -182,3 +182,8 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.surface,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

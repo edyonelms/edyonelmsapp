@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import {
@@ -622,7 +622,7 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
 
 export default TeacherSyllabusScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16 },
 
@@ -875,3 +875,8 @@ const s = StyleSheet.create({
   },
   modalAddText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

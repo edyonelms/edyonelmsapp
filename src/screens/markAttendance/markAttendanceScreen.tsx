@@ -29,7 +29,7 @@ import {
   type AttendanceStudent,
 } from '../../api/attendanceApi';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import constant from '../../utils/constant';
 import VectorIcon from '../../components/VectorIcon';
 import Header from '../../components/Header';
@@ -665,7 +665,7 @@ const MarkAttendanceScreen = () => {
 
 export default MarkAttendanceScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
 
   // Setup
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     width: 62,
     paddingVertical: 12,
     borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignItems: 'center',
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 
   dropdown: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -940,3 +940,8 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: { color: theme.colors.primary, fontWeight: '700', fontSize: 15 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

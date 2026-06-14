@@ -15,7 +15,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useFocusLoad } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { Chip } from '../../components/Charts';
 import {
   getStudentDashboard,
@@ -69,7 +69,7 @@ const BarChart = ({ data, color, maxVal }: { data: { label: string; value: numbe
     })}
   </View>
 );
-const bc = StyleSheet.create({
+const __mk_bc = () => StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 130, paddingTop: 20 },
   col: { flex: 1, alignItems: 'center', gap: 4 },
   val: { fontSize: 10, fontWeight: '700', color: theme.colors.textSecondary },
@@ -110,7 +110,7 @@ const StatRow = ({ icon, label, value, color, bg }: { icon: string; label: strin
     <Text style={[sr.value, { color }]}>{value}</Text>
   </View>
 );
-const sr = StyleSheet.create({
+const __mk_sr = () => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   icon: { width: 28, height: 28, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   label: { flex: 1, fontSize: 12, color: theme.colors.textSecondary, fontWeight: '500' },
@@ -128,7 +128,7 @@ const SubjectBar = ({ name, pct, color }: { name: string; pct: number; color: st
     <Text style={[sb.pct, { color }]}>{pct}%</Text>
   </View>
 );
-const sb = StyleSheet.create({
+const __mk_sb = () => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   name: { fontSize: 11, fontWeight: '600', color: theme.colors.textSecondary, width: 76 },
@@ -476,7 +476,7 @@ const AnalyticsScreen = () => {
 
 export default AnalyticsScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, gap: 14, paddingBottom: 30 },
 
@@ -537,3 +537,14 @@ const s = StyleSheet.create({
   },
   retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let bc = __mk_bc();
+onThemeChange(() => { bc = __mk_bc(); });
+let sr = __mk_sr();
+onThemeChange(() => { sr = __mk_sr(); });
+let sb = __mk_sb();
+onThemeChange(() => { sb = __mk_sb(); });
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

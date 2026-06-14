@@ -12,7 +12,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { getStudentMarks, marksErrorMessage } from '../../api/marksApi';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ const ProgressBar = ({ pct, color }: { pct: number; color: string }) => (
   </View>
 );
 
-const pStyles = StyleSheet.create({
+const __mk_pStyles = () => StyleSheet.create({
   barBg: {
     flex: 1,
     height: 6,
@@ -539,7 +539,7 @@ const PerformanceScreen = () => {
 
 export default PerformanceScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: theme.spacing.lg, gap: 16, paddingBottom: 30 },
 
@@ -771,3 +771,10 @@ const styles = StyleSheet.create({
   gradeBadgeSmText: { fontSize: 13, fontWeight: '800' },
   gradeRange: { fontSize: 12, color: theme.colors.textSecondary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let pStyles = __mk_pStyles();
+onThemeChange(() => { pStyles = __mk_pStyles(); });
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

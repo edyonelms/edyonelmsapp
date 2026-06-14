@@ -9,7 +9,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   EXAMS,
   Exam,
@@ -175,7 +175,7 @@ const SeatingPlanScreen = ({ navigation }: any) => {
 
 export default SeatingPlanScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   listContent: {
     paddingHorizontal: 16,
@@ -197,7 +197,7 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -222,7 +222,7 @@ const s = StyleSheet.create({
 
   // Card (announcement style)
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -313,3 +313,8 @@ const s = StyleSheet.create({
   },
   emptySubtitle: { fontSize: 13, color: theme.colors.textMuted },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

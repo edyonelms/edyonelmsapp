@@ -14,7 +14,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   getStudentExamCopies,
   marksErrorMessage,
@@ -248,7 +248,7 @@ const ExamCopyScreen = ({ navigation }: any) => {
 
 export default ExamCopyScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   listContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40, gap: 14 },
 
@@ -301,7 +301,7 @@ const s = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -372,3 +372,8 @@ const s = StyleSheet.create({
   emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
   emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

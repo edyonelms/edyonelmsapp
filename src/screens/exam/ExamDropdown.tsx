@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { Exam, EXAMS, iconForType } from './examData';
 
 interface Props {
@@ -89,7 +89,7 @@ const ExamDropdown = ({ selected, onSelect }: Props) => {
 
 export default ExamDropdown;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   wrap: { zIndex: 99 },
   btn: {
     flexDirection: 'row',
@@ -148,3 +148,8 @@ const s = StyleSheet.create({
   itemTitleActive: { color: theme.colors.primary, fontWeight: '700' },
   itemSub: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

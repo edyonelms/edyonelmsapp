@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import { CONTENT_STORE, SUBJECTS } from './contentData';
@@ -367,7 +367,7 @@ const StudentContentScreen = ({ navigation }: any) => {
 
 export default StudentContentScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
 
@@ -595,3 +595,8 @@ const s = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

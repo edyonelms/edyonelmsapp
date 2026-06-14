@@ -8,7 +8,7 @@ import {
   Image,
 } from 'react-native';
 import React, { useState } from 'react';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 
 const SelectUserScreen = () => {
@@ -100,10 +100,10 @@ const SelectUserScreen = () => {
 
 export default SelectUserScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
   },
   container: {
     flexGrow: 1,
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: theme.colors.border,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
@@ -180,3 +180,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

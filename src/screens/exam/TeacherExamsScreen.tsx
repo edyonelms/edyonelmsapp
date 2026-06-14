@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import {
@@ -294,7 +294,7 @@ const TeacherExamsScreen = () => {
 
 export default TeacherExamsScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
 
   searchWrapper: {
@@ -518,3 +518,8 @@ const styles = StyleSheet.create({
   },
   retryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

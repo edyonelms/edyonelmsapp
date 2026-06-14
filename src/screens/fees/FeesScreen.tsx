@@ -12,7 +12,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   CATEGORIES,
   FEE_DATA,
@@ -152,7 +152,7 @@ const OverallTab = () => {
           paddingTop: 6,
           marginHorizontal: 16,
           marginBottom: 10,
-          backgroundColor: '#fff',
+          backgroundColor: theme.colors.card,
           borderRadius: 18,
           alignItems: 'center',
           gap: 12,
@@ -612,13 +612,13 @@ const FeesScreen = ({ navigation }: any) => {
 export default FeesScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
+const __mk_s = () => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 40 },
 
   // Tab bar
   tabBarWrap: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -637,7 +637,7 @@ const s = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1E293B',
+    color: theme.colors.textPrimary,
     marginHorizontal: 16,
     marginTop: 4,
     marginBottom: 10,
@@ -701,7 +701,7 @@ const s = StyleSheet.create({
     color: '#4ADE80',
     marginBottom: 2,
   },
-  heroStatLbl: { fontSize: 10, color: '#94A3B8', fontWeight: '600' },
+  heroStatLbl: { fontSize: 10, color: theme.colors.textMuted, fontWeight: '600' },
   heroStatDivider: { width: 1, height: 30, backgroundColor: '#ffffff18' },
   heroTrack: {
     height: 6,
@@ -715,7 +715,7 @@ const s = StyleSheet.create({
   catCard: {
     marginHorizontal: 16,
     marginBottom: 10,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 18,
     paddingVertical: 6,
     // padding: 14,
@@ -736,19 +736,19 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  catName: { fontSize: 14, fontWeight: '800', color: '#1E293B' },
+  catName: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
   catPct: { fontSize: 13, fontWeight: '800' },
   catTrack: {
     height: 6,
     borderRadius: 4,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     overflow: 'hidden',
     marginBottom: 5,
   },
   catFill: { height: '100%', borderRadius: 4 },
   catBottomRow: { flexDirection: 'row', justifyContent: 'space-between' },
   catPaid: { fontSize: 11, fontWeight: '700' },
-  catTotal: { fontSize: 11, color: '#94A3B8', fontWeight: '600' },
+  catTotal: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
 
   // Quick stats
   quickRow: {
@@ -765,14 +765,14 @@ const s = StyleSheet.create({
     gap: 4,
   },
   quickVal: { fontSize: 22, fontWeight: '900' },
-  quickLbl: { fontSize: 10, fontWeight: '600', color: '#64748B' },
+  quickLbl: { fontSize: 10, fontWeight: '600', color: theme.colors.textSecondary },
 
   // ── Summary card ──
   summaryCard: {
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 20,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 22,
     padding: 18,
     borderTopWidth: 4,
@@ -790,18 +790,18 @@ const s = StyleSheet.create({
   },
   summaryEyebrow: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     fontWeight: '600',
     marginBottom: 4,
   },
   summaryBig: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#1E293B',
+    color: theme.colors.textPrimary,
     letterSpacing: -0.5,
   },
   summarySlash: { color: '#CBD5E1', fontWeight: '400', fontSize: 20 },
-  summaryTotal: { fontSize: 18, fontWeight: '600', color: '#94A3B8' },
+  summaryTotal: { fontSize: 18, fontWeight: '600', color: theme.colors.textMuted },
   summarySubLabel: { fontSize: 11, fontWeight: '700', marginTop: 2 },
   pctRing: {
     width: 62,
@@ -813,11 +813,11 @@ const s = StyleSheet.create({
     backgroundColor: '#FAFAFA',
   },
   pctRingNum: { fontSize: 15, fontWeight: '900' },
-  pctRingSub: { fontSize: 9, color: '#94A3B8', fontWeight: '600' },
+  pctRingSub: { fontSize: 9, color: theme.colors.textMuted, fontWeight: '600' },
   summaryTrack: {
     height: 8,
     borderRadius: 5,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     overflow: 'hidden',
     marginBottom: 12,
   },
@@ -825,14 +825,14 @@ const s = StyleSheet.create({
   summaryFooter: { flexDirection: 'row', gap: 20 },
   summaryFooterItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   footerDot: { width: 7, height: 7, borderRadius: 4 },
-  footerLbl: { fontSize: 11, color: '#94A3B8', fontWeight: '600' },
+  footerLbl: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
   footerVal: { fontSize: 12, fontWeight: '800' },
 
   // Shared card
   card: {
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     padding: 16,
     shadowColor: '#000',
@@ -848,8 +848,8 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
   cardTitleDot: { width: 4, height: 18, borderRadius: 3 },
-  cardTitleText: { fontSize: 14, fontWeight: '800', color: '#1E293B' },
-  divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 10 },
+  cardTitleText: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
+  divider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 10 },
 
   // Row
   row: {
@@ -858,16 +858,16 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  rowLabel: { fontSize: 13, color: '#94A3B8', fontWeight: '500' },
-  rowLabelBold: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
-  rowValue: { fontSize: 13, fontWeight: '700', color: '#1E293B' },
-  rowValueBold: { fontSize: 16, fontWeight: '900', color: '#1E293B' },
+  rowLabel: { fontSize: 13, color: theme.colors.textMuted, fontWeight: '500' },
+  rowLabelBold: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  rowValue: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+  rowValueBold: { fontSize: 16, fontWeight: '900', color: theme.colors.textPrimary },
 
   // Upcoming card
   upcomingCard: {
     marginHorizontal: 16,
     marginBottom: 4,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 22,
     padding: 18,
     borderTopWidth: 4,
@@ -903,7 +903,7 @@ const s = StyleSheet.create({
   upcomingTitle: {
     fontSize: 17,
     fontWeight: '900',
-    color: '#1E293B',
+    color: theme.colors.textPrimary,
     marginBottom: 12,
   },
   amountBox: {
@@ -914,7 +914,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  amountBoxLabel: { fontSize: 13, color: '#64748B', fontWeight: '600' },
+  amountBoxLabel: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: '600' },
   amountBoxValue: { fontSize: 22, fontWeight: '900' },
   upcomingDetails: {
     backgroundColor: '#FAFAFA',
@@ -969,7 +969,7 @@ const s = StyleSheet.create({
   paidCard: {
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 22,
     padding: 18,
     borderTopWidth: 4,
@@ -1005,7 +1005,7 @@ const s = StyleSheet.create({
   paidTitle: {
     fontSize: 17,
     fontWeight: '900',
-    color: '#1E293B',
+    color: theme.colors.textPrimary,
     marginBottom: 12,
   },
   paidAmountBox: {
@@ -1037,3 +1037,8 @@ const s = StyleSheet.create({
   },
   receiptBtnText: { fontSize: 14, fontWeight: '700', color: '#10B981' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import { Storage } from '../../utils/storage';
@@ -156,10 +156,10 @@ const OnboardingScreen: React.FC = () => {
 
 export default OnboardingScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
   },
   slide: {
     width: width,
@@ -231,3 +231,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

@@ -13,7 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 const { width } = Dimensions.get('window');
 // 4 columns: 16px page padding each side + 14px card padding each side + 3 gaps
@@ -118,9 +118,9 @@ const CATEGORIES: Category[] = [
     accent: '#64748B',
     accentBg: '#F1F5F9',
     links: [
-      { label: 'Settings',     icon: 'settings-outline',      color: '#64748B', bg: '#F1F5F9', route: 'Settings',         roles: ['student', 'teacher'] },
+      { label: 'Settings',     icon: 'settings-outline',      color: theme.colors.textSecondary, bg: '#F1F5F9', route: 'Settings',         roles: ['student', 'teacher'] },
       { label: 'ID Card',      icon: 'id-card-outline',       color: '#4F46E5', bg: '#E0E7FF', route: 'IDCard',           roles: ['student', 'teacher'] },
-      { label: 'More',         icon: 'apps-outline',          color: '#64748B', bg: '#F1F5F9', route: 'More',             roles: ['student', 'teacher'] },
+      { label: 'More',         icon: 'apps-outline',          color: theme.colors.textSecondary, bg: '#F1F5F9', route: 'More',             roles: ['student', 'teacher'] },
     ],
   },
 ];
@@ -408,12 +408,12 @@ const QuickLinksScreen = () => {
 
 export default QuickLinksScreen;
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F1F5F9' },
+const __mk_s = () => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.border },
 
   // Heading
   header: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     paddingHorizontal: 16,
     paddingTop: theme.spacing.sm,
     paddingBottom: theme.spacing.sm,
@@ -432,7 +432,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginHorizontal: 16,
     marginTop: 14,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -455,7 +455,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderWidth: 1.5,
     borderColor: theme.colors.primary,
     borderRadius: theme.radius.full,
@@ -468,7 +468,7 @@ const s = StyleSheet.create({
     top: 44,
     right: 0,
     minWidth: 210,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -510,7 +510,7 @@ const s = StyleSheet.create({
 
   // Grid card
   gridCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 18,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -556,7 +556,7 @@ const s = StyleSheet.create({
   // Empty
   emptyBox: {
     alignItems: 'center', paddingVertical: 36,
-    backgroundColor: '#fff', borderRadius: 18,
+    backgroundColor: theme.colors.card, borderRadius: 18,
     gap: 6,
   },
   emptyIconWrap: {
@@ -568,3 +568,8 @@ const s = StyleSheet.create({
   emptyTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
   emptySubtitle: { fontSize: 12, color: theme.colors.textMuted },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

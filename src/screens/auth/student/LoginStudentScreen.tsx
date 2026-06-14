@@ -12,7 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { theme } from '../../../utils/theme';
+import { theme, onThemeChange } from '../../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import VectorIcon from '../../../components/VectorIcon';
 import { studentLogin } from '../../../api/authApi';
@@ -269,8 +269,8 @@ const LoginStudentScreen = () => {
 
 export default LoginStudentScreen;
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: theme.colors.white },
+const __mk_styles = () => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: theme.colors.card },
   backBtn: {
     padding: theme.spacing.lg,
     flexDirection: 'row',
@@ -381,3 +381,8 @@ const styles = StyleSheet.create({
   buttonDisabled: { backgroundColor: '#B0B0B0' },
   buttonText: { color: theme.colors.white, fontWeight: '600', fontSize: 16 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

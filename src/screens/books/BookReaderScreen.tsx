@@ -12,7 +12,7 @@ import {
 import Pdf from 'react-native-pdf';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -146,7 +146,7 @@ const BookReaderScreen = ({ navigation, route }: any) => {
 
 export default BookReaderScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
@@ -222,3 +222,8 @@ const s = StyleSheet.create({
   },
   loadingText: { fontSize: 14, color: theme.colors.textSecondary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

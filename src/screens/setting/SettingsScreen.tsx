@@ -14,7 +14,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange, useThemeMode } from '../../utils/theme';
 import { Biometrics } from '../../utils/biometrics';
 
 const NOTIFICATIONS_KEY = 'notifications_enabled';
@@ -37,6 +37,9 @@ const SettingsScreen = () => {
 
   // ── Notifications (local toggle for now, persisted in AsyncStorage) ─────────
   const [notifEnabled, setNotifEnabled] = useState(true);
+
+  // ── Appearance (light / dark) ───────────────────────────────────────────────
+  const { isDark, toggle: toggleTheme } = useThemeMode();
 
   useEffect(() => {
     (async () => {
@@ -142,6 +145,23 @@ const SettingsScreen = () => {
           }
         />
 
+        {/* Dark mode toggle */}
+        <SettingCard
+          accent="#6366F1"
+          icon={isDark ? 'moon' : 'sunny'}
+          iconSet="Ionicons"
+          title="Dark Mode"
+          subtitle={isDark ? 'Dark theme is on' : 'Light theme is on'}
+          trailing={
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: theme.colors.border, true: '#C7D2FE' }}
+              thumbColor={isDark ? '#6366F1' : '#f4f3f4'}
+            />
+          }
+        />
+
         <Text style={[s.sectionTitle, { marginTop: 8 }]}>Account</Text>
         <Text style={s.sectionDesc}>Security options for your account.</Text>
 
@@ -204,7 +224,7 @@ const SettingCard = ({
 
 export default SettingsScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16, paddingBottom: 32 },
 
@@ -212,7 +232,7 @@ const s = StyleSheet.create({
   sectionDesc: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 16 },
 
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     overflow: 'hidden',
     marginBottom: 12,
@@ -242,3 +262,8 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

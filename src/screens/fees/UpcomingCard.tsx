@@ -4,6 +4,7 @@ import VectorIcon from '../../components/VectorIcon';
 import { fmt, PURPLE, PINK } from './feesData';
 import FeeRow from './FeeRow';
 import { shared } from './feesStyles';
+import { theme, onThemeChange } from '../../utils/theme';
 
 const CARD_W = Dimensions.get('window').width - 32;
 
@@ -59,10 +60,10 @@ const UpcomingCard = ({ item }: Props) => (
 
 export default UpcomingCard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   card: {
     marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: '#fff', borderRadius: 24,
+    backgroundColor: theme.colors.card, borderRadius: 24,
     overflow: 'hidden',
     shadowColor: PURPLE, shadowOpacity: 0.1,
     shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 5,
@@ -75,7 +76,7 @@ const s = StyleSheet.create({
   badgeText: { fontSize: 12, fontWeight: '700', color: '#F59E0B' },
   dueChip: { fontSize: 11, fontWeight: '700', color: '#EF4444', backgroundColor: '#FEE2E2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
 
-  installmentTitle: { fontSize: 17, fontWeight: '900', color: '#1E293B', marginBottom: 12 },
+  installmentTitle: { fontSize: 17, fontWeight: '900', color: theme.colors.textPrimary, marginBottom: 12 },
 
   amountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F5F3FF', borderRadius: 14, padding: 14, marginBottom: 12 },
   amountLabel: { fontSize: 13, color: PURPLE, fontWeight: '600' },
@@ -87,8 +88,8 @@ const s = StyleSheet.create({
   noteText: { fontSize: 11, color: '#EF4444', fontStyle: 'italic', flex: 1, lineHeight: 16 },
 
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  totalLabel: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
-  totalValue: { fontSize: 18, fontWeight: '900', color: '#1E293B' },
+  totalLabel: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  totalValue: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
 
   payBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -98,3 +99,8 @@ const s = StyleSheet.create({
   },
   payBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import { Biometrics, isPromptInProgress } from '../utils/biometrics';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 
 /**
  * Wraps the app and dims the dashboard while the system biometric prompt is
@@ -125,7 +125,7 @@ const AppLock = ({
 
 export default AppLock;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   flex: { flex: 1 },
   overlay: {
     position: 'absolute',
@@ -137,3 +137,8 @@ const s = StyleSheet.create({
     elevation: 999,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

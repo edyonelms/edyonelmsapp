@@ -13,7 +13,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { getInstructors, getInstructorDetails } from '../../api/instructorApi';
@@ -268,8 +268,8 @@ const InstructorScreen = () => {
 
 export default InstructorScreen;
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F1F5F9' },
+const __mk_styles = () => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: theme.colors.border },
   list: { padding: 12, paddingBottom: 30 },
   listEmpty: { flexGrow: 1 },
   row: { justifyContent: 'space-between', marginBottom: 0 },
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 22,
     marginBottom: 16,
     overflow: 'visible',
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
     borderWidth: 3,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     alignSelf: 'center',
     marginTop: -34,
     overflow: 'visible',
@@ -424,3 +424,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

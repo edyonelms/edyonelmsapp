@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { Selection } from './uploadData';
 
 interface Props {
@@ -52,10 +52,10 @@ const SelectionCard = ({ selection }: Props) => (
 
 export default SelectionCard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -96,3 +96,8 @@ const s = StyleSheet.create({
     textAlign: 'right',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

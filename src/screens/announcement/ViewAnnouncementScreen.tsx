@@ -16,7 +16,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { TAG_META } from './announcementData';
 import type { Announcement } from './announcementData';
 import AttachmentPreviewModal from './AttachmentPreviewModal';
@@ -292,7 +292,7 @@ const ViewAnnouncementScreen = ({ navigation, route }: any) => {
 
 export default ViewAnnouncementScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16, paddingBottom: 40 },
   centeredBox: {
@@ -309,7 +309,7 @@ const s = StyleSheet.create({
 
   // Single card
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     overflow: 'hidden',
     shadowColor: theme.colors.shadow,
@@ -393,7 +393,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
   },
   attachIconBox: {
     width: 40,
@@ -430,3 +430,8 @@ const s = StyleSheet.create({
   },
   creatorEmail: { fontSize: 13, color: theme.colors.textSecondary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

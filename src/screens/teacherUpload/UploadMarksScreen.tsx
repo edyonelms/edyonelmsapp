@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import SelectionWizard from './SelectionWizard';
@@ -257,7 +257,7 @@ const UploadMarksScreen = ({ navigation }: any) => {
 
 export default UploadMarksScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
   list: { paddingHorizontal: theme.spacing.lg, paddingTop: 14, paddingBottom: 30 },
 
@@ -329,7 +329,7 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.sm,
     borderWidth: 1.5,
     borderColor: theme.colors.border,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '700',
@@ -395,3 +395,8 @@ const s = StyleSheet.create({
   },
   rosterRetryText: { fontSize: 13, fontWeight: '700', color: theme.colors.primary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

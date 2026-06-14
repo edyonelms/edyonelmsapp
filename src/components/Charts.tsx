@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import VectorIcon from './VectorIcon';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 
 // ─── Chip ────────────────────────────────────────────────────────────────────
 export const Chip = ({
@@ -268,7 +268,7 @@ export const ChartCard = ({
   </View>
 );
 
-const c = StyleSheet.create({
+const __mk_c = () => StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,12 +281,12 @@ const c = StyleSheet.create({
   chipValue: { fontWeight: '900' },
 });
 
-const d = StyleSheet.create({
+const __mk_d = () => StyleSheet.create({
   clip: { position: 'absolute', overflow: 'hidden' },
   donutSub: { fontSize: 9, color: theme.colors.textMuted, fontWeight: '700' },
 });
 
-const mb = StyleSheet.create({
+const __mk_mb = () => StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingTop: 18 },
   col: { flex: 1, alignItems: 'center', gap: 5 },
   val: { fontSize: 10, fontWeight: '800', color: theme.colors.textSecondary },
@@ -307,7 +307,7 @@ const mb = StyleSheet.create({
   },
 });
 
-const hb = StyleSheet.create({
+const __mk_hb = () => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   name: {
@@ -327,7 +327,7 @@ const hb = StyleSheet.create({
   val: { fontSize: 11, fontWeight: '800', width: 38, textAlign: 'right' },
 });
 
-const sbar = StyleSheet.create({
+const __mk_sbar = () => StyleSheet.create({
   track: {
     flexDirection: 'row',
     borderRadius: theme.radius.full,
@@ -340,7 +340,7 @@ const sbar = StyleSheet.create({
   legendText: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '500' },
 });
 
-const wd = StyleSheet.create({
+const __mk_wd = () => StyleSheet.create({
   row: { flexDirection: 'row', gap: 6 },
   cell: {
     flex: 1,
@@ -353,7 +353,7 @@ const wd = StyleSheet.create({
   label: { fontSize: 10, fontWeight: '700', color: theme.colors.textSecondary },
 });
 
-const cc = StyleSheet.create({
+const __mk_cc = () => StyleSheet.create({
   card: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
@@ -373,3 +373,20 @@ const cc = StyleSheet.create({
   },
   title: { flex: 1, fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let c = __mk_c();
+onThemeChange(() => { c = __mk_c(); });
+let d = __mk_d();
+onThemeChange(() => { d = __mk_d(); });
+let mb = __mk_mb();
+onThemeChange(() => { mb = __mk_mb(); });
+let hb = __mk_hb();
+onThemeChange(() => { hb = __mk_hb(); });
+let sbar = __mk_sbar();
+onThemeChange(() => { sbar = __mk_sbar(); });
+let wd = __mk_wd();
+onThemeChange(() => { wd = __mk_wd(); });
+let cc = __mk_cc();
+onThemeChange(() => { cc = __mk_cc(); });

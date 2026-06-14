@@ -14,7 +14,7 @@ import TopBar from '../../../components/TopBar';
 import VectorIcon from '../../../components/VectorIcon';
 import AppRefreshControl from '../../../components/AppRefreshControl';
 import { useRefresh } from '../../../hooks/useRefresh';
-import { theme } from '../../../utils/theme';
+import { theme, onThemeChange } from '../../../utils/theme';
 import { Chip, ChartCard, Donut, MiniBars, StackedBar } from '../../../components/Charts';
 import {
   getTeacherDashboard,
@@ -333,7 +333,7 @@ const TeacherHomeScreen = () => {
 
 export default TeacherHomeScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 20 },
 
@@ -490,3 +490,8 @@ const s = StyleSheet.create({
   noticeTitle: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
   noticeTime: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

@@ -12,7 +12,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import type { Chapter, Question, Quiz, Subject } from './quizData';
 import { QUIZ_SUBJECTS } from './quizData';
 
@@ -604,8 +604,8 @@ const TeacherQuizScreen = ({ navigation }: any) => {
 
 export default TeacherQuizScreen;
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
+const __mk_s = () => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16 },
 
   // Dropdown
@@ -614,7 +614,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 13,
@@ -634,7 +634,7 @@ const s = StyleSheet.create({
     color: theme.colors.textPrimary,
   },
   dropList: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     marginTop: 4,
     borderWidth: 1,
@@ -686,7 +686,7 @@ const s = StyleSheet.create({
 
   // Chapter card
   chapterCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -810,7 +810,7 @@ const s = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -904,7 +904,7 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 13,
     color: theme.colors.textPrimary,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
   },
   addQBtn: {
     flexDirection: 'row',
@@ -971,7 +971,7 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
   },
   cancelText: {
@@ -991,3 +991,8 @@ const s = StyleSheet.create({
   },
   saveText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

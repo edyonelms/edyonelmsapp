@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { STATUS_META } from './queryTypes';
 import type { Query } from './queryTypes';
 
@@ -86,7 +86,7 @@ const QueryCard = ({ item, onPress }: Props) => {
 
 export default QueryCard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   // Card (shared template)
   card: {
     backgroundColor: theme.colors.card,
@@ -147,3 +147,8 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

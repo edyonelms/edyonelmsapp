@@ -14,7 +14,7 @@ import TopBar from '../../../components/TopBar';
 import VectorIcon from '../../../components/VectorIcon';
 import AppRefreshControl from '../../../components/AppRefreshControl';
 import { useRefresh } from '../../../hooks/useRefresh';
-import { theme } from '../../../utils/theme';
+import { theme, onThemeChange } from '../../../utils/theme';
 import { Chip, ChartCard, Donut, HBar, WeekDots } from '../../../components/Charts';
 import {
   getStudentDashboard,
@@ -29,7 +29,7 @@ const { width } = Dimensions.get('window');
 const weekDotStyle = (status: string) => {
   if (status === 'present') return { color: '#16A34A', bg: '#DCFCE7' };
   if (status === 'absent') return { color: '#DC2626', bg: '#FEE2E2' };
-  return { color: '#94A3B8', bg: '#F1F5F9' };
+  return { color: theme.colors.textMuted, bg: '#F1F5F9' };
 };
 
 const examColors = (status: string) =>
@@ -332,7 +332,7 @@ export default StudentHomeScreen;
 
 const CARD_W = width * 0.38;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 20 },
 
@@ -485,3 +485,8 @@ const s = StyleSheet.create({
   noticeTitle: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
   noticeTime: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

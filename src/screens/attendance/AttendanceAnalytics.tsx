@@ -12,7 +12,7 @@ import {
 import moment from 'moment';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { STATUS_META } from './attendanceTypes';
 import { getMyAttendance } from '../../api/attendanceApi';
 
@@ -329,7 +329,7 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
 
 export default AttendanceAnalyticsModal;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: theme.spacing.lg, gap: 16, paddingBottom: 30 },
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -483,3 +483,8 @@ const s = StyleSheet.create({
     textAlign: 'right',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

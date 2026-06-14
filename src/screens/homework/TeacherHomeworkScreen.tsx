@@ -15,7 +15,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   getTeacherHomework,
   deleteHomework,
@@ -293,12 +293,12 @@ const TeacherHomeworkScreen = ({ navigation }: any) => {
 
 export default TeacherHomeworkScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
 
   // Date strip
   dateStripWrap: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     paddingTop: 10,
@@ -319,7 +319,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     gap: 2,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -338,7 +338,7 @@ const s = StyleSheet.create({
   dateNumActive: { color: '#fff' },
   dateMonth: { fontSize: 10, fontWeight: '600', color: theme.colors.textMuted },
   hwDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: PRIMARY, marginTop: 2 },
-  hwDotActive: { backgroundColor: '#fff' },
+  hwDotActive: { backgroundColor: theme.colors.card },
 
   // List
   scroll: { padding: theme.spacing.lg },
@@ -356,7 +356,7 @@ const s = StyleSheet.create({
   // HW card
   hwCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     marginBottom: 12,
     overflow: 'hidden',
@@ -424,3 +424,8 @@ const s = StyleSheet.create({
     elevation: 8,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

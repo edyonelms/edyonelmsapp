@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -122,7 +122,7 @@ const AttachmentPreviewModal = ({
 
 export default AttachmentPreviewModal;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: '#000000EE',
@@ -212,3 +212,8 @@ const s = StyleSheet.create({
   },
   doneBtnText: { fontSize: 15, fontWeight: '800', color: '#fff' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

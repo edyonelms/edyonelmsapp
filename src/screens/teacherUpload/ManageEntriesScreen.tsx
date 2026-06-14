@@ -13,7 +13,7 @@ import {
 import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import SelectionCard from './SelectionCard';
@@ -338,7 +338,7 @@ const ManageEntriesScreen = ({ navigation, route }: any) => {
 
 export default ManageEntriesScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   list: { paddingHorizontal: theme.spacing.lg, paddingTop: 14, paddingBottom: 30 },
 
@@ -386,7 +386,7 @@ const s = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
@@ -454,7 +454,7 @@ const s = StyleSheet.create({
     borderRadius: theme.radius.sm,
     borderWidth: 1.5,
     borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '800',
@@ -477,8 +477,13 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalBtnGhost: { backgroundColor: '#F1F5F9' },
+  modalBtnGhost: { backgroundColor: theme.colors.border },
   modalBtnGhostText: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
   modalBtnPrimary: { backgroundColor: theme.colors.primary },
   modalBtnPrimaryText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

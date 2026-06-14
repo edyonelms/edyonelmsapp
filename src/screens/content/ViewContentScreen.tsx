@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import { ContentItem, TYPE_META } from './contentData';
@@ -267,13 +267,13 @@ const ViewContentScreen = ({ navigation, route }: any) => {
 
 export default ViewContentScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16, paddingBottom: 40 },
 
   // Single card (announcement style)
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     overflow: 'hidden',
     shadowColor: theme.colors.shadow,
@@ -360,7 +360,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
   },
   attachIconBox: {
     width: 40,
@@ -393,3 +393,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

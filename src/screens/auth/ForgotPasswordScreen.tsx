@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
 import {
@@ -674,14 +674,14 @@ const ForgotPasswordScreen = () => {
 
 export default ForgotPasswordScreen;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
   },
   container: {
     flexGrow: 1,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
   },
@@ -848,3 +848,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

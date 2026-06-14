@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 import VectorIcon from './VectorIcon';
 
 // Logout-style confirmation dialog (matches the drawer's logout modal).
@@ -140,7 +140,7 @@ export const SuccessDialog = ({
   </Modal>
 );
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -193,7 +193,12 @@ const styles = StyleSheet.create({
   },
   btnFull: { marginTop: theme.spacing.xl },
   btnText: { fontSize: 15, fontWeight: '700' },
-  btnGhost: { backgroundColor: '#F1F5F9' },
+  btnGhost: { backgroundColor: theme.colors.border },
   btnGhostText: { color: theme.colors.textPrimary },
   btnConfirmText: { color: theme.colors.white },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

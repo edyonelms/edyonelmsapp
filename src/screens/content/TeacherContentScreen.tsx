@@ -7,7 +7,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import {
   addContent, ContentItem, CONTENT_STORE, ContentType,
   SUBJECTS, TYPE_META,
@@ -315,15 +315,15 @@ const TeacherContentScreen = ({ navigation }: any) => {
 export default TeacherContentScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
+const __mk_s = () => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16 },
 
   // Dropdown
   dropWrap: { marginBottom: 20, zIndex: 99 },
   dropBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13,
+    backgroundColor: theme.colors.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13,
     borderWidth: 1.5, borderColor: theme.colors.primaryLight,
     shadowColor: PRIMARY, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
@@ -331,7 +331,7 @@ const s = StyleSheet.create({
   dropIcon: { fontSize: 18 },
   dropSelected: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
   dropList: {
-    backgroundColor: '#fff', borderRadius: 14, marginTop: 4,
+    backgroundColor: theme.colors.card, borderRadius: 14, marginTop: 4,
     borderWidth: 1, borderColor: theme.colors.border,
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5, overflow: 'hidden',
   },
@@ -352,7 +352,7 @@ const s = StyleSheet.create({
 
   // Chapter card
   chapterCard: {
-    backgroundColor: '#fff', borderRadius: 16, marginBottom: 12, overflow: 'hidden',
+    backgroundColor: theme.colors.card, borderRadius: 16, marginBottom: 12, overflow: 'hidden',
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
   chapterHeader: {
@@ -397,12 +397,12 @@ const s = StyleSheet.create({
   typeBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
     paddingVertical: 8, borderRadius: 10,
-    borderWidth: 1.5, borderColor: theme.colors.border, backgroundColor: '#fff',
+    borderWidth: 1.5, borderColor: theme.colors.border, backgroundColor: theme.colors.card,
   },
   typeBtnText: { fontSize: 11, fontWeight: '800', color: theme.colors.textMuted },
   label: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary, marginBottom: 6, marginTop: 4 },
   input: {
-    backgroundColor: '#fff', borderRadius: 12,
+    backgroundColor: theme.colors.card, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12, fontSize: 14,
     color: theme.colors.textPrimary, borderWidth: 1.5, borderColor: theme.colors.border, marginBottom: 8,
   },
@@ -411,7 +411,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1.5, borderColor: theme.colors.border, borderStyle: 'dashed',
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
-    backgroundColor: '#fff', marginBottom: 8,
+    backgroundColor: theme.colors.card, marginBottom: 8,
   },
   filePickerText: { flex: 1, fontSize: 13, color: theme.colors.textMuted, fontWeight: '600' },
   errorBox: {
@@ -430,3 +430,8 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 48, gap: 8 },
   emptyText: { fontSize: 16, color: theme.colors.textSecondary, fontWeight: '700' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

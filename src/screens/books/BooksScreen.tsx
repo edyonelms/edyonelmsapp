@@ -11,7 +11,7 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import BookCard from './BookCard';
 import { subjectMetaFor } from './bookData';
 import { getBooks, type ApiBook } from '../../api/booksApi';
@@ -194,7 +194,7 @@ const BooksScreen = ({ navigation, route }: any) => {
 
 export default BooksScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
@@ -208,9 +208,9 @@ const s = StyleSheet.create({
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     borderRadius: theme.radius.full, paddingHorizontal: 14, paddingVertical: 7,
-    backgroundColor: theme.colors.white, borderWidth: 1.5, borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card, borderWidth: 1.5, borderColor: theme.colors.border,
   },
-  chipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
+  chipDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.card },
   chipText: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
   chipTextActive: { color: '#fff' },
 
@@ -229,3 +229,8 @@ const s = StyleSheet.create({
   emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
   emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center' },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

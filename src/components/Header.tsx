@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 import VectorIcon from './VectorIcon';
 import { useNavigation } from '@react-navigation/native';
 
@@ -17,19 +17,25 @@ interface HeaderProps {
   backgroundColor?: string;
 }
 
-const Header = ({ title, onBackPress, showBack = true, backgroundColor = '#fff' }: HeaderProps) => {
+const Header = ({ title, onBackPress, showBack = true, backgroundColor }: HeaderProps) => {
   const navigation = useNavigation<any>();
 
   const handleBackPress = () => {
     navigation.goBack();
   };
 
+  // Default to the themed surface so the header turns dark in dark mode.
+  const headerBg = backgroundColor ?? theme.colors.card;
+
   return (
     <>
-      {/* Status bar tinted with the light page background so it reads as a
-          separate strip from the white header — no gap/padding between them. */}
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.statusBar} translucent={false} />
-      <View style={[styles.container, { backgroundColor }]}>
+      {/* Status bar tinted with the page background; light icons in dark mode. */}
+      <StatusBar
+        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.statusBar}
+        translucent={false}
+      />
+      <View style={[styles.container, { backgroundColor: headerBg }]}>
         <View style={styles.side}>
           {showBack ? (
             <TouchableOpacity
@@ -59,7 +65,7 @@ const Header = ({ title, onBackPress, showBack = true, backgroundColor = '#fff' 
 
 export default Header;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -94,3 +100,8 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.sm,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

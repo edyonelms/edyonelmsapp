@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { TAG_META } from './announcementData';
 import type { Announcement } from './announcementData';
 
@@ -85,9 +85,9 @@ const AnnouncementCard = ({ item, onPress }: Props) => {
 
 export default AnnouncementCard;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -151,3 +151,8 @@ const s = StyleSheet.create({
     marginTop: 10,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

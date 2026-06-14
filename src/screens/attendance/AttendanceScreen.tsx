@@ -13,7 +13,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { STATUS_META } from './attendanceTypes';
 import type { AttendanceStatus } from './attendanceTypes';
 import MonthYearPicker from '../calendar/MonthYearPicker';
@@ -324,7 +324,7 @@ const AttendanceScreen = () => {
 
 export default AttendanceScreen;
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: theme.spacing.lg, paddingBottom: 32 },
 
@@ -556,3 +556,8 @@ const s = StyleSheet.create({
     backgroundColor: theme.colors.border,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

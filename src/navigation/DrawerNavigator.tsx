@@ -21,7 +21,7 @@ import {
 import { revokeAccountToken } from '../api/switchAccountApi';
 import TabNavigator from './TabNavigator';
 import SettingsScreen from '../screens/setting/SettingsScreen';
-import { theme } from '../utils/theme';
+import { theme, onThemeChange } from '../utils/theme';
 import VectorIcon from '../components/VectorIcon';
 import MoreScreen from '../screens/more/MoreScreen';
 import CalendarScreen from '../screens/calendar/CalendarScreen';
@@ -505,7 +505,7 @@ const DrawerNavigator = ({ route }: any) => {
 
 export default DrawerNavigator;
 
-const styles = StyleSheet.create({
+const __mk_styles = () => StyleSheet.create({
   header: {
     height: 70,
     width: '100%',
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   modalBtnGhost: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
   },
   modalBtnGhostText: {
     color: theme.colors.textPrimary,
@@ -645,3 +645,8 @@ const styles = StyleSheet.create({
     // opacity: 0.5,
   },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+let styles = __mk_styles();
+onThemeChange(() => { styles = __mk_styles(); });

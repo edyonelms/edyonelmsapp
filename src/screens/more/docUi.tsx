@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Header from '../../components/Header';
 import ScreenSkeleton from '../../components/Skeleton';
 import VectorIcon from '../../components/VectorIcon';
-import { theme } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 
 /**
  * Shared "announcement-style" building blocks for the More info screens
@@ -245,12 +245,12 @@ export const DocError = ({
   </View>
 );
 
-export const docStyles = StyleSheet.create({
+const __mk_docStyles = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { padding: 16, paddingBottom: 40, gap: 14 },
 });
 
-const s = StyleSheet.create({
+const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
@@ -267,7 +267,7 @@ const s = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
     overflow: 'hidden',
     shadowColor: theme.colors.shadow,
@@ -351,3 +351,10 @@ const s = StyleSheet.create({
   noDataTitle: { fontSize: 17, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 6 },
   noDataSub: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
 });
+
+
+// Themed stylesheets — rebuilt on light/dark toggle.
+export let docStyles = __mk_docStyles();
+onThemeChange(() => { docStyles = __mk_docStyles(); });
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });
