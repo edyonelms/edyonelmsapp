@@ -1,131 +1,101 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import ScreenSkeleton from '../../components/Skeleton';
+import React, { useState, useCallback } from 'react';
 import {
-  Dimensions,
   FlatList,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+import ScreenSkeleton from '../../components/Skeleton';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
-import { getInstructors, getInstructorDetails } from '../../api/instructorApi';
-import InstructorDetailModal from './InstructorDetailModal';
+import { getInstructors, Instructor } from '../../api/instructorApi';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 36) / 2;
+// A stable accent colour per instructor (announcement-card style).
+const ACCENTS = [
+  { color: '#4F46E5', bg: '#E0E7FF' },
+  { color: '#0EA5E9', bg: '#E0F2FE' },
+  { color: '#16A34A', bg: '#DCFCE7' },
+  { color: '#D97706', bg: '#FEF3C7' },
+  { color: '#DB2777', bg: '#FCE7F3' },
+  { color: '#7C3AED', bg: '#EDE9FE' },
+];
+const accentFor = (id: number) => ACCENTS[id % ACCENTS.length];
 
-const getGradient = (id: number) => {
-  const gradients = [
-    ['#6366F1', '#818CF8'],
-    ['#EC4899', '#F472B6'],
-    ['#F59E0B', '#FCD34D'],
-    ['#10B981', '#34D399'],
-    ['#3B82F6', '#60A5FA'],
-    ['#8B5CF6', '#A78BFA'],
-  ];
-  return gradients[id % gradients.length];
-};
+const initials = (name: string) =>
+  name
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
-const InstructorCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
-  const gradient = getGradient(item.id);
-  const subjectNames = item.subjects?.map((s: any) => s.name).join(', ') || 'No subjects';
+const InstructorCard = ({
+  item,
+  onProfile,
+  onChat,
+}: {
+  item: Instructor;
+  onProfile: () => void;
+  onChat: () => void;
+}) => {
+  const accent = accentFor(item.id);
+  const subjectNames =
+    item.subjects?.map(s => s.name).filter(Boolean).join(', ') || 'No subjects assigned';
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
-      {/* Gradient header bg */}
-      <LinearGradient
-        colors={gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cardHeader}
-      >
-        {/* Subject pill */}
-        <View style={styles.subjectPill}>
-          <Text style={styles.subjectText} numberOfLines={1}>
-            {subjectNames}
-          </Text>
-        </View>
-      </LinearGradient>
+    <TouchableOpacity activeOpacity={0.9} onPress={onProfile} style={s.card}>
+      <View style={[s.accent, { backgroundColor: accent.color }]} />
 
-      {/* Floating avatar */}
-      <View style={[styles.avatarWrapper, { borderColor: gradient[0] }]}>
-        {item.avatar ? (
-          <Image source={{ uri: item.avatar }} style={styles.avatarImg} />
-        ) : (
-          <LinearGradient colors={gradient} style={styles.avatarFallback}>
-            <Text style={styles.initials}>
-              {item.name
-                .split(' ')
-                .map((n: string) => n[0])
-                .join('')}
-            </Text>
-          </LinearGradient>
-        )}
-      </View>
+      <View style={s.inner}>
+        {/* Top row: avatar + name + subjects */}
+        <View style={s.topRow}>
+          {item.avatar ? (
+            <Image source={{ uri: item.avatar }} style={s.avatar} />
+          ) : (
+            <View style={[s.avatarFallback, { backgroundColor: accent.bg }]}>
+              <Text style={[s.avatarInitials, { color: accent.color }]}>
+                {initials(item.name || 'NA')}
+              </Text>
+            </View>
+          )}
 
-      {/* Body */}
-      <View style={styles.cardBody}>
-        <Text style={styles.name} numberOfLines={1}>
-          {item.name}
-        </Text>
-
-        {/* Info rows */}
-        <View style={styles.infoRow}>
-          <View
-            style={[
-              styles.iconBox,
-              { backgroundColor: gradient[0] + '18' },
-            ]}
-          >
-            <VectorIcon
-              iconSet="Feather"
-              iconName="mail"
-              size={11}
-              color={gradient[0]}
-            />
+          <View style={s.meta}>
+            <Text style={s.name} numberOfLines={1}>{item.name}</Text>
+            <View style={[s.subjectPill, { backgroundColor: accent.bg }]}>
+              <VectorIcon iconSet="Ionicons" iconName="book-outline" size={11} color={accent.color} />
+              <Text style={[s.subjectText, { color: accent.color }]} numberOfLines={1}>
+                {subjectNames}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.infoText} numberOfLines={1}>
-            {item.email}
-          </Text>
         </View>
 
-        <View style={styles.infoRow}>
-          <View
-            style={[
-              styles.iconBox,
-              { backgroundColor: gradient[0] + '18' },
-            ]}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="briefcase-outline"
-              size={11}
-              color={gradient[0]}
-            />
+        {/* Mobile number (instead of ID) */}
+        <View style={s.infoRow}>
+          <View style={[s.infoIcon, { backgroundColor: accent.bg }]}>
+            <VectorIcon iconSet="Feather" iconName="phone" size={12} color={accent.color} />
           </View>
-          <Text style={styles.infoText} numberOfLines={1}>
-            ID: {item.employee_id}
+          <Text style={s.infoText} numberOfLines={1}>
+            {item.phone || 'Mobile not available'}
           </Text>
         </View>
 
-        {/* Chat button */}
-        <View style={styles.callBtnWrapper}>
-          <LinearGradient
-            colors={gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.callBtn}
-          >
-            <Text style={styles.callBtnText}>View Profile</Text>
-          </LinearGradient>
+        {/* Actions: View Profile + Chat Now */}
+        <View style={s.btnRow}>
+          <TouchableOpacity style={s.ghostBtn} onPress={onProfile} activeOpacity={0.85}>
+            <VectorIcon iconSet="Feather" iconName="user" size={14} color={theme.colors.primary} />
+            <Text style={s.ghostBtnText}>View Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.primaryBtn} onPress={onChat} activeOpacity={0.9}>
+            <VectorIcon iconSet="Ionicons" iconName="chatbubble-ellipses-outline" size={14} color="#fff" />
+            <Text style={s.primaryBtnText}>Chat Now</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -133,25 +103,18 @@ const InstructorCard = ({ item, onPress }: { item: any; onPress: () => void }) =
 };
 
 const InstructorScreen = () => {
-  const [instructors, setInstructors] = useState<any[]>([]);
+  const navigation = useNavigation<any>();
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedInstructor, setSelectedInstructor] = useState<any>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
 
-  // Fetch instructors
   const fetchInstructors = useCallback(async () => {
-    console.log('[InstructorScreen] Fetching instructors...');
     setLoading(true);
     setError(null);
-    
     try {
       const data = await getInstructors(20);
-      console.log('[InstructorScreen] Instructors fetched:', data.length);
       setInstructors(data);
     } catch (err: any) {
-      console.error('[InstructorScreen] Error:', err?.message);
       setError(err?.message || 'Failed to load instructors');
     } finally {
       setLoading(false);
@@ -159,45 +122,19 @@ const InstructorScreen = () => {
   }, []);
 
   const { refreshing, onRefresh } = useRefresh(fetchInstructors);
-
   useFocusLoad(fetchInstructors);
 
-  // Handle instructor press - fetch details
-  const handleInstructorPress = async (instructor: any) => {
-    console.log('[InstructorScreen] Instructor pressed:', instructor.id);
-    setSelectedInstructor(instructor);
-    setModalVisible(true);
-    setDetailLoading(true);
-    
-    try {
-      const details = await getInstructorDetails(instructor.id);
-      console.log('[InstructorScreen] Details fetched successfully');
-      
-      // Merge details with existing instructor data
-      if (details?.data) {
-        setSelectedInstructor({
-          ...instructor,
-          ...details.data,
-        });
-      }
-    } catch (err: any) {
-      console.error('[InstructorScreen] Error fetching details:', err?.message);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
+  const openProfile = (item: Instructor) =>
+    navigation.navigate('InstructorProfile', { instructor: item });
 
-  const handleCloseModal = () => {
-    console.log('[InstructorScreen] Closing modal');
-    setModalVisible(false);
-    setSelectedInstructor(null);
-  };
+  // Chat Now → the chats screen.
+  const openChat = (_item: Instructor) => navigation.navigate('ChatsList');
 
   if (loading) {
     return (
-      <View style={styles.screen}>
+      <View style={s.screen}>
         <Header title="Instructors" />
-        <View style={styles.centeredBox}>
+        <View style={s.centeredBox}>
           <ScreenSkeleton variant="list" />
         </View>
       </View>
@@ -206,13 +143,13 @@ const InstructorScreen = () => {
 
   if (error) {
     return (
-      <View style={styles.screen}>
+      <View style={s.screen}>
         <Header title="Instructors" />
-        <View style={styles.centeredBox}>
+        <View style={s.centeredBox}>
           <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={36} color={theme.colors.textMuted} />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={fetchInstructors}>
-            <Text style={styles.retryText}>Retry</Text>
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={fetchInstructors}>
+            <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -220,47 +157,30 @@ const InstructorScreen = () => {
   }
 
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <Header title="Instructors" />
       <FlatList
         data={instructors}
-        keyExtractor={(item) => String(item.id)}
-        numColumns={2}
-        contentContainerStyle={[
-          styles.list,
-          instructors.length === 0 && styles.listEmpty,
-        ]}
-        columnWrapperStyle={instructors.length > 0 ? styles.row : undefined}
+        keyExtractor={item => String(item.id)}
+        contentContainerStyle={[s.list, instructors.length === 0 && s.listEmpty]}
         renderItem={({ item }) => (
-          <InstructorCard item={item} onPress={() => handleInstructorPress(item)} />
+          <InstructorCard
+            item={item}
+            onProfile={() => openProfile(item)}
+            onChat={() => openChat(item)}
+          />
         )}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <View style={styles.emptyIconRing}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="people-outline"
-                size={36}
-                color={theme.colors.primary}
-              />
+          <View style={s.emptyBox}>
+            <View style={s.emptyIconRing}>
+              <VectorIcon iconSet="Ionicons" iconName="people-outline" size={36} color={theme.colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>No instructors found</Text>
-            <Text style={styles.emptySubtitle}>
-              No instructors have been added yet.
-            </Text>
+            <Text style={s.emptyTitle}>No instructors found</Text>
+            <Text style={s.emptySubtitle}>No instructors have been added yet.</Text>
           </View>
         }
-      />
-      
-      <InstructorDetailModal
-        visible={modalVisible}
-        instructor={selectedInstructor}
-        loading={detailLoading}
-        onClose={handleCloseModal}
       />
     </View>
   );
@@ -268,11 +188,19 @@ const InstructorScreen = () => {
 
 export default InstructorScreen;
 
-const __mk_styles = () => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.colors.border },
-  list: { padding: 12, paddingBottom: 30 },
+const __mk_s = () => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  list: { padding: 16, paddingBottom: 30, gap: 12 },
   listEmpty: { flexGrow: 1 },
-  row: { justifyContent: 'space-between', marginBottom: 0 },
+
+  centeredBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20 },
+  errorText: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center' },
+  retryBtn: {
+    marginTop: 4, paddingHorizontal: 24, paddingVertical: 10,
+    borderRadius: theme.radius.full, backgroundColor: theme.colors.primary,
+  },
+  retryText: { fontSize: 14, fontWeight: '700', color: theme.colors.white },
+
   emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingTop: 80 },
   emptyIconRing: {
     width: 80, height: 80, borderRadius: 40,
@@ -281,150 +209,53 @@ const __mk_styles = () => StyleSheet.create({
   },
   emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
   emptySubtitle: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center' },
-  centeredBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: 4,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.primary,
-  },
-  retryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.white,
-  },
+
+  // Card (announcement style)
   card: {
-    width: CARD_WIDTH,
     backgroundColor: theme.colors.card,
-    borderRadius: 22,
-    marginBottom: 16,
-    overflow: 'visible',
-    shadowColor: '#6366F1',
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-  cardHeader: {
-    height: 80,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    borderRadius: theme.radius.lg,
+    flexDirection: 'row',
     overflow: 'hidden',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    padding: 12,
-  },
-  subjectPill: {
-    backgroundColor: 'rgba(127, 103, 103, 0.28)',
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
-    maxWidth: '100%',
-  },
-  subjectText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  avatarWrapper: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
-    backgroundColor: theme.colors.card,
-    alignSelf: 'center',
-    marginTop: -34,
-    overflow: 'visible',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  avatarImg: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    margin: 0,
+  accent: { width: 4, alignSelf: 'stretch' },
+  inner: { flex: 1, padding: 14 },
+
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: { width: 50, height: 50, borderRadius: 25 },
+  avatarFallback: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  avatarInitials: { fontSize: 16, fontWeight: '800' },
+  meta: { flex: 1 },
+  name: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 5 },
+  subjectPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    alignSelf: 'flex-start', maxWidth: '100%',
+    borderRadius: theme.radius.full, paddingHorizontal: 9, paddingVertical: 3,
   },
-  avatarFallback: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    alignItems: 'center',
-    justifyContent: 'center',
+  subjectText: { fontSize: 10.5, fontWeight: '700', flexShrink: 1 },
+
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  infoIcon: { width: 24, height: 24, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  infoText: { flex: 1, fontSize: 13, color: theme.colors.textSecondary, fontWeight: '600' },
+
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  ghostBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    borderRadius: theme.radius.full, borderWidth: 1.5, borderColor: theme.colors.primary,
+    paddingVertical: 9, backgroundColor: theme.colors.card,
   },
-  initials: { color: '#fff', fontSize: 20, fontWeight: '800' },
-  cardBody: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 14,
-    alignItems: 'center',
+  ghostBtnText: { fontSize: 12.5, fontWeight: '700', color: theme.colors.primary },
+  primaryBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    borderRadius: theme.radius.full, paddingVertical: 9, backgroundColor: theme.colors.primary,
   },
-  name: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginBottom: 10,
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    width: '100%',
-    marginBottom: 5,
-  },
-  iconBox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoText: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-    flex: 1,
-  },
-  callBtnWrapper: {
-    width: '100%',
-    marginTop: 12,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  callBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: 999,
-  },
-  callBtnText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
+  primaryBtnText: { fontSize: 12.5, fontWeight: '700', color: '#fff' },
 });
 
 // Themed stylesheets — rebuilt on light/dark toggle.
-let styles = __mk_styles();
-onThemeChange(() => { styles = __mk_styles(); });
+let s = __mk_s();
+onThemeChange(() => { s = __mk_s(); });

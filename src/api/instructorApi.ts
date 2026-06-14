@@ -8,13 +8,32 @@ export interface Subject {
   image: string;
 }
 
+export interface InstructorClass {
+  standard_id: number | null;
+  standard_name: string | null;
+  section_id: number | null;
+  section_name: string | null;
+}
+
 export interface Instructor {
   id: number;
   name: string;
   email: string;
   avatar: string | null;
   employee_id: string;
+  phone: string | null;
   subjects: Subject[];
+}
+
+// Full profile (GET /instructors/{id}). emp id / date_of_joining are returned
+// by the API but intentionally NOT shown on the profile screen.
+export interface InstructorProfile extends Instructor {
+  qualification?: string | null;
+  city?: string | null;
+  state?: string | null;
+  address?: string | null;
+  classes?: InstructorClass[];
+  assigned_classes?: InstructorClass[];
 }
 
 export interface InstructorDetailResponse {
@@ -59,11 +78,12 @@ export const getInstructors = async (per_page: number = 20): Promise<Instructor[
 
 // GET /instructors/{id} - Fetch single instructor details
 export const getInstructorDetails = async (id: number): Promise<any> => {
-  console.log('[getInstructorDetails] Fetching instructor details for id:', id);
-  
   const { data } = await apiClient.get(`/instructors/${id}`);
-  
-  console.log('[getInstructorDetails] Response:', JSON.stringify(data, null, 2));
-  
   return data;
+};
+
+// GET /instructors/{id} - normalized full profile for the profile screen.
+export const getInstructorProfile = async (id: number): Promise<InstructorProfile> => {
+  const { data } = await apiClient.get(`/instructors/${id}`);
+  return (data?.data ?? data) as InstructorProfile;
 };
