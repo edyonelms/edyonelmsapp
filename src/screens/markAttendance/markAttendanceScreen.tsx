@@ -28,6 +28,7 @@ import {
   type AttendanceClass,
   type AttendanceStudent,
 } from '../../api/attendanceApi';
+import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../utils/theme';
 import constant from '../../utils/constant';
 import VectorIcon from '../../components/VectorIcon';
@@ -135,6 +136,7 @@ const StatusButtons = ({
 );
 
 const MarkAttendanceScreen = () => {
+  const navigation = useNavigation<any>();
   const [step, setStep] = useState<Step>('setup');
   const [selectedDate, setSelectedDate] = useState<string>(
     RECENT_DATES[RECENT_DATES.length - 1].iso,
@@ -231,6 +233,8 @@ const MarkAttendanceScreen = () => {
           selectedDate,
         )}\nPresent ${counts.present} · Absent ${counts.absent} · Holiday ${counts.holiday}`,
       );
+      // Briefly show the success popup, then head back to the dashboard.
+      setTimeout(goToDashboard, 1500);
     } catch (e: any) {
       Alert.alert('Submit failed', attendanceErrorMessage(e));
     } finally {
@@ -246,9 +250,13 @@ const MarkAttendanceScreen = () => {
     loadClasses(selectedDate);
   };
 
-  const onSuccessClose = () => {
+  // Dismiss the success popup and return to the dashboard.
+  const goToDashboard = () => {
     setSuccessMsg(null);
-    resetToSetup();
+    setStep('setup');
+    setStudents([]);
+    setAlreadyMarked(false);
+    navigation.navigate('MainTabs');
   };
 
   // ── Info bar shown on mark / preview ──
@@ -649,7 +657,7 @@ const MarkAttendanceScreen = () => {
         title={alreadyMarked ? 'Attendance Updated' : 'Attendance Submitted'}
         message={successMsg ?? ''}
         buttonText="Done"
-        onClose={onSuccessClose}
+        onClose={goToDashboard}
       />
     </KeyboardAvoidingView>
   );
