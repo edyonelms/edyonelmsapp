@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Notifications: required to post notifications on Android 13 (API 33)+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Storage: Android 9 and below only -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 

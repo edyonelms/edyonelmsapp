@@ -19,6 +19,7 @@ import VectorIcon from './VectorIcon';
 import AccountSwitcherSheet from './AccountSwitcherSheet';
 import { getActiveAccount, upsertAccount } from '../utils/accountStore';
 import { fetchCurrentSnapshot } from '../api/switchAccountApi';
+import { useUnreadCount } from '../notifications';
 
 interface TopBarProps {
   userName?: string;
@@ -46,6 +47,7 @@ const TopBar = ({
 }: TopBarProps) => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const unreadCount = useUnreadCount();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [displayName, setDisplayName]   = useState<string>(userName ?? '');
   const [avatarUri, setAvatarUri]       = useState<string | null>(null);
@@ -161,7 +163,13 @@ const TopBar = ({
             size={19}
             color={theme.colors.primary}
           />
-          <View style={styles.bellDot} />
+          {unreadCount > 0 && (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onAvatarPress} style={[styles.iconBtn, styles.avatarBtn]}>
@@ -249,16 +257,25 @@ const __mk_styles = () => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bellDot: {
+  bellBadge: {
     position: 'absolute',
-    top: 9,
-    right: 11,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: 8,
     backgroundColor: '#EF4444',
     borderWidth: 1.5,
     borderColor: HEADER_BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    lineHeight: 11,
   },
   avatarBtn: {
     backgroundColor: theme.colors.primaryLight,

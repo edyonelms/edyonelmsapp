@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, StatusBar } from 'react-native';
 import {
   NavigationContainer,
@@ -11,6 +11,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import AppLock from './src/components/AppLock';
 import { ThemeProvider, theme } from './src/utils/theme';
+import { initNotifications } from './src/notifications';
 
 // Routes where the biometric prompt must NOT fire — splash, onboarding and
 // every auth screen. Anything else is considered "inside the app" (dashboard
@@ -65,6 +66,11 @@ const AppInner = () => {
 };
 
 const App = () => {
+  // Set up the notification channel, permission and tap handling once.
+  useEffect(() => {
+    initNotifications();
+  }, []);
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
