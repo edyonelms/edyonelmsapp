@@ -16,8 +16,7 @@ import { theme } from '../../utils/theme';
 import { STATUS_META } from './attendanceTypes';
 import { getMyAttendance } from '../../api/attendanceApi';
 
-// How many months back the analytics view aggregates.
-const MONTHS_BACK = 6;
+// The analytics view aggregates the current academic year, which starts in April.
 
 // Same banding as the performance screen
 const getAttendanceLabel = (pct: number) => {
@@ -54,7 +53,6 @@ interface MonthAnalytics {
   workDays: number;
   presentDays: number;
   absentDays: number;
-  leaveDays: number;
   holidayDays: number;
   pct: number;
 }
@@ -75,8 +73,14 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
     (async () => {
       setLoading(true);
       try {
-        const keys = Array.from({ length: MONTHS_BACK }, (_, i) =>
-          moment().subtract(i, 'month').format('YYYY-MM'),
+        // Academic year starts in April. List the current academic year's months
+        // newest-first, so the bottom-most card is April.
+        const now = moment();
+        const academicStartYear = now.month() >= 3 ? now.year() : now.year() - 1;
+        const academicStart = moment({ year: academicStartYear, month: 3, day: 1 });
+        const monthsCount = now.diff(academicStart, 'months') + 1;
+        const keys = Array.from({ length: monthsCount }, (_, i) =>
+          now.clone().subtract(i, 'month').format('YYYY-MM'),
         );
         const results = await Promise.all(
           keys.map(k => getMyAttendance(k).catch(() => null)),
@@ -96,7 +100,6 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
             workDays,
             presentDays,
             absentDays,
-            leaveDays: 0,
             holidayDays,
             pct,
           };
@@ -117,9 +120,9 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
       workDays: acc.workDays + m.workDays,
       presentDays: acc.presentDays + m.presentDays,
       absentDays: acc.absentDays + m.absentDays,
-      leaveDays: acc.leaveDays + m.leaveDays,
+      holidayDays: acc.holidayDays + m.holidayDays,
     }),
-    { workDays: 0, presentDays: 0, absentDays: 0, leaveDays: 0 },
+    { workDays: 0, presentDays: 0, absentDays: 0, holidayDays: 0 },
   );
   const overallPct =
     overall.workDays > 0
@@ -194,11 +197,11 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
                   <View style={s.statDivider} />
                   <View style={s.statItem}>
                     <Text
-                      style={[s.statValue, { color: STATUS_META.leave.color }]}
+                      style={[s.statValue, { color: STATUS_META.holiday.color }]}
                     >
-                      {overall.leaveDays}
+                      {overall.holidayDays}
                     </Text>
-                    <Text style={s.statLabel}>Leave</Text>
+                    <Text style={s.statLabel}>Holiday</Text>
                   </View>
                 </View>
               </View>
@@ -236,12 +239,6 @@ const AttendanceAnalyticsModal = ({ visible, onClose }: Props) => {
                   value: m.absentDays,
                   pct: m.workDays > 0 ? (m.absentDays / m.workDays) * 100 : 0,
                   color: STATUS_META.absent.color,
-                },
-                {
-                  label: 'Leave',
-                  value: m.leaveDays,
-                  pct: m.workDays > 0 ? (m.leaveDays / m.workDays) * 100 : 0,
-                  color: STATUS_META.leave.color,
                 },
                 {
                   label: 'Holiday',
