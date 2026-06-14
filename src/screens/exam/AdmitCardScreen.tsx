@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,48 +15,160 @@ import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import { theme, onThemeChange } from '../../utils/theme';
+import { Exam, STATUS_CONFIG, iconForType } from './examData';
+import { getExams, examErrorMessage } from '../../api/examApi';
 import {
-  EXAMS,
-  Exam,
-  SEATING_DATA,
-  STATUS_CONFIG,
-  STUDENT_INFO,
-  iconForType,
-} from './examData';
+  AdmitCardData,
+  admitCardErrorMessage,
+  authHeader,
+  downloadAdmitCardPdf,
+  getExamAdmitCard,
+  isAdmitCardNotIssued,
+} from '../../api/admitCardApi';
 import ExamDropdown from './ExamDropdown';
 
 const pdfName = (exam: Exam) =>
-  `Admit_Card_${exam.name.replace(/\s+/g, '_')}_${exam.academicYear}.pdf`;
+  `Admit_Card_${(exam.name || 'Exam').replace(/\s+/g, '_')}_${exam.academicYear || ''}`.replace(/_+$/, '');
+
+const mk = (n: number | null | undefined) =>
+  n === null || n === undefined ? '—' : String(n);
+
+type CardState = 'loading' | 'issued' | 'not_issued' | 'error';
 
 const AdmitCardScreen = ({ navigation }: any) => {
-  const [exam, setExam] = useState<Exam>(EXAMS[0]);
-  const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState(false);
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [examsLoading, setExamsLoading] = useState(true);
+  const [examsError, setExamsError] = useState<string | null>(null);
+  const [exam, setExam] = useState<Exam | null>(null);
 
-  // TODO: wire to the admit-card API loader once integrated.
-  const { refreshing, onRefresh } = useRefresh(() => {});
+  const [card, setCard] = useState<AdmitCardData | null>(null);
+  const [cardState, setCardState] = useState<CardState>('loading');
+  const [cardError, setCardError] = useState<string | null>(null);
 
-  const schedule = SEATING_DATA[exam.id] ?? [];
-  const status = STATUS_CONFIG[exam.status];
+  const [downloading, setDownloading] = useState(false);
+
+  // ── Load the student's exams ──────────────────────────────────────────────
+  const loadExams = useCallback(async () => {
+    setExamsLoading(true);
+    setExamsError(null);
+    try {
+      const list = await getExams();
+      setExams(list);
+      const first = list[0] ?? null;
+      setExam(first);
+      if (first) fetchAdmitCard(first);
+      else setCardState('not_issued');
+    } catch (e) {
+      setExamsError(examErrorMessage(e));
+    } finally {
+      setExamsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Load the admit card for a given exam ──────────────────────────────────
+  const fetchAdmitCard = useCallback(async (e: Exam) => {
+    setCardState('loading');
+    setCard(null);
+    setCardError(null);
+    try {
+      const data = await getExamAdmitCard(e.id);
+      setCard(data);
+      setCardState('issued');
+    } catch (err) {
+      if (isAdmitCardNotIssued(err)) {
+        setCardState('not_issued');
+      } else {
+        setCardError(admitCardErrorMessage(err));
+        setCardState('error');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadExams();
+  }, [loadExams]);
 
   const chooseExam = (e: Exam) => {
     setExam(e);
-    setGenerated(false);
-    setGenerating(false);
+    fetchAdmitCard(e);
   };
 
-  const generate = () => {
-    setGenerating(true);
-    setTimeout(() => {
-      setGenerating(false);
-      setGenerated(true);
-    }, 1100);
+  const { refreshing, onRefresh } = useRefresh(async () => {
+    if (exam) await fetchAdmitCard(exam);
+    else await loadExams();
+  });
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const onPreview = async () => {
+    if (!card?.pdf_url) return;
+    const headers = await authHeader();
+    navigation.navigate('BookReader', {
+      url: card.pdf_url,
+      title: 'Admit Card',
+      headers,
+    });
   };
 
-  const onDownload = () =>
-    Alert.alert('Downloaded', `${pdfName(exam)} has been saved to Downloads.`);
-  const onPrint = () =>
-    Alert.alert('Print', `${pdfName(exam)} has been sent to the printer.`);
+  const onDownload = async () => {
+    if (!card?.pdf_url || downloading) return;
+    setDownloading(true);
+    try {
+      await downloadAdmitCardPdf(card.pdf_url, pdfName(exam ?? ({} as Exam)));
+      Alert.alert(
+        'Downloaded',
+        Platform.OS === 'android'
+          ? 'Admit card saved to your Downloads.'
+          : 'Admit card saved to your device.',
+      );
+    } catch (e) {
+      Alert.alert('Download failed', admitCardErrorMessage(e));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // ── Exams still loading / failed ──────────────────────────────────────────
+  if (examsLoading) {
+    return (
+      <View style={s.root}>
+        <Header title="Admit Card" onBackPress={() => navigation.goBack()} />
+        <View style={s.center}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={s.centerText}>Loading exams…</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (examsError) {
+    return (
+      <View style={s.root}>
+        <Header title="Admit Card" onBackPress={() => navigation.goBack()} />
+        <View style={s.center}>
+          <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={46} color={theme.colors.textMuted} />
+          <Text style={s.centerText}>{examsError}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={loadExams} activeOpacity={0.85}>
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (!exam) {
+    return (
+      <View style={s.root}>
+        <Header title="Admit Card" onBackPress={() => navigation.goBack()} />
+        <View style={s.center}>
+          <VectorIcon iconSet="Ionicons" iconName="document-text-outline" size={46} color={theme.colors.textMuted} />
+          <Text style={s.centerText}>No exams found for your class yet.</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const status = STATUS_CONFIG[exam.status];
 
   return (
     <View style={s.root}>
@@ -64,101 +177,81 @@ const AdmitCardScreen = ({ navigation }: any) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.listContent}
-        refreshControl={
-          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <ExamDropdown selected={exam} onSelect={chooseExam} />
+        <ExamDropdown selected={exam} onSelect={chooseExam} exams={exams} />
 
-        {/* ── Selected exam card (announcement style) ── */}
+        {/* ── Selected exam card ── */}
         <View style={s.card}>
-          <View style={[s.accent, { backgroundColor: status.accent }]} />
+          <View style={[s.accent, { backgroundColor: status?.accent ?? theme.colors.primary }]} />
           <View style={s.cardInner}>
             <View style={s.topRow}>
               <View style={s.iconBox}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName={iconForType(exam.type)}
-                  size={20}
-                  color={theme.colors.primary}
-                />
+                <VectorIcon iconSet="Ionicons" iconName={iconForType(exam.type)} size={20} color={theme.colors.primary} />
               </View>
               <View style={s.meta}>
-                <Text style={s.title} numberOfLines={1}>
-                  {exam.name}
-                </Text>
+                <Text style={s.title} numberOfLines={1}>{exam.name}</Text>
                 <View style={s.metaRow}>
                   <View style={s.tagPill}>
                     <Text style={s.tagText}>{exam.type}</Text>
                   </View>
-                  <View style={[s.tagPill, { backgroundColor: status.bg }]}>
-                    <Text style={[s.tagText, { color: status.color }]}>
-                      {exam.status}
-                    </Text>
-                  </View>
+                  {!!status && (
+                    <View style={[s.tagPill, { backgroundColor: status.bg }]}>
+                      <Text style={[s.tagText, { color: status.color }]}>{exam.status}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
 
             <View style={s.detailRow}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="calendar-outline"
-                size={14}
-                color={theme.colors.textMuted}
-              />
+              <VectorIcon iconSet="Ionicons" iconName="calendar-outline" size={14} color={theme.colors.textMuted} />
               <Text style={s.detailText}>{exam.dateRange}</Text>
             </View>
             <View style={s.detailRow}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="location-outline"
-                size={14}
-                color={theme.colors.textMuted}
-              />
-              <Text style={s.detailText}>{exam.venue}</Text>
+              <VectorIcon iconSet="Ionicons" iconName="ribbon-outline" size={14} color={theme.colors.textMuted} />
+              <Text style={s.detailText}>
+                Total {mk(exam.totalMarks)} · Passing {mk(exam.passingMarks)} marks
+              </Text>
             </View>
           </View>
         </View>
 
-        {/* ── Generate / Preview ── */}
-        {!generated ? (
-          <View style={s.generateBox}>
-            <View style={s.generateIconRing}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="card-outline"
-                size={34}
-                color={theme.colors.primary}
-              />
+        {/* ── Admit card body ── */}
+        {cardState === 'loading' && (
+          <View style={s.stateBox}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={s.stateSub}>Checking admit card…</Text>
+          </View>
+        )}
+
+        {cardState === 'error' && (
+          <View style={s.stateBox}>
+            <View style={s.stateIconRing}>
+              <VectorIcon iconSet="Ionicons" iconName="alert-circle-outline" size={32} color={theme.colors.danger} />
             </View>
-            <Text style={s.generateTitle}>Admit card not generated</Text>
-            <Text style={s.generateSubtitle}>
-              Generate the admit card for {exam.name} ({exam.academicYear}) to
-              preview, download or print it.
-            </Text>
-            <TouchableOpacity
-              style={[s.generateBtn, generating && { opacity: 0.7 }]}
-              onPress={generate}
-              disabled={generating}
-              activeOpacity={0.85}
-            >
-              {generating ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="document-text-outline"
-                  size={16}
-                  color="#fff"
-                />
-              )}
-              <Text style={s.generateBtnText}>
-                {generating ? 'Generating…' : 'Generate Admit Card'}
-              </Text>
+            <Text style={s.stateTitle}>Couldn’t load admit card</Text>
+            <Text style={s.stateSub}>{cardError}</Text>
+            <TouchableOpacity style={s.retryBtn} onPress={() => fetchAdmitCard(exam)} activeOpacity={0.85}>
+              <Text style={s.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : (
+        )}
+
+        {cardState === 'not_issued' && (
+          <View style={s.stateBox}>
+            <View style={s.stateIconRing}>
+              <VectorIcon iconSet="Ionicons" iconName="card-outline" size={34} color={theme.colors.primary} />
+            </View>
+            <Text style={s.stateTitle}>Admit card not issued yet</Text>
+            <Text style={s.stateSub}>
+              Your admit card for {exam.name} ({exam.academicYear}) hasn’t been issued by the
+              school yet. Please check back later.
+            </Text>
+          </View>
+        )}
+
+        {cardState === 'issued' && card && (
           <>
             {/* PDF toolbar */}
             <View style={s.pdfBar}>
@@ -166,119 +259,110 @@ const AdmitCardScreen = ({ navigation }: any) => {
                 <Text style={s.pdfBadgeText}>PDF</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.pdfName} numberOfLines={1}>
-                  {pdfName(exam)}
+                <Text style={s.pdfName} numberOfLines={1}>{pdfName(exam)}.pdf</Text>
+                <Text style={s.pdfMeta}>
+                  {card.admit_card_number ? `No. ${card.admit_card_number}` : 'Admit card'}
+                  {card.issue_date_formatted ? ` · Issued ${card.issue_date_formatted}` : ''}
                 </Text>
-                <Text style={s.pdfMeta}>1 page · 215 KB</Text>
               </View>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="eye-outline"
-                size={18}
-                color={theme.colors.textMuted}
-              />
+              <TouchableOpacity onPress={onPreview} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <VectorIcon iconSet="Ionicons" iconName="eye-outline" size={20} color={theme.colors.primary} />
+              </TouchableOpacity>
             </View>
 
-            {/* ── Paper preview ── */}
+            {/* ── Paper preview (summary) ── */}
             <View style={s.paper}>
-              <Text style={s.paperSchool}>EDYONE PUBLIC SCHOOL</Text>
-              <Text style={s.paperAddress}>
-                42, MG Road, Aligarh, Uttar Pradesh – 202001
-              </Text>
+              <Text style={s.paperSchool}>{card.organization.name ?? 'School'}</Text>
+              {!!card.organization.address && (
+                <Text style={s.paperAddress}>{card.organization.address}</Text>
+              )}
               <View style={s.paperTitlePill}>
                 <Text style={s.paperTitleText}>
-                  ADMIT CARD — {exam.name.toUpperCase()} ({exam.academicYear})
+                  ADMIT CARD — {(card.exam.name ?? exam.name).toUpperCase()}
+                  {card.exam.academic_year ? ` (${card.exam.academic_year})` : ''}
                 </Text>
               </View>
 
               {/* Student row */}
               <View style={s.studentRow}>
-                <Image source={{ uri: STUDENT_INFO.photo }} style={s.studentPhoto} />
+                {!!card.student.image_url && (
+                  <Image source={{ uri: card.student.image_url }} style={s.studentPhoto} />
+                )}
                 <View style={s.studentGrid}>
                   {[
-                    ['Name', STUDENT_INFO.name],
-                    ['Class', STUDENT_INFO.className],
-                    ['Roll No', STUDENT_INFO.rollNo],
-                    ['Admission No', STUDENT_INFO.admissionNo],
-                  ].map(([label, value]) => (
-                    <View key={label} style={s.studentField}>
-                      <Text style={s.studentLabel}>{label}</Text>
-                      <Text style={s.studentValue}>{value}</Text>
+                    ['Name', card.student.full_name],
+                    ['Class', card.student.class],
+                    ['Roll No', card.student.exam_roll_number || card.student.roll_number || card.student.roll_no],
+                    ['Admission No', card.student.admission_no],
+                  ]
+                    .filter(([, v]) => !!v)
+                    .map(([label, value]) => (
+                      <View key={label as string} style={s.studentField}>
+                        <Text style={s.studentLabel}>{label}</Text>
+                        <Text style={s.studentValue}>{value}</Text>
+                      </View>
+                    ))}
+                </View>
+              </View>
+
+              {/* Subjects table with marks */}
+              {card.subjects.length > 0 ? (
+                <View style={s.table}>
+                  <View style={[s.tr, s.trHead]}>
+                    <Text style={[s.th, { flex: 1.7 }]}>Subject</Text>
+                    <Text style={[s.th, s.thRight, { flex: 0.7 }]}>Total</Text>
+                    <Text style={[s.th, s.thRight, { flex: 0.7 }]}>Pass</Text>
+                    <Text style={[s.th, { flex: 1.2 }]}>Date</Text>
+                  </View>
+                  {card.subjects.map((row, i) => (
+                    <View key={`${row.subject_id ?? row.subject_name}-${i}`} style={[s.tr, i % 2 === 1 && s.trAlt]}>
+                      <Text style={[s.td, { flex: 1.7, fontWeight: '700' }]} numberOfLines={1}>
+                        {row.subject_name}
+                      </Text>
+                      <Text style={[s.td, s.tdRight, { flex: 0.7 }]}>{mk(row.total_marks)}</Text>
+                      <Text style={[s.td, s.tdRight, { flex: 0.7 }]}>{mk(row.passing_marks)}</Text>
+                      <Text style={[s.td, { flex: 1.2 }]}>{row.exam_date_formatted ?? '—'}</Text>
                     </View>
                   ))}
                 </View>
-              </View>
+              ) : (
+                <Text style={s.noSubjects}>Subject schedule will appear here once added.</Text>
+              )}
 
-              {/* Schedule table */}
-              <View style={s.table}>
-                <View style={[s.tr, s.trHead]}>
-                  <Text style={[s.th, { flex: 1.6 }]}>Subject</Text>
-                  <Text style={[s.th, { flex: 1.1 }]}>Date</Text>
-                  <Text style={[s.th, { flex: 1.4 }]}>Time</Text>
-                  <Text style={[s.th, { flex: 0.7 }]}>Room</Text>
-                  <Text style={[s.th, { flex: 0.6 }]}>Seat</Text>
+              {/* Center / seat */}
+              {(card.exam_center.name || card.exam_center.seating_label) && (
+                <View style={s.centerRow}>
+                  <VectorIcon iconSet="Ionicons" iconName="location-outline" size={13} color={theme.colors.textMuted} />
+                  <Text style={s.centerText2}>
+                    {[card.exam_center.name, card.exam_center.seating_label].filter(Boolean).join('  ·  ')}
+                  </Text>
                 </View>
-                {schedule.map((row, i) => (
-                  <View
-                    key={row.subjectCode}
-                    style={[s.tr, i % 2 === 1 && s.trAlt]}
-                  >
-                    <Text style={[s.td, { flex: 1.6, fontWeight: '700' }]}>
-                      {row.subject}
-                    </Text>
-                    <Text style={[s.td, { flex: 1.1 }]}>{row.date}</Text>
-                    <Text style={[s.td, { flex: 1.4 }]}>{row.time}</Text>
-                    <Text style={[s.td, { flex: 0.7 }]}>{row.roomNo}</Text>
-                    <Text style={[s.td, { flex: 0.6 }]}>{row.seatNo}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Signatures */}
-              <View style={s.signRow}>
-                <View style={s.signBox}>
-                  <View style={s.signLine} />
-                  <Text style={s.signLabel}>Class Teacher</Text>
-                </View>
-                <View style={s.signBox}>
-                  <View style={s.signLine} />
-                  <Text style={s.signLabel}>Principal</Text>
-                </View>
-              </View>
+              )}
 
               <Text style={s.paperNote}>
-                Note: Carry this admit card on all exam days. Report 30 minutes
-                before the exam starts.
+                Note: This is a summary. Tap “Preview” to view the full admit card, and carry the
+                downloaded copy on all exam days.
               </Text>
             </View>
 
             {/* ── Actions ── */}
             <View style={s.actionRow}>
-              <TouchableOpacity
-                style={s.actionPrimary}
-                onPress={onDownload}
-                activeOpacity={0.85}
-              >
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="download-outline"
-                  size={17}
-                  color="#fff"
-                />
-                <Text style={s.actionPrimaryText}>Download</Text>
+              <TouchableOpacity style={s.actionGhost} onPress={onPreview} activeOpacity={0.85}>
+                <VectorIcon iconSet="Ionicons" iconName="book-outline" size={17} color={theme.colors.primary} />
+                <Text style={s.actionGhostText}>Preview</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={s.actionGhost}
-                onPress={onPrint}
+                style={[s.actionPrimary, downloading && { opacity: 0.7 }]}
+                onPress={onDownload}
+                disabled={downloading}
                 activeOpacity={0.85}
               >
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="print-outline"
-                  size={17}
-                  color={theme.colors.primary}
-                />
-                <Text style={s.actionGhostText}>Print</Text>
+                {downloading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <VectorIcon iconSet="Ionicons" iconName="download-outline" size={17} color="#fff" />
+                )}
+                <Text style={s.actionPrimaryText}>{downloading ? 'Downloading…' : 'Download'}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -292,14 +376,12 @@ export default AdmitCardScreen;
 
 const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 40,
-    gap: 14,
-  },
+  listContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40, gap: 14 },
 
-  // Exam card (announcement style)
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  centerText: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+
+  // Exam card
   card: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
@@ -323,12 +405,7 @@ const __mk_s = () => StyleSheet.create({
     justifyContent: 'center',
   },
   meta: { flex: 1 },
-  title: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginBottom: 5,
-  },
+  title: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 5 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tagPill: {
     borderRadius: theme.radius.full,
@@ -337,63 +414,42 @@ const __mk_s = () => StyleSheet.create({
     backgroundColor: theme.colors.primaryLight,
   },
   tagText: { fontSize: 10, fontWeight: '700', color: theme.colors.primary },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-  },
-  detailText: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
-  },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  detailText: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: '500' },
 
-  // Generate box
-  generateBox: {
+  // State boxes (loading / not issued / error)
+  stateBox: {
     alignItems: 'center',
     backgroundColor: theme.colors.card,
     borderRadius: theme.radius.lg,
-    paddingVertical: 32,
+    paddingVertical: 34,
     paddingHorizontal: 24,
+    gap: 8,
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07,
     shadowRadius: 10,
     elevation: 4,
   },
-  generateIconRing: {
+  stateIconRing: {
     width: 72,
     height: 72,
     borderRadius: 36,
     backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 8,
   },
-  generateTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginBottom: 6,
-  },
-  generateSubtitle: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 18,
-  },
-  generateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  stateTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  stateSub: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  retryBtn: {
+    marginTop: 12,
     backgroundColor: theme.colors.primary,
     borderRadius: theme.radius.full,
-    paddingHorizontal: 26,
-    paddingVertical: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 10,
   },
-  generateBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   // PDF toolbar
   pdfBar: {
@@ -410,16 +466,12 @@ const __mk_s = () => StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: theme.radius.sm,
-    backgroundColor: '#EF4444',
+    backgroundColor: theme.colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pdfBadgeText: { fontSize: 10, fontWeight: '900', color: '#fff' },
-  pdfName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
+  pdfName: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
   pdfMeta: { fontSize: 11, color: theme.colors.textMuted, marginTop: 1 },
 
   // Paper preview
@@ -442,12 +494,7 @@ const __mk_s = () => StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.5,
   },
-  paperAddress: {
-    fontSize: 10,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    marginTop: 2,
-  },
+  paperAddress: { fontSize: 10, color: theme.colors.textMuted, textAlign: 'center', marginTop: 2 },
   paperTitlePill: {
     alignSelf: 'center',
     backgroundColor: theme.colors.primaryLight,
@@ -456,18 +503,8 @@ const __mk_s = () => StyleSheet.create({
     paddingVertical: 4,
     marginTop: 10,
   },
-  paperTitleText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: theme.colors.primary,
-    letterSpacing: 0.6,
-  },
-  studentRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 14,
-    alignItems: 'center',
-  },
+  paperTitleText: { fontSize: 11, fontWeight: '800', color: theme.colors.primary, letterSpacing: 0.6 },
+  studentRow: { flexDirection: 'row', gap: 12, marginTop: 14, alignItems: 'center' },
   studentPhoto: {
     width: 64,
     height: 76,
@@ -475,68 +512,26 @@ const __mk_s = () => StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  studentGrid: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
+  studentGrid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap' },
   studentField: { width: '50%', paddingVertical: 3 },
   studentLabel: { fontSize: 9, color: theme.colors.textMuted, fontWeight: '600' },
-  studentValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
+  studentValue: { fontSize: 12, fontWeight: '700', color: theme.colors.textPrimary },
 
   // Table
-  table: {
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  tr: {
-    flexDirection: 'row',
-    paddingVertical: 7,
-    paddingHorizontal: 8,
-    gap: 4,
-  },
+  table: { marginTop: 14, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 6, overflow: 'hidden' },
+  tr: { flexDirection: 'row', paddingVertical: 7, paddingHorizontal: 8, gap: 4 },
   trHead: { backgroundColor: theme.colors.primaryLight },
   trAlt: { backgroundColor: theme.colors.background },
-  th: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: theme.colors.primary,
-    textTransform: 'uppercase',
-  },
+  th: { fontSize: 9, fontWeight: '800', color: theme.colors.primary, textTransform: 'uppercase' },
+  thRight: { textAlign: 'right' },
   td: { fontSize: 10, color: theme.colors.textPrimary },
+  tdRight: { textAlign: 'right' },
+  noSubjects: { fontSize: 11, color: theme.colors.textMuted, marginTop: 14, fontStyle: 'italic' },
 
-  // Signatures
-  signRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 26,
-    paddingHorizontal: 6,
-  },
-  signBox: { alignItems: 'center', width: 100 },
-  signLine: {
-    width: '100%',
-    height: 1,
-    backgroundColor: theme.colors.textSecondary,
-    marginBottom: 4,
-  },
-  signLabel: {
-    fontSize: 9,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
-  },
-  paperNote: {
-    fontSize: 9,
-    color: theme.colors.textMuted,
-    marginTop: 12,
-    lineHeight: 13,
-  },
+  centerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
+  centerText2: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '600', flex: 1 },
+
+  paperNote: { fontSize: 9, color: theme.colors.textMuted, marginTop: 12, lineHeight: 13 },
 
   // Actions
   actionRow: { flexDirection: 'row', gap: 12 },
@@ -563,11 +558,7 @@ const __mk_s = () => StyleSheet.create({
     borderColor: theme.colors.primary,
     paddingVertical: 13,
   },
-  actionGhostText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.primary,
-  },
+  actionGhostText: { fontSize: 14, fontWeight: '700', color: theme.colors.primary },
 });
 
 

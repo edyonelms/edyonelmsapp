@@ -7,10 +7,14 @@ import { Exam, EXAMS, iconForType } from './examData';
 interface Props {
   selected: Exam;
   onSelect: (exam: Exam) => void;
+  // Optional list to choose from. Defaults to the bundled mock EXAMS so the
+  // existing exam screens keep working; screens wired to the live API (e.g.
+  // Admit Card) pass the fetched exams instead.
+  exams?: Exam[];
 }
 
 // Collapsible exam selector used at the top of exam sub-screens
-const ExamDropdown = ({ selected, onSelect }: Props) => {
+const ExamDropdown = ({ selected, onSelect, exams = EXAMS }: Props) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -46,7 +50,7 @@ const ExamDropdown = ({ selected, onSelect }: Props) => {
 
       {open && (
         <View style={s.list}>
-          {EXAMS.map((exam, i) => {
+          {exams.map((exam, i) => {
             const active = exam.id === selected.id;
             return (
               <TouchableOpacity
@@ -54,7 +58,7 @@ const ExamDropdown = ({ selected, onSelect }: Props) => {
                 style={[
                   s.item,
                   active && s.itemActive,
-                  i === EXAMS.length - 1 && s.itemLast,
+                  i === exams.length - 1 && s.itemLast,
                 ]}
                 onPress={() => {
                   onSelect(exam);

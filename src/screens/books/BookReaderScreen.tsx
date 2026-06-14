@@ -28,6 +28,9 @@ const { width, height } = Dimensions.get('window');
 const BookReaderScreen = ({ navigation, route }: any) => {
   const url: string | undefined = route?.params?.url;
   const title: string = route?.params?.title ?? 'Book';
+  // Optional auth headers — set when previewing a token-protected PDF (e.g. the
+  // student admit card). Public book PDFs (S3) don't need them.
+  const headers: Record<string, string> | undefined = route?.params?.headers;
 
   // IMPORTANT: keep two separate values to avoid a feedback loop that crashes
   // the native Pdf view on fast scrolling.
@@ -109,7 +112,7 @@ const BookReaderScreen = ({ navigation, route }: any) => {
         ) : (
           <>
             <Pdf
-              source={{ uri: url, cache: true }}
+              source={{ uri: url, cache: true, ...(headers ? { headers } : {}) }}
               page={targetPage}
               trustAllCerts={false}
               enablePaging={false}
