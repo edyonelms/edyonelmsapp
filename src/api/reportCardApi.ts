@@ -1,7 +1,8 @@
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import ReactNativeBlobUtil from 'react-native-blob-util';
 import apiClient from './apiClient';
+import { authHeader, downloadPdf } from './pdfDownload';
+
+// Re-exported so screens can keep importing it from this module.
+export { authHeader };
 
 const unwrap = (data: any) => data?.data ?? data;
 const unwrapList = (data: any): any[] => {
@@ -85,49 +86,9 @@ export const getReportCard = async (id: number | string): Promise<ReportCardDeta
 
 export const isReportCardMissing = (e: any): boolean => e?.response?.status === 404;
 
-// Sanctum bearer header for the in-app PDF reader / downloader.
-export const authHeader = async (): Promise<Record<string, string>> => {
-  const token = await AsyncStorage.getItem('auth_token');
-  return {
-    Accept: 'application/pdf',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
-
-/**
- * Download the report-card PDF to the device.
- *  • Android → system DownloadManager (shows in the notification tray)
- *  • iOS     → saves to the document dir and opens the share/preview sheet
- */
-export const downloadReportCardPdf = async (
-  pdfUrl: string,
-  fileName: string,
-): Promise<string> => {
-  const headers = await authHeader();
-  const { config, fs, ios } = ReactNativeBlobUtil;
-  const safeName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
-
-  if (Platform.OS === 'android') {
-    const res = await config({
-      fileCache: true,
-      addAndroidDownloads: {
-        useDownloadManager: true,
-        notification: true,
-        title: safeName,
-        description: 'Report card',
-        mime: 'application/pdf',
-        mediaScannable: true,
-        path: `${fs.dirs.DownloadDir}/${safeName}`,
-      },
-    }).fetch('GET', pdfUrl, headers);
-    return res.path();
-  }
-
-  const path = `${fs.dirs.DocumentDir}/${safeName}`;
-  const res = await config({ fileCache: true, path }).fetch('GET', pdfUrl, headers);
-  await ios.openDocument(res.path());
-  return res.path();
-};
+/** Download the report-card PDF to the device (Android Downloads / iOS share). */
+export const downloadReportCardPdf = (pdfUrl: string, fileName: string): Promise<string> =>
+  downloadPdf(pdfUrl, fileName);
 
 // ─── Error → friendly message ───────────────────────────────────────────────────
 export const reportCardErrorMessage = (e: any): string => {

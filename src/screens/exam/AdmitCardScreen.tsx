@@ -253,23 +253,6 @@ const AdmitCardScreen = ({ navigation }: any) => {
 
         {cardState === 'issued' && card && (
           <>
-            {/* PDF toolbar */}
-            <View style={s.pdfBar}>
-              <View style={s.pdfBadge}>
-                <Text style={s.pdfBadgeText}>PDF</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.pdfName} numberOfLines={1}>{pdfName(exam)}.pdf</Text>
-                <Text style={s.pdfMeta}>
-                  {card.admit_card_number ? `No. ${card.admit_card_number}` : 'Admit card'}
-                  {card.issue_date_formatted ? ` · Issued ${card.issue_date_formatted}` : ''}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={onPreview} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <VectorIcon iconSet="Ionicons" iconName="eye-outline" size={20} color={theme.colors.primary} />
-              </TouchableOpacity>
-            </View>
-
             {/* ── Paper preview (summary) ── */}
             <View style={s.paper}>
               <Text style={s.paperSchool}>{card.organization.name ?? 'School'}</Text>

@@ -1,8 +1,9 @@
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import ReactNativeBlobUtil from 'react-native-blob-util';
 import apiClient from './apiClient';
 import constant from '../utils/constant';
+import { authHeader, downloadPdf } from './pdfDownload';
+
+// Re-exported so screens can keep importing it from this module.
+export { authHeader };
 
 // Unwrap the standard { success, message, data } envelope.
 const unwrap = (data: any) => data?.data ?? data;
@@ -102,51 +103,9 @@ export const isAdmitCardNotIssued = (e: any): boolean => e?.response?.status ===
 export const admitCardPdfUrl = (examId: number | string): string =>
   `${constant.API_BASE_URL}/exams/${examId}/admit-card/pdf`;
 
-// The Sanctum bearer header the in-app PDF reader / downloader must send.
-export const authHeader = async (): Promise<Record<string, string>> => {
-  const token = await AsyncStorage.getItem('auth_token');
-  return {
-    Accept: 'application/pdf',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
-
-/**
- * Download the admit-card PDF to the device.
- *  • Android → uses the system DownloadManager (shows in the notification tray).
- *  • iOS     → saves to the app document dir and opens the share/preview sheet.
- * Returns the saved file path.
- */
-export const downloadAdmitCardPdf = async (
-  pdfUrl: string,
-  fileName: string,
-): Promise<string> => {
-  const headers = await authHeader();
-  const { config, fs, ios } = ReactNativeBlobUtil;
-  const safeName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
-
-  if (Platform.OS === 'android') {
-    const res = await config({
-      fileCache: true,
-      addAndroidDownloads: {
-        useDownloadManager: true,
-        notification: true,
-        title: safeName,
-        description: 'Admit card',
-        mime: 'application/pdf',
-        mediaScannable: true,
-        path: `${fs.dirs.DownloadDir}/${safeName}`,
-      },
-    }).fetch('GET', pdfUrl, headers);
-    return res.path();
-  }
-
-  // iOS
-  const path = `${fs.dirs.DocumentDir}/${safeName}`;
-  const res = await config({ fileCache: true, path }).fetch('GET', pdfUrl, headers);
-  await ios.openDocument(res.path());
-  return res.path();
-};
+/** Download the admit-card PDF to the device (Android Downloads / iOS share). */
+export const downloadAdmitCardPdf = (pdfUrl: string, fileName: string): Promise<string> =>
+  downloadPdf(pdfUrl, fileName);
 
 // ─── Error → friendly message ───────────────────────────────────────────────────
 export const admitCardErrorMessage = (e: any): string => {
