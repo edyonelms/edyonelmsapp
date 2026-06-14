@@ -22,6 +22,7 @@ import {
 import {
   attendanceErrorMessage,
   getStudentsForAttendance,
+  markHoliday,
   submitAttendance,
   type AttendanceClass,
   type AttendanceStudent,
@@ -42,7 +43,8 @@ interface MarkStudent {
   status: AttendanceStatus;
 }
 
-const RECENT_DATES = getRecentDates(7);
+// Teachers may only mark today + the previous 2 days.
+const RECENT_DATES = getRecentDates(3);
 
 // Map the server's per-student attendance into the UI's P/A/L model.
 // Leave is stored on a binary backend as absent + a "Leave" remark.
@@ -116,6 +118,7 @@ const MarkAttendanceScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [markingHoliday, setMarkingHoliday] = useState(false);
 
   const counts = countByStatus(students);
 
@@ -198,6 +201,44 @@ const MarkAttendanceScreen = () => {
     }
   };
 
+  const handleMarkHoliday = () => {
+    if (!selectedClass) return;
+    Alert.alert(
+      'Mark as Holiday',
+      `Mark ${formatLong(selectedDate)} as a holiday for ${
+        selectedClass.class_info.class_display
+      }?\nEvery student in this class will be set to Holiday for this date.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Holiday',
+          style: 'destructive',
+          onPress: async () => {
+            setMarkingHoliday(true);
+            try {
+              const res = await markHoliday(
+                selectedDate,
+                selectedClass.class_info.standard_id,
+                selectedClass.class_info.section_id,
+              );
+              Alert.alert(
+                'Holiday Marked',
+                `${res.marked_students} student${
+                  res.marked_students === 1 ? '' : 's'
+                } marked as holiday for ${formatLong(selectedDate)}.`,
+              );
+              loadClasses(selectedDate);
+            } catch (e: any) {
+              Alert.alert('Failed', attendanceErrorMessage(e));
+            } finally {
+              setMarkingHoliday(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const resetToSetup = () => {
     setStep('setup');
     setSubmitted(false);
@@ -248,118 +289,149 @@ const MarkAttendanceScreen = () => {
         <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.sectionLabel}>Select Date</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.dateStrip}
-      >
-        {RECENT_DATES.map((d: DateItem) => {
-          const active = d.iso === selectedDate;
-          return (
-            <TouchableOpacity
-              key={d.iso}
-              activeOpacity={0.85}
-              onPress={() => setSelectedDate(d.iso)}
-              style={[styles.dateCard, active && styles.dateCardActive]}
-            >
-              <Text style={[styles.dateWeekday, active && styles.dateTextActive]}>
-                {d.weekday}
-              </Text>
-              <Text style={[styles.dateDay, active && styles.dateTextActive]}>
-                {d.day}
-              </Text>
-              <Text style={[styles.dateMonth, active && styles.dateTextActive]}>
-                {d.isToday ? 'Today' : d.month}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      {/* Window note (announcement-style banner) */}
+      <View style={styles.noteBar}>
+        <VectorIcon
+          iconSet="Ionicons"
+          iconName="information-circle-outline"
+          size={16}
+          color={theme.colors.primary}
+        />
+        <Text style={styles.noteText}>
+          You can mark attendance for today and the previous 2 days only.
+        </Text>
+      </View>
 
-      <Text style={styles.sectionLabel}>Class & Section</Text>
-
-      {loadingClasses ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator color={theme.colors.primary} />
-        </View>
-      ) : error ? (
-        <View style={styles.errorBox}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="cloud-offline-outline"
-            size={26}
-            color={theme.colors.danger}
-          />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity
-            style={styles.retryBtn}
-            onPress={() => loadClasses(selectedDate)}
-            activeOpacity={0.85}
+      {/* Date card */}
+      <View style={styles.setupCard}>
+        <View style={[styles.cardAccent, { backgroundColor: theme.colors.primary }]} />
+        <View style={styles.setupCardInner}>
+          <Text style={styles.setupCardTitle}>Select Date</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dateStrip}
           >
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
+            {RECENT_DATES.map((d: DateItem) => {
+              const active = d.iso === selectedDate;
+              return (
+                <TouchableOpacity
+                  key={d.iso}
+                  activeOpacity={0.85}
+                  onPress={() => setSelectedDate(d.iso)}
+                  style={[styles.dateCard, active && styles.dateCardActive]}
+                >
+                  <Text
+                    style={[styles.dateWeekday, active && styles.dateTextActive]}
+                  >
+                    {d.weekday}
+                  </Text>
+                  <Text style={[styles.dateDay, active && styles.dateTextActive]}>
+                    {d.day}
+                  </Text>
+                  <Text style={[styles.dateMonth, active && styles.dateTextActive]}>
+                    {d.isToday ? 'Today' : d.month}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
-      ) : classes.length === 0 ? (
-        <View style={styles.errorBox}>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="people-outline"
-            size={26}
-            color={theme.colors.textMuted}
-          />
-          <Text style={styles.errorText}>
-            No classes are assigned to you. Please contact the administrator.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.dropdown}>
-          {classes.map(c => {
-            const active = c.assignment_id === selectedClassId;
-            return (
-              <TouchableOpacity
-                key={c.assignment_id}
-                style={[styles.dropdownItem, active && styles.dropdownItemActive]}
-                activeOpacity={0.8}
-                onPress={() => setSelectedClassId(c.assignment_id)}
-              >
-                <View style={styles.classRowLeft}>
-                  <View style={styles.infoIcon}>
-                    <VectorIcon
-                      iconSet="Ionicons"
-                      iconName="people-outline"
-                      size={16}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <View>
-                    <Text
-                      style={[
-                        styles.dropdownText,
-                        active && styles.dropdownTextActive,
-                      ]}
-                    >
-                      {c.class_info.class_display}
-                    </Text>
-                    <Text style={styles.classMeta}>
-                      {c.total_students} students
-                    </Text>
-                  </View>
-                </View>
-                {active && (
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName="checkmark-circle"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
+      </View>
 
+      {/* Class card */}
+      <View style={styles.setupCard}>
+        <View style={[styles.cardAccent, { backgroundColor: theme.colors.success }]} />
+        <View style={styles.setupCardInner}>
+          <Text style={styles.setupCardTitle}>Class & Section</Text>
+
+          {loadingClasses ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator color={theme.colors.primary} />
+            </View>
+          ) : error ? (
+            <View style={styles.errorBox}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="cloud-offline-outline"
+                size={26}
+                color={theme.colors.danger}
+              />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                onPress={() => loadClasses(selectedDate)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : classes.length === 0 ? (
+            <View style={styles.errorBox}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="people-outline"
+                size={26}
+                color={theme.colors.textMuted}
+              />
+              <Text style={styles.errorText}>
+                No classes are assigned to you. Please contact the administrator.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.dropdown}>
+              {classes.map(c => {
+                const active = c.assignment_id === selectedClassId;
+                return (
+                  <TouchableOpacity
+                    key={c.assignment_id}
+                    style={[
+                      styles.dropdownItem,
+                      active && styles.dropdownItemActive,
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedClassId(c.assignment_id)}
+                  >
+                    <View style={styles.classRowLeft}>
+                      <View style={styles.infoIcon}>
+                        <VectorIcon
+                          iconSet="Ionicons"
+                          iconName="people-outline"
+                          size={16}
+                          color={theme.colors.primary}
+                        />
+                      </View>
+                      <View>
+                        <Text
+                          style={[
+                            styles.dropdownText,
+                            active && styles.dropdownTextActive,
+                          ]}
+                        >
+                          {c.class_info.class_display}
+                        </Text>
+                        <Text style={styles.classMeta}>
+                          {c.total_students} students
+                        </Text>
+                      </View>
+                    </View>
+                    {active && (
+                      <VectorIcon
+                        iconSet="Ionicons"
+                        iconName="checkmark-circle"
+                        size={18}
+                        color={theme.colors.primary}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Actions */}
       <TouchableOpacity
         style={[
           styles.primaryBtn,
@@ -376,6 +448,28 @@ const MarkAttendanceScreen = () => {
           size={18}
           color="#fff"
         />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.holidayBtn,
+          (!selectedClass || markingHoliday) && styles.primaryBtnDisabled,
+        ]}
+        activeOpacity={0.85}
+        disabled={!selectedClass || markingHoliday}
+        onPress={handleMarkHoliday}
+      >
+        {markingHoliday ? (
+          <ActivityIndicator size="small" color={STATUS_CONFIG.leave.color} />
+        ) : (
+          <VectorIcon
+            iconSet="Ionicons"
+            iconName="sunny-outline"
+            size={18}
+            color={STATUS_CONFIG.leave.color}
+          />
+        )}
+        <Text style={styles.holidayBtnText}>Mark as Holiday</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -726,6 +820,43 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 6,
   },
+
+  // Announcement-style note banner
+  noteBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: theme.spacing.md,
+  },
+  noteText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
+
+  // Accent-bar cards (attendance template)
+  setupCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+    marginBottom: theme.spacing.md,
+    elevation: 1,
+  },
+  cardAccent: { height: 4, width: '100%' },
+  setupCardInner: { padding: theme.spacing.md },
+  setupCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    marginBottom: 10,
+  },
   dateStrip: { gap: 10, paddingBottom: 4 },
   dateCard: {
     width: 62,
@@ -968,4 +1099,22 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   secondaryBtnText: { color: theme.colors.primary, fontWeight: '700', fontSize: 14 },
+
+  holidayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+    paddingVertical: 13,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1.5,
+    borderColor: STATUS_CONFIG.leave.color,
+    backgroundColor: STATUS_CONFIG.leave.bg,
+  },
+  holidayBtnText: {
+    color: STATUS_CONFIG.leave.color,
+    fontWeight: '700',
+    fontSize: 14,
+  },
 });

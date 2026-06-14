@@ -85,7 +85,8 @@ const AttendanceScreen = () => {
   const presentDays = summary?.present_days ?? 0;
   const absentDays = summary?.absent_days ?? 0;
   const workDays = summary?.working_days ?? 0;
-  const holidayDays = Math.max(0, (summary?.total_days ?? 0) - workDays);
+  const holidayDays =
+    summary?.holiday_days ?? Math.max(0, (summary?.total_days ?? 0) - workDays);
   const presentPct = summary
     ? Number(summary.present_percentage ?? 0).toFixed(1)
     : '0.0';
@@ -228,7 +229,9 @@ const AttendanceScreen = () => {
 
             {/* Day rows */}
             {days.map((row, i) => {
-              const sc = row.status ? STATUS_META[row.status] : null;
+              // Future days in the month render as a plain dash.
+              const isDash = !row.status || row.status === 'upcoming';
+              const sc = isDash ? null : STATUS_META[row.status as AttendanceStatus];
               return (
                 <View
                   key={row.serial}

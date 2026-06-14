@@ -130,7 +130,9 @@ export const formatLong = (iso: string): string => {
   return `${WEEKDAYS[date.getDay()]}, ${pad(d)} ${MONTHS[m - 1]} ${y}`;
 };
 
-export const EDIT_WINDOW_DAYS = 3;
+// Teachers may mark today + the previous 2 days (3 days total). Kept in sync
+// with the server-side window in AttendanceController.
+export const EDIT_WINDOW_DAYS = 2;
 
 const midnight = (d: Date) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();

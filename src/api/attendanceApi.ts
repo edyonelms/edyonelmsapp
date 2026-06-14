@@ -1,7 +1,13 @@
 import apiClient from './apiClient';
 
 // ─── Self attendance (student & teacher share this, role-aware on the server) ──
-export type MyAttendanceStatus = 'present' | 'absent' | 'holiday';
+// not_marked = a past/today date with no record; upcoming = future date in the month.
+export type MyAttendanceStatus =
+  | 'present'
+  | 'absent'
+  | 'holiday'
+  | 'not_marked'
+  | 'upcoming';
 
 export interface MyAttendanceDay {
   date: string; // YYYY-MM-DD
@@ -14,6 +20,8 @@ export interface MyAttendanceSummary {
   working_days: number;
   present_days: number;
   absent_days: number;
+  holiday_days?: number;
+  not_marked_days?: number;
   present_percentage: number;
 }
 
@@ -96,6 +104,27 @@ export const submitAttendance = async (
   const { data } = await apiClient.post('/attendance', {
     attendance_date,
     attendances,
+  });
+  return data?.data ?? data;
+};
+
+// POST /attendance/mark-holiday — teacher marks a whole class+section holiday for a date
+export interface MarkHolidayResult {
+  date: string;
+  standard_id: number;
+  section_id: number | null;
+  marked_students: number;
+}
+
+export const markHoliday = async (
+  date: string,
+  standard_id: number,
+  section_id: number | null,
+): Promise<MarkHolidayResult> => {
+  const { data } = await apiClient.post('/attendance/mark-holiday', {
+    date,
+    standard_id,
+    section_id,
   });
   return data?.data ?? data;
 };

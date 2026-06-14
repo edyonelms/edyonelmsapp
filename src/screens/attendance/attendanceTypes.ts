@@ -1,6 +1,12 @@
 import moment from 'moment';
 
-export type AttendanceStatus = 'present' | 'absent' | 'leave' | 'holiday';
+export type AttendanceStatus =
+  | 'present'
+  | 'absent'
+  | 'leave'
+  | 'holiday'
+  | 'not_marked'
+  | 'upcoming';
 
 export interface AttendanceData {
   [monthKey: string]: {
@@ -16,6 +22,8 @@ export const STATUS_META: Record<
   absent: { color: '#DC2626', bg: '#FEE2E2', label: 'Absent' },
   leave: { color: '#D97706', bg: '#FEF9C3', label: 'Leave' },
   holiday: { color: '#6366F1', bg: '#EDE9FE', label: 'Holiday' },
+  not_marked: { color: '#64748B', bg: '#F1F5F9', label: 'Not marked' },
+  upcoming: { color: '#94A3B8', bg: '#F8FAFC', label: '–' },
 };
 
 export const WEEK_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
