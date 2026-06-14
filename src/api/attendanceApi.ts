@@ -92,8 +92,8 @@ export const getStudentsForAttendance = async (
 
 export interface SubmitAttendanceItem {
   student_detail_id: number;
-  status: boolean; // true = present, false = absent
-  remarks?: string | null; // e.g. "Leave"
+  status: number; // status code: 0 = absent, 1 = present, 4 = holiday
+  remarks?: string | null;
 }
 
 // POST /attendance — bulk submit/update attendance for a date

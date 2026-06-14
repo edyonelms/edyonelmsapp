@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type AttendanceStatus = 'present' | 'absent' | 'leave';
+export type AttendanceStatus = 'present' | 'absent' | 'holiday';
 
 export interface Student {
   id: string;
@@ -32,16 +32,23 @@ export const STATUS_CONFIG: Record<
     bg: '#FEE2E2',
     icon: 'close-circle',
   },
-  leave: {
-    short: 'L',
-    full: 'Leave',
-    color: '#D97706',
-    bg: '#FEF3C7',
-    icon: 'time',
+  holiday: {
+    short: 'H',
+    full: 'Holiday',
+    color: '#6366F1',
+    bg: '#EDE9FE',
+    icon: 'sunny-outline',
   },
 };
 
-export const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'leave'];
+export const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'holiday'];
+
+// DB tinyint code for each status (matches the backend status map).
+export const STATUS_CODE: Record<AttendanceStatus, number> = {
+  present: 1,
+  absent: 0,
+  holiday: 4,
+};
 
 export const CLASSES: ClassItem[] = [
   { id: '1', label: 'Class 6A' },
@@ -81,7 +88,7 @@ export const getCounts = (
       acc[s.status]++;
       return acc;
     },
-    { present: 0, absent: 0, leave: 0 },
+    { present: 0, absent: 0, holiday: 0 },
   );
 
 // ─── Dates ───────────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +15,7 @@ import {
 import {
   AttendanceStatus,
   DateItem,
+  STATUS_CODE,
   STATUS_CONFIG,
   STATUS_ORDER,
   formatLong,
@@ -22,35 +24,42 @@ import {
 import {
   attendanceErrorMessage,
   getStudentsForAttendance,
-  markHoliday,
   submitAttendance,
   type AttendanceClass,
   type AttendanceStudent,
 } from '../../api/attendanceApi';
 import { theme } from '../../utils/theme';
+import constant from '../../utils/constant';
 import VectorIcon from '../../components/VectorIcon';
 import Header from '../../components/Header';
 import AppRefreshControl from '../../components/AppRefreshControl';
+import { ConfirmDialog, SuccessDialog } from '../../components/ConfirmDialog';
 import { useRefresh } from '../../hooks/useRefresh';
 
-type Step = 'setup' | 'mark' | 'summary';
-type Filter = 'all' | AttendanceStatus;
+type Step = 'setup' | 'mark' | 'preview';
 
 interface MarkStudent {
   id: number; // student_detail_id
   rollNo: string;
   name: string;
+  photo: string | null;
   status: AttendanceStatus;
 }
 
 // Teachers may only mark today + the previous 2 days.
 const RECENT_DATES = getRecentDates(3);
 
-// Map the server's per-student attendance into the UI's P/A/L model.
-// Leave is stored on a binary backend as absent + a "Leave" remark.
+// Resolve a (possibly relative) photo path into a full URL.
+const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+const resolveFileUrl = (url?: string | null): string | undefined => {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${FILE_ORIGIN}/${url.replace(/^\/+/, '')}`;
+};
+
+// Map the server's per-student attendance into the P/A/Holiday model.
 const mapStatus = (a: AttendanceStudent['attendance']): AttendanceStatus => {
-  const remark = (a?.remarks || '').toLowerCase();
-  if (remark.includes('leave')) return 'leave';
+  if (a?.status === 'holiday') return 'holiday';
   if (a?.status === 'absent') return 'absent';
   return 'present'; // present / not_marked default to present
 };
@@ -61,10 +70,32 @@ const countByStatus = (students: MarkStudent[]) =>
       acc[s.status]++;
       return acc;
     },
-    { present: 0, absent: 0, leave: 0 } as Record<AttendanceStatus, number>,
+    { present: 0, absent: 0, holiday: 0 } as Record<AttendanceStatus, number>,
   );
 
-// ── Per-student P / A / L toggle ──
+// ── Student avatar: photo with first-letter fallback ──
+const Avatar = ({ name, photo }: { name: string; photo: string | null }) => {
+  const uri = resolveFileUrl(photo);
+  const [failed, setFailed] = useState(false);
+  if (uri && !failed) {
+    return (
+      <Image
+        source={{ uri }}
+        style={styles.avatarImg}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>
+        {(name || '?').charAt(0).toUpperCase()}
+      </Text>
+    </View>
+  );
+};
+
+// ── Per-student P / A / H toggle ──
 const StatusButtons = ({
   status,
   onChange,
@@ -112,13 +143,16 @@ const MarkAttendanceScreen = () => {
   const [classes, setClasses] = useState<AttendanceClass[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [students, setStudents] = useState<MarkStudent[]>([]);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [alreadyMarked, setAlreadyMarked] = useState(false);
 
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [markingHoliday, setMarkingHoliday] = useState(false);
+
+  // Dialogs
+  const [holidayConfirm, setHolidayConfirm] = useState(false);
+  const [submitConfirm, setSubmitConfirm] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const counts = countByStatus(students);
 
@@ -164,35 +198,38 @@ const MarkAttendanceScreen = () => {
 
   const handleContinue = () => {
     if (!selectedClass) return;
+    // Already-marked when any student carries a real (non not_marked) status.
+    const marked = selectedClass.students.some(
+      st => st.attendance?.status && st.attendance.status !== 'not_marked',
+    );
     setStudents(
       selectedClass.students.map(st => ({
         id: st.student_id,
         rollNo: String(st.roll_no ?? ''),
         name: st.full_name,
+        photo: st.photo ?? null,
         status: mapStatus(st.attendance),
       })),
     );
-    setSubmitted(false);
-    setFilter('all');
+    setAlreadyMarked(marked);
     setStep('mark');
   };
 
-  const handleSubmit = async () => {
+  const doSubmit = async () => {
+    setSubmitConfirm(false);
     if (!students.length) return;
     setSubmitting(true);
     try {
       const attendances = students.map(s => ({
         student_detail_id: s.id,
-        status: s.status === 'present',
-        remarks: s.status === 'leave' ? 'Leave' : null,
+        status: STATUS_CODE[s.status],
+        remarks: null,
       }));
       await submitAttendance(selectedDate, attendances);
-      setSubmitted(true);
-      Alert.alert(
-        'Attendance Submitted',
+      setSuccessMsg(
         `${selectedClass?.class_info.class_display ?? ''} · ${formatLong(
           selectedDate,
-        )}\nPresent ${counts.present} · Absent ${counts.absent} · Leave ${counts.leave}`,
+        )}\nPresent ${counts.present} · Absent ${counts.absent} · Holiday ${counts.holiday}`,
       );
     } catch (e: any) {
       Alert.alert('Submit failed', attendanceErrorMessage(e));
@@ -201,53 +238,20 @@ const MarkAttendanceScreen = () => {
     }
   };
 
-  const handleMarkHoliday = () => {
-    if (!selectedClass) return;
-    Alert.alert(
-      'Mark as Holiday',
-      `Mark ${formatLong(selectedDate)} as a holiday for ${
-        selectedClass.class_info.class_display
-      }?\nEvery student in this class will be set to Holiday for this date.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Holiday',
-          style: 'destructive',
-          onPress: async () => {
-            setMarkingHoliday(true);
-            try {
-              const res = await markHoliday(
-                selectedDate,
-                selectedClass.class_info.standard_id,
-                selectedClass.class_info.section_id,
-              );
-              Alert.alert(
-                'Holiday Marked',
-                `${res.marked_students} student${
-                  res.marked_students === 1 ? '' : 's'
-                } marked as holiday for ${formatLong(selectedDate)}.`,
-              );
-              loadClasses(selectedDate);
-            } catch (e: any) {
-              Alert.alert('Failed', attendanceErrorMessage(e));
-            } finally {
-              setMarkingHoliday(false);
-            }
-          },
-        },
-      ],
-    );
-  };
-
+  // Reset everything and return to the setup screen.
   const resetToSetup = () => {
     setStep('setup');
-    setSubmitted(false);
     setStudents([]);
-    setFilter('all');
+    setAlreadyMarked(false);
     loadClasses(selectedDate);
   };
 
-  // ── Info bar shown on mark / summary ──
+  const onSuccessClose = () => {
+    setSuccessMsg(null);
+    resetToSetup();
+  };
+
+  // ── Info bar shown on mark / preview ──
   const InfoBar = () => (
     <View style={styles.infoBar}>
       <View style={styles.infoLeft}>
@@ -280,7 +284,7 @@ const MarkAttendanceScreen = () => {
     </View>
   );
 
-  // ── Step 1: Setup ──
+  // ── Setup ──
   const renderSetup = () => (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -289,7 +293,6 @@ const MarkAttendanceScreen = () => {
         <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Window note (announcement-style banner) */}
       <View style={styles.noteBar}>
         <VectorIcon
           iconSet="Ionicons"
@@ -431,50 +434,21 @@ const MarkAttendanceScreen = () => {
         </View>
       </View>
 
-      {/* Actions */}
       <TouchableOpacity
         style={[
           styles.primaryBtn,
           (!selectedClass || loadingClasses) && styles.primaryBtnDisabled,
         ]}
-        activeOpacity={0.85}
+        activeOpacity={0.9}
         disabled={!selectedClass || loadingClasses}
         onPress={handleContinue}
       >
         <Text style={styles.primaryBtnText}>Load Students</Text>
-        <VectorIcon
-          iconSet="Ionicons"
-          iconName="arrow-forward"
-          size={18}
-          color="#fff"
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.holidayBtn,
-          (!selectedClass || markingHoliday) && styles.primaryBtnDisabled,
-        ]}
-        activeOpacity={0.85}
-        disabled={!selectedClass || markingHoliday}
-        onPress={handleMarkHoliday}
-      >
-        {markingHoliday ? (
-          <ActivityIndicator size="small" color={STATUS_CONFIG.leave.color} />
-        ) : (
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="sunny-outline"
-            size={18}
-            color={STATUS_CONFIG.leave.color}
-          />
-        )}
-        <Text style={styles.holidayBtnText}>Mark as Holiday</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 
-  // ── Step 2: Mark ──
+  // ── Mark ──
   const renderMark = () => (
     <FlatList
       data={students}
@@ -485,9 +459,7 @@ const MarkAttendanceScreen = () => {
         <View style={styles.row}>
           <View style={styles.rowLeft}>
             <Text style={styles.rollNo}>{item.rollNo}</Text>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-            </View>
+            <Avatar name={item.name} photo={item.photo} />
             <Text style={styles.studentName} numberOfLines={1}>
               {item.name}
             </Text>
@@ -501,6 +473,19 @@ const MarkAttendanceScreen = () => {
       ListHeaderComponent={
         <>
           <InfoBar />
+          {alreadyMarked && (
+            <View style={styles.editBanner}>
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName="create-outline"
+                size={15}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.editBannerText}>
+                Attendance already exists for this date — edit and re-submit.
+              </Text>
+            </View>
+          )}
           <View style={styles.markAllRow}>
             <Text style={styles.markAllLabel}>Mark all:</Text>
             {STATUS_ORDER.map(st => (
@@ -513,7 +498,9 @@ const MarkAttendanceScreen = () => {
                     borderColor: STATUS_CONFIG[st].color,
                   },
                 ]}
-                onPress={() => markAll(st)}
+                onPress={() =>
+                  st === 'holiday' ? setHolidayConfirm(true) : markAll(st)
+                }
               >
                 <Text
                   style={[styles.markAllBtnText, { color: STATUS_CONFIG[st].color }]}
@@ -525,7 +512,7 @@ const MarkAttendanceScreen = () => {
           </View>
           <View style={styles.listHeader}>
             <Text style={styles.listHeaderText}>Student</Text>
-            <Text style={styles.listHeaderText}>P / A / L</Text>
+            <Text style={styles.listHeaderText}>P / A / H</Text>
           </View>
         </>
       }
@@ -535,178 +522,81 @@ const MarkAttendanceScreen = () => {
       ListFooterComponent={
         <TouchableOpacity
           style={styles.primaryBtn}
-          activeOpacity={0.85}
-          onPress={() => {
-            setFilter('all');
-            setStep('summary');
-          }}
+          activeOpacity={0.9}
+          onPress={() => setStep('preview')}
         >
-          <Text style={styles.primaryBtnText}>Review Summary</Text>
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName="arrow-forward"
-            size={18}
-            color="#fff"
-          />
+          <Text style={styles.primaryBtnText}>Review</Text>
         </TouchableOpacity>
       }
     />
   );
 
-  // ── Step 3: Summary / review ──
-  const FILTERS: { key: Filter; label: string; count: number }[] = [
-    { key: 'all', label: 'All', count: students.length },
-    { key: 'present', label: 'Present', count: counts.present },
-    { key: 'absent', label: 'Absent', count: counts.absent },
-    { key: 'leave', label: 'Leave', count: counts.leave },
-  ];
-
-  const filtered =
-    filter === 'all' ? students : students.filter(s => s.status === filter);
-
-  const renderSummary = () => (
+  // ── Preview (clean review, no analytics) ──
+  const renderPreview = () => (
     <FlatList
-      data={filtered}
+      data={students}
       keyExtractor={i => String(i.id)}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.list}
-      renderItem={({ item }) => (
-        <View style={styles.row}>
-          <View style={styles.rowLeft}>
-            <Text style={styles.rollNo}>{item.rollNo}</Text>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-            </View>
-            <Text style={styles.studentName} numberOfLines={1}>
-              {item.name}
-            </Text>
-          </View>
-          <StatusButtons
-            status={item.status}
-            onChange={s => setStatus(item.id, s)}
-          />
-        </View>
-      )}
-      ListHeaderComponent={
-        <>
-          {submitted && (
-            <View style={styles.successBanner}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="checkmark-circle"
-                size={16}
-                color={theme.colors.success}
-              />
-              <Text style={styles.successText}>
-                Attendance submitted · you can still edit
+      renderItem={({ item }) => {
+        const cfg = STATUS_CONFIG[item.status];
+        return (
+          <View style={styles.row}>
+            <View style={styles.rowLeft}>
+              <Text style={styles.rollNo}>{item.rollNo}</Text>
+              <Avatar name={item.name} photo={item.photo} />
+              <Text style={styles.studentName} numberOfLines={1}>
+                {item.name}
               </Text>
             </View>
-          )}
+            <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
+              <View style={[styles.statusDot, { backgroundColor: cfg.color }]} />
+              <Text style={[styles.statusBadgeText, { color: cfg.color }]}>
+                {cfg.full}
+              </Text>
+            </View>
+          </View>
+        );
+      }}
+      ListHeaderComponent={
+        <>
           <InfoBar />
-
-          {/* Present / Absent / Leave totals */}
-          <View style={styles.statRow}>
-            {STATUS_ORDER.map(st => (
-              <View
-                key={st}
-                style={[styles.statCard, { backgroundColor: STATUS_CONFIG[st].bg }]}
-              >
-                <Text style={[styles.statNum, { color: STATUS_CONFIG[st].color }]}>
-                  {counts[st]}
-                </Text>
-                <Text style={[styles.statLabel, { color: STATUS_CONFIG[st].color }]}>
-                  {STATUS_CONFIG[st].full}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Filter tabs */}
-          <View style={styles.filterRow}>
-            {FILTERS.map(f => {
-              const active = filter === f.key;
-              return (
-                <TouchableOpacity
-                  key={f.key}
-                  style={[styles.filterTab, active && styles.filterTabActive]}
-                  activeOpacity={0.8}
-                  onPress={() => setFilter(f.key)}
-                >
-                  <Text
-                    style={[
-                      styles.filterTabText,
-                      active && styles.filterTabTextActive,
-                    ]}
-                  >
-                    {f.label} {f.count}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <Text style={styles.previewHint}>
+            Review the attendance below, then submit.
+          </Text>
         </>
       }
       ListEmptyComponent={
-        <Text style={styles.empty}>No students in this filter.</Text>
+        <Text style={styles.empty}>No students to review.</Text>
       }
       ListFooterComponent={
         <View style={styles.footerCol}>
           <TouchableOpacity
-            style={[
-              styles.primaryBtn,
-              submitted && styles.primaryBtnDone,
-              submitting && styles.primaryBtnDisabled,
-            ]}
-            activeOpacity={0.85}
+            style={[styles.primaryBtn, submitting && styles.primaryBtnDisabled]}
+            activeOpacity={0.9}
             disabled={submitting}
-            onPress={handleSubmit}
+            onPress={() => setSubmitConfirm(true)}
           >
             {submitting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName={submitted ? 'checkmark-done' : 'send'}
-                size={18}
-                color="#fff"
-              />
+              <Text style={styles.primaryBtnText}>
+                {alreadyMarked ? 'Update Attendance' : 'Submit Attendance'}
+              </Text>
             )}
-            <Text style={styles.primaryBtnText}>
-              {submitting
-                ? 'Submitting…'
-                : submitted
-                ? 'Update Attendance'
-                : 'Submit Attendance'}
-            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryBtn}
-            activeOpacity={0.8}
-            onPress={() => (submitted ? resetToSetup() : setStep('mark'))}
+            activeOpacity={0.85}
+            onPress={resetToSetup}
           >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={submitted ? 'add-circle-outline' : 'arrow-back'}
-              size={16}
-              color={theme.colors.primary}
-            />
-            <Text style={styles.secondaryBtnText}>
-              {submitted ? 'Mark Another Day' : 'Back to List'}
-            </Text>
+            <Text style={styles.secondaryBtnText}>Back</Text>
           </TouchableOpacity>
         </View>
       }
     />
   );
-
-  // ── Step indicator ──
-  const STEPS: { key: Step; label: string }[] = [
-    { key: 'setup', label: 'Setup' },
-    { key: 'mark', label: 'Mark' },
-    { key: 'summary', label: 'Review' },
-  ];
-  const activeIndex = STEPS.findIndex(s => s.key === step);
 
   return (
     <KeyboardAvoidingView
@@ -715,50 +605,52 @@ const MarkAttendanceScreen = () => {
     >
       <Header title="Mark Attendance" />
 
-      <View style={styles.stepper}>
-        {STEPS.map((stp, i) => {
-          const done = i < activeIndex;
-          const active = i === activeIndex;
-          return (
-            <React.Fragment key={stp.key}>
-              <View style={styles.stepNode}>
-                <View
-                  style={[
-                    styles.stepCircle,
-                    active && styles.stepCircleActive,
-                    done && styles.stepCircleDone,
-                  ]}
-                >
-                  {done ? (
-                    <VectorIcon
-                      iconSet="Ionicons"
-                      iconName="checkmark"
-                      size={13}
-                      color="#fff"
-                    />
-                  ) : (
-                    <Text style={[styles.stepNum, active && styles.stepNumActive]}>
-                      {i + 1}
-                    </Text>
-                  )}
-                </View>
-                <Text style={[styles.stepLabel, active && styles.stepLabelActive]}>
-                  {stp.label}
-                </Text>
-              </View>
-              {i < STEPS.length - 1 && (
-                <View
-                  style={[styles.stepLine, i < activeIndex && styles.stepLineDone]}
-                />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </View>
-
       {step === 'setup' && renderSetup()}
       {step === 'mark' && renderMark()}
-      {step === 'summary' && renderSummary()}
+      {step === 'preview' && renderPreview()}
+
+      {/* Mark-all-holiday confirmation (logout style) */}
+      <ConfirmDialog
+        visible={holidayConfirm}
+        title="Mark all as Holiday?"
+        message={`Every student in ${
+          selectedClass?.class_info.class_display ?? 'this class'
+        } will be set to Holiday for ${formatLong(selectedDate)}.`}
+        confirmText="Mark Holiday"
+        confirmColor={STATUS_CONFIG.holiday.color}
+        iconName="sunny-outline"
+        iconColor={STATUS_CONFIG.holiday.color}
+        iconBg={STATUS_CONFIG.holiday.bg}
+        onConfirm={() => {
+          markAll('holiday');
+          setHolidayConfirm(false);
+        }}
+        onCancel={() => setHolidayConfirm(false)}
+      />
+
+      {/* Submit confirmation (logout style) */}
+      <ConfirmDialog
+        visible={submitConfirm}
+        title={alreadyMarked ? 'Update attendance?' : 'Submit attendance?'}
+        message={`${formatLong(selectedDate)}\nPresent ${counts.present} · Absent ${
+          counts.absent
+        } · Holiday ${counts.holiday}`}
+        confirmText={alreadyMarked ? 'Update' : 'Submit'}
+        confirmColor={theme.colors.primary}
+        iconName="checkmark-done-outline"
+        loading={submitting}
+        onConfirm={doSubmit}
+        onCancel={() => setSubmitConfirm(false)}
+      />
+
+      {/* Success popup */}
+      <SuccessDialog
+        visible={!!successMsg}
+        title={alreadyMarked ? 'Attendance Updated' : 'Attendance Submitted'}
+        message={successMsg ?? ''}
+        buttonText="Done"
+        onClose={onSuccessClose}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -768,58 +660,8 @@ export default MarkAttendanceScreen;
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.background },
 
-  // Stepper
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: theme.spacing.lg,
-    backgroundColor: theme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  stepNode: { alignItems: 'center', gap: 4 },
-  stepCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1.5,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepCircleActive: {
-    backgroundColor: theme.colors.primaryLight,
-    borderColor: theme.colors.primary,
-  },
-  stepCircleDone: {
-    backgroundColor: theme.colors.success,
-    borderColor: theme.colors.success,
-  },
-  stepNum: { fontSize: 12, fontWeight: '800', color: theme.colors.textMuted },
-  stepNumActive: { color: theme.colors.primary },
-  stepLabel: { fontSize: 11, fontWeight: '600', color: theme.colors.textMuted },
-  stepLabelActive: { color: theme.colors.primary, fontWeight: '700' },
-  stepLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: theme.colors.border,
-    marginHorizontal: 6,
-    marginBottom: 16,
-  },
-  stepLineDone: { backgroundColor: theme.colors.success },
-
   // Setup
   setupBody: { padding: theme.spacing.lg, paddingBottom: 40 },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginBottom: 10,
-    marginTop: 6,
-  },
 
   // Announcement-style note banner
   noteBar: {
@@ -905,7 +747,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    marginTop: 6,
     overflow: 'hidden',
   },
   dropdownItem: {
@@ -957,6 +798,18 @@ const styles = StyleSheet.create({
   },
   editChipText: { fontSize: 10, fontWeight: '700' },
 
+  editBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: theme.spacing.sm,
+  },
+  editBannerText: { flex: 1, fontSize: 12, fontWeight: '600', color: theme.colors.primary },
+
   // Lists
   list: { paddingHorizontal: theme.spacing.lg, paddingBottom: 40 },
   markAllRow: {
@@ -988,6 +841,13 @@ const styles = StyleSheet.create({
   },
   listHeaderText: { fontSize: 12, fontWeight: '700', color: theme.colors.textMuted },
 
+  previewHint: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+    marginBottom: theme.spacing.sm,
+  },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1000,12 +860,18 @@ const styles = StyleSheet.create({
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   rollNo: { fontSize: 12, color: theme.colors.textMuted, width: 22 },
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primaryLight,
   },
   avatarText: { fontSize: 14, fontWeight: '700', color: theme.colors.primary },
   studentName: {
@@ -1026,53 +892,20 @@ const styles = StyleSheet.create({
   },
   statusBtnText: { fontSize: 12, fontWeight: '700' },
 
-  // Summary
-  successBanner: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#DCFCE7',
-    borderRadius: theme.radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginTop: theme.spacing.md,
-  },
-  successText: { fontSize: 12, fontWeight: '700', color: theme.colors.success },
-
-  statRow: { flexDirection: 'row', gap: 10, marginBottom: theme.spacing.md },
-  statCard: {
-    flex: 1,
-    borderRadius: theme.radius.md,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  statNum: { fontSize: 22, fontWeight: '900' },
-  statLabel: { fontSize: 11, fontWeight: '700', marginTop: 2 },
-
-  filterRow: { flexDirection: 'row', gap: 8, marginBottom: theme.spacing.sm },
-  filterTab: {
-    flex: 1,
-    paddingVertical: 8,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: theme.radius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.white,
-    alignItems: 'center',
   },
-  filterTabActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  filterTabText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: theme.colors.textSecondary,
-  },
-  filterTabTextActive: { color: '#fff' },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusBadgeText: { fontSize: 11, fontWeight: '700' },
 
   empty: { textAlign: 'center', color: theme.colors.textMuted, paddingVertical: 30 },
 
-  // Footer / buttons
+  // Footer / buttons (login pill style)
   footerCol: { marginTop: theme.spacing.lg, gap: 10 },
   primaryBtn: {
     flexDirection: 'row',
@@ -1080,41 +913,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: theme.colors.primary,
-    paddingVertical: 15,
-    borderRadius: theme.radius.sm,
+    paddingVertical: 14,
+    borderRadius: 99,
     marginTop: theme.spacing.lg,
   },
-  primaryBtnDisabled: { opacity: 0.5 },
-  primaryBtnDone: { backgroundColor: theme.colors.success },
-  primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  primaryBtnDisabled: { backgroundColor: '#B0B0B0' },
+  primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 
   secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 12,
-    borderRadius: theme.radius.sm,
+    paddingVertical: 13,
+    borderRadius: 99,
     borderWidth: 1.5,
     borderColor: theme.colors.primary,
   },
-  secondaryBtnText: { color: theme.colors.primary, fontWeight: '700', fontSize: 14 },
-
-  holidayBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 10,
-    paddingVertical: 13,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1.5,
-    borderColor: STATUS_CONFIG.leave.color,
-    backgroundColor: STATUS_CONFIG.leave.bg,
-  },
-  holidayBtnText: {
-    color: STATUS_CONFIG.leave.color,
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  secondaryBtnText: { color: theme.colors.primary, fontWeight: '700', fontSize: 15 },
 });
