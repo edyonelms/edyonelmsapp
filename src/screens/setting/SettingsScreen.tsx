@@ -14,7 +14,7 @@ import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
-import { theme, onThemeChange, useThemeMode } from '../../utils/theme';
+import { theme, onThemeChange } from '../../utils/theme';
 import { Biometrics } from '../../utils/biometrics';
 
 const NOTIFICATIONS_KEY = 'notifications_enabled';
@@ -37,9 +37,6 @@ const SettingsScreen = () => {
 
   // ── Notifications (local toggle for now, persisted in AsyncStorage) ─────────
   const [notifEnabled, setNotifEnabled] = useState(true);
-
-  // ── Appearance (light / dark) ───────────────────────────────────────────────
-  const { isDark, toggle: toggleTheme } = useThemeMode();
 
   useEffect(() => {
     (async () => {
@@ -141,23 +138,6 @@ const SettingsScreen = () => {
               disabled={bioBusy || (!bioAvailable && !bioEnabled)}
               trackColor={{ false: theme.colors.border, true: '#A7F3D0' }}
               thumbColor={bioEnabled ? '#10B981' : '#f4f3f4'}
-            />
-          }
-        />
-
-        {/* Dark mode toggle */}
-        <SettingCard
-          accent="#6366F1"
-          icon={isDark ? 'moon' : 'sunny'}
-          iconSet="Ionicons"
-          title="Dark Mode"
-          subtitle={isDark ? 'Dark theme is on' : 'Light theme is on'}
-          trailing={
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: theme.colors.border, true: '#C7D2FE' }}
-              thumbColor={isDark ? '#6366F1' : '#f4f3f4'}
             />
           }
         />

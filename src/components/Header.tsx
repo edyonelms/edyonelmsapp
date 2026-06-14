@@ -31,7 +31,7 @@ const Header = ({ title, onBackPress, showBack = true, backgroundColor }: Header
     <>
       {/* Status bar tinted with the page background; light icons in dark mode. */}
       <StatusBar
-        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle="dark-content"
         backgroundColor={theme.colors.statusBar}
         translucent={false}
       />
