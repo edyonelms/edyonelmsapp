@@ -19,7 +19,7 @@ import {
   STATUS_CONFIG,
   STATUS_ORDER,
   formatLong,
-  getRecentDates,
+  getRecentMarkableDates,
 } from './markAttendanceData';
 import {
   attendanceErrorMessage,
@@ -47,8 +47,8 @@ interface MarkStudent {
   status: AttendanceStatus;
 }
 
-// Teachers may only mark today + the previous 2 days.
-const RECENT_DATES = getRecentDates(3);
+// Teachers may only mark the last 3 working days — Sundays (auto-holidays) are skipped.
+const RECENT_DATES = getRecentMarkableDates(3);
 
 // Resolve a (possibly relative) photo path into a full URL.
 const FILE_ORIGIN = constant.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
@@ -309,7 +309,7 @@ const MarkAttendanceScreen = () => {
           color={theme.colors.primary}
         />
         <Text style={styles.noteText}>
-          You can mark attendance for today and the previous 2 days only.
+          You can mark the last 3 working days. Sundays are auto-holidays.
         </Text>
       </View>
 

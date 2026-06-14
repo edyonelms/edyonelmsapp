@@ -131,6 +131,31 @@ export const getRecentDates = (count = 7): DateItem[] => {
   return out;
 };
 
+// Last `count` working days (Sundays excluded) ending today — oldest first, today last.
+// Sundays are auto-holidays and never markable, so they're skipped entirely. When
+// today is a Sunday, it's skipped too and the latest entry is the previous Saturday.
+export const getRecentMarkableDates = (count = 3): DateItem[] => {
+  const today = new Date();
+  const todayIso = toIso(today);
+  const out: DateItem[] = [];
+  const d = new Date(today);
+  while (out.length < count) {
+    if (d.getDay() !== 0) {
+      // 0 = Sunday
+      const iso = toIso(d);
+      out.push({
+        iso,
+        weekday: WEEKDAYS[d.getDay()],
+        day: pad(d.getDate()),
+        month: MONTHS[d.getMonth()],
+        isToday: iso === todayIso,
+      });
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return out.reverse();
+};
+
 export const formatLong = (iso: string): string => {
   const [y, m, d] = iso.split('-').map(Number);
   const date = new Date(y, m - 1, d);

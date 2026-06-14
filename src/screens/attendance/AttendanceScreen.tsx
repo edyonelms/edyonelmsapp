@@ -71,12 +71,17 @@ const AttendanceScreen = () => {
       const d = i + 1;
       const iso = `${monthKey}-${String(d).padStart(2, '0')}`;
       const m = moment(iso, 'YYYY-MM-DD');
+      // Sundays are always holidays, regardless of any recorded status.
+      const isSunday = m.day() === 0;
+      const status = (
+        isSunday ? 'holiday' : statusByDate[iso] ?? null
+      ) as AttendanceStatus | null;
       return {
         serial: d,
         date: m.format('DD MMM'),
         day: m.format('ddd'),
         isToday: iso === today,
-        status: (statusByDate[iso] ?? null) as AttendanceStatus | null,
+        status,
       };
     });
   }, [monthKey, currentMonth, today, statusByDate]);
