@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -15,6 +15,7 @@ import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   activateAccount,
+  getActiveAccount,
   getActiveAccountId,
   removeAccount,
 } from '../utils/accountStore';
@@ -166,6 +167,13 @@ const DrawerNavigator = ({ route }: any) => {
   const CustomDrawer = (props: any) => {
     const { navigation, state } = props;
     const [logoutVisible, setLogoutVisible] = useState(false);
+    const [org, setOrg] = useState<{ name?: string; logo?: string | null } | null>(null);
+
+    useEffect(() => {
+      getActiveAccount()
+        .then(a => setOrg(a?.organization ?? null))
+        .catch(() => setOrg(null));
+    }, []);
 
     const doLogout = async () => {
       setLogoutVisible(false);
@@ -233,12 +241,23 @@ const DrawerNavigator = ({ route }: any) => {
           <View style={{ flex: 1 }}>
             <View style={styles.header}>
               <View style={styles.brandBadge}>
-                <Image
-                  source={{ uri: 'logo' }}
-                  style={styles.brandBadgeImage}
-                />
+                {org?.logo ? (
+                  <Image
+                    source={{ uri: org.logo }}
+                    style={styles.brandBadgeImage}
+                  />
+                ) : (
+                  <VectorIcon
+                    iconSet="Ionicons"
+                    iconName="school"
+                    size={34}
+                    color={theme.colors.primary}
+                  />
+                )}
               </View>
-              <Text style={styles.appName}>Edyone LMS</Text>
+              <Text style={styles.appName} numberOfLines={2}>
+                {org?.name || 'Edyone LMS'}
+              </Text>
             </View>
             <View style={styles.headerDivider} />
 
@@ -507,11 +526,12 @@ export default DrawerNavigator;
 
 const __mk_styles = () => StyleSheet.create({
   header: {
-    height: 70,
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
   },
   headerDivider: {
     height: 1,
@@ -519,19 +539,24 @@ const __mk_styles = () => StyleSheet.create({
     backgroundColor: theme.colors.border,
   },
   brandBadge: {
-    width: 60,
-    height: 60,
-    backgroundColor: theme.colors.primary,
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   brandBadgeImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   appName: {
+    flex: 1,
     color: theme.colors.primary,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
   userName: {
     color: theme.colors.textPrimary,
@@ -559,11 +584,13 @@ const __mk_styles = () => StyleSheet.create({
   logoutContainer: {
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    padding: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   logoutText: {
     marginLeft: 15,

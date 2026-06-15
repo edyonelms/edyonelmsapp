@@ -1,1032 +1,382 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
+  ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  SafeAreaView,
 } from 'react-native';
-import { QUIZ_SUBJECTS, Subject, Quiz, Question } from './quizData';
+import Header from '../../components/Header';
+import VectorIcon from '../../components/VectorIcon';
 import { theme, onThemeChange } from '../../utils/theme';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
-import VectorIcon from '../../components/VectorIcon';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
+import {
+  getStudentSubjects,
+  getChapters,
+  contentErrorMessage,
+  subjectStyle,
+  type StudentSubject,
+  type SyllabusChapter,
+  type SyllabusTopic,
+} from '../../api/contentApi';
 
 const PRIMARY = theme.colors.primary;
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-interface AttemptRecord {
-  quizId: string;
-  correct: number;
-  total: number;
-  skipped: number;
-}
-
-type Screen = 'home' | 'quiz' | 'result';
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
-const StudentQuizScreen = () => {
-  const [screen, setScreen] = useState<Screen>('home');
-  const [selectedSubject, setSelectedSubject] = useState<Subject>(
-    QUIZ_SUBJECTS[0],
-  );
-  const [subDropOpen, setSubDropOpen] = useState(false);
-  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
-  const [qIndex, setQIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string | null>>({});
-  const [attempts, setAttempts] = useState<AttemptRecord[]>([]);
-
-  // ── helpers ──
-  const getAttempt = (quizId: string) =>
-    attempts.find(a => a.quizId === quizId);
-
-  const startQuiz = (quiz: Quiz) => {
-    setActiveQuiz(quiz);
-    setQIndex(0);
-    setAnswers({});
-    setScreen('quiz');
-  };
-
-  const selectAnswer = (questionId: string, optionId: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: optionId }));
-  };
-
-  const skipQuestion = () => {
-    setAnswers(prev => ({ ...prev, [activeQuiz!.questions[qIndex].id]: null }));
-    nextQuestion();
-  };
-
-  const nextQuestion = () => {
-    if (qIndex < activeQuiz!.questions.length - 1) {
-      setQIndex(i => i + 1);
-    } else {
-      finishQuiz();
-    }
-  };
-
-  const finishQuiz = () => {
-    const qs = activeQuiz!.questions;
-    let correct = 0;
-    let skipped = 0;
-    qs.forEach(q => {
-      const ans = answers[q.id];
-      if (ans === undefined || ans === null) skipped++;
-      else if (ans === q.correctId) correct++;
-    });
-    const record: AttemptRecord = {
-      quizId: activeQuiz!.id,
-      correct,
-      total: qs.length,
-      skipped,
-    };
-    setAttempts(prev => {
-      const filtered = prev.filter(a => a.quizId !== activeQuiz!.id);
-      return [...filtered, record];
-    });
-    setScreen('result');
-  };
-
-  // ── all quizzes for selected subject ──
-  const allTopicQuizzes: {
-    topicName: string;
-    chapterName: string;
-    quiz: Quiz;
-  }[] = [];
-  selectedSubject.chapters.forEach(ch =>
-    ch.topics.forEach(tp =>
-      tp.quizzes.forEach(qz =>
-        allTopicQuizzes.push({
-          topicName: tp.name,
-          chapterName: ch.name,
-          quiz: qz,
-        }),
-      ),
-    ),
+const SubjectThumb = ({ image, color, fallback }: { image?: string | null; color: string; fallback: string }) =>
+  image ? (
+    <Image source={{ uri: image }} style={s.thumb} />
+  ) : (
+    <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+      <Text style={{ fontSize: 20 }}>{fallback}</Text>
+    </View>
   );
 
-  // TODO: wire to the quiz API loader once integrated.
-  const { refreshing, onRefresh } = useRefresh(() => {});
-
-  // ─── Screens ──────────────────────────────────────────────────────────────
-  if (screen === 'quiz' && activeQuiz) {
-    return (
-      <QuizScreen
-        quiz={activeQuiz}
-        qIndex={qIndex}
-        answers={answers}
-        onSelect={selectAnswer}
-        onSkip={skipQuestion}
-        onNext={nextQuestion}
-        onFinish={finishQuiz}
-      />
-    );
-  }
-
-  if (screen === 'result' && activeQuiz) {
-    const rec = getAttempt(activeQuiz.id)!;
-    return (
-      <ResultScreen
-        quiz={activeQuiz}
-        record={rec}
-        answers={answers}
-        onRetry={() => startQuiz(activeQuiz)}
-        onHome={() => setScreen('home')}
-      />
-    );
-  }
-
-  // ─── Home ─────────────────────────────────────────────────────────────────
-  return (
-    <SafeAreaView style={s.root}>
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* Subject Dropdown */}
-        <View style={[s.dropWrap, subDropOpen && { zIndex: 99 }]}>
-          <TouchableOpacity
-            style={s.dropBtn}
-            onPress={() => setSubDropOpen(o => !o)}
-            activeOpacity={0.8}
-          >
-            <View style={s.dropLeft}>
-              <Text style={s.dropIcon}>{selectedSubject.icon}</Text>
-              <Text style={s.dropSelected}>{selectedSubject.name}</Text>
-            </View>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={subDropOpen ? 'chevron-up' : 'chevron-down'}
-              size={18}
-              color={PRIMARY}
-            />
-          </TouchableOpacity>
-          {subDropOpen && (
-            <View style={s.dropList}>
-              {QUIZ_SUBJECTS.map(sub => (
-                <TouchableOpacity
-                  key={sub.id}
-                  style={[
-                    s.dropItem,
-                    sub.id === selectedSubject.id && s.dropItemActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedSubject(sub);
-                    setSubDropOpen(false);
-                  }}
-                >
-                  <Text style={s.dropIcon}>{sub.icon}</Text>
-                  <Text
-                    style={[
-                      s.dropItemText,
-                      sub.id === selectedSubject.id && s.dropItemTextActive,
-                    ]}
-                  >
-                    {sub.name}
-                  </Text>
-                  {sub.id === selectedSubject.id && (
-                    <VectorIcon
-                      iconSet="Ionicons"
-                      iconName="checkmark-circle"
-                      size={16}
-                      color={PRIMARY}
-                    />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Stats summary */}
-        <StatsBar
-          attempts={attempts}
-          quizzes={allTopicQuizzes.map(t => t.quiz)}
-        />
-
-        {/* Quiz list grouped by topic */}
-        {allTopicQuizzes.length === 0 ? (
-          <View style={s.empty}>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="help-circle-outline"
-              size={48}
-              color={theme.colors.textMuted}
-            />
-            <Text style={s.emptyText}>No quizzes available</Text>
-          </View>
-        ) : (
-          allTopicQuizzes.map(({ topicName, chapterName, quiz }) => {
-            const attempt = getAttempt(quiz.id);
-            const pct = attempt
-              ? Math.round((attempt.correct / attempt.total) * 100)
-              : null;
-            return (
-              <View key={quiz.id} style={s.quizCard}>
-                <View style={s.quizCardTop}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.quizTitle}>{quiz.title}</Text>
-                    <Text style={s.quizMeta}>
-                      {chapterName} · {topicName}
-                    </Text>
-                    <View style={s.quizMetaRow}>
-                      <VectorIcon
-                        iconSet="Ionicons"
-                        iconName="help-circle-outline"
-                        size={13}
-                        color={theme.colors.textMuted}
-                      />
-                      <Text style={s.quizMetaText}>
-                        {quiz.questions.length} questions
-                      </Text>
-                      <VectorIcon
-                        iconSet="Ionicons"
-                        iconName="time-outline"
-                        size={13}
-                        color={theme.colors.textMuted}
-                      />
-                      <Text style={s.quizMetaText}>{quiz.duration} min</Text>
-                    </View>
-                  </View>
-                  {attempt && (
-                    <View
-                      style={[
-                        s.scoreBadge,
-                        { backgroundColor: pct! >= 60 ? '#D1FAE5' : '#FEE2E2' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          s.scorePct,
-                          {
-                            color:
-                              pct! >= 60
-                                ? theme.colors.success
-                                : theme.colors.danger,
-                          },
-                        ]}
-                      >
-                        {pct}%
-                      </Text>
-                      <Text
-                        style={[
-                          s.scoreLabel,
-                          {
-                            color:
-                              pct! >= 60
-                                ? theme.colors.success
-                                : theme.colors.danger,
-                          },
-                        ]}
-                      >
-                        {attempt.correct}/{attempt.total}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {attempt && (
-                  <View style={s.attemptRow}>
-                    <Chip
-                      icon="checkmark-circle"
-                      color={theme.colors.success}
-                      label={`${attempt.correct} Correct`}
-                    />
-                    <Chip
-                      icon="close-circle"
-                      color={theme.colors.danger}
-                      label={`${
-                        attempt.total - attempt.correct - attempt.skipped
-                      } Wrong`}
-                    />
-                    <Chip
-                      icon="play-skip-forward"
-                      color={theme.colors.textMuted}
-                      label={`${attempt.skipped} Skipped`}
-                    />
-                  </View>
-                )}
-
-                <TouchableOpacity
-                  style={s.startBtn}
-                  onPress={() => startQuiz(quiz)}
-                  activeOpacity={0.85}
-                >
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName={attempt ? 'refresh' : 'play'}
-                    size={15}
-                    color="#fff"
-                  />
-                  <Text style={s.startBtnText}>
-                    {attempt ? 'Retry Quiz' : 'Start Quiz'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })
-        )}
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
-
-// ─── Stats Bar ────────────────────────────────────────────────────────────────
-const StatsBar = ({
-  attempts,
-  quizzes,
+const SubjectDropdown = ({
+  subjects,
+  selected,
+  onSelect,
 }: {
-  attempts: AttemptRecord[];
-  quizzes: Quiz[];
+  subjects: StudentSubject[];
+  selected: StudentSubject;
+  onSelect: (sub: StudentSubject) => void;
 }) => {
-  const attempted = attempts.length;
-  const skipped = attempts.reduce((s, a) => s + a.skipped, 0);
-  const totalQ = attempts.reduce((s, a) => s + a.total, 0);
-  const correct = attempts.reduce((s, a) => s + a.correct, 0);
-  const overallPct = totalQ > 0 ? Math.round((correct / totalQ) * 100) : 0;
-
+  const [open, setOpen] = useState(false);
   return (
-    <View style={s.statsBar}>
-      <StatItem
-        label="Attempted"
-        value={`${attempted}/${quizzes.length}`}
-        color={PRIMARY}
-      />
-      <StatItem
-        label="Skipped Qs"
-        value={String(skipped)}
-        color={theme.colors.textMuted}
-      />
-      <StatItem
-        label="Overall"
-        value={totalQ > 0 ? `${overallPct}%` : '—'}
-        color={overallPct >= 60 ? theme.colors.success : theme.colors.danger}
-      />
+    <View style={[s.dropWrap, open && { zIndex: 99 }]}>
+      <TouchableOpacity style={s.dropBtn} onPress={() => setOpen(v => !v)} activeOpacity={0.8}>
+        <View style={s.dropLeft}>
+          <Text style={s.dropIcon}>{subjectStyle(selected.id).icon}</Text>
+          <Text style={s.dropSelected} numberOfLines={1}>{selected.name}</Text>
+        </View>
+        <VectorIcon iconSet="Ionicons" iconName={open ? 'chevron-up' : 'chevron-down'} size={18} color={PRIMARY} />
+      </TouchableOpacity>
+      {open && (
+        <View style={s.dropList}>
+          <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled>
+            {subjects.map(sub => (
+              <TouchableOpacity
+                key={sub.id}
+                style={[s.dropItem, sub.id === selected.id && s.dropItemActive]}
+                onPress={() => {
+                  onSelect(sub);
+                  setOpen(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={s.dropIcon}>{subjectStyle(sub.id).icon}</Text>
+                <Text style={[s.dropItemText, sub.id === selected.id && s.dropItemTextActive]} numberOfLines={1}>
+                  {sub.name}
+                </Text>
+                {sub.id === selected.id && (
+                  <VectorIcon iconSet="Ionicons" iconName="checkmark" size={16} color={PRIMARY} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 };
 
-const StatItem = ({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color: string;
-}) => (
-  <View style={s.statItem}>
-    <Text style={[s.statValue, { color }]}>{value}</Text>
-    <Text style={s.statLabel}>{label}</Text>
-  </View>
-);
+const StudentQuizScreen = ({ navigation }: any) => {
+  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
+  const [selectedSub, setSelectedSub] = useState<StudentSubject | null>(null);
+  const [chapters, setChapters] = useState<SyllabusChapter[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-const Chip = ({
-  icon,
-  color,
-  label,
-}: {
-  icon: string;
-  color: string;
-  label: string;
-}) => (
-  <View style={s.chip}>
-    <VectorIcon iconSet="Ionicons" iconName={icon} size={12} color={color} />
-    <Text style={[s.chipText, { color }]}>{label}</Text>
-  </View>
-);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
 
-// ─── Quiz Screen ──────────────────────────────────────────────────────────────
-interface QuizScreenProps {
-  quiz: Quiz;
-  qIndex: number;
-  answers: Record<string, string | null>;
-  onSelect: (qId: string, optId: string) => void;
-  onSkip: () => void;
-  onNext: () => void;
-  onFinish: () => void;
-}
-const QuizScreen = ({
-  quiz,
-  qIndex,
-  answers,
-  onSelect,
-  onSkip,
-  onNext,
-  onFinish,
-}: QuizScreenProps) => {
-  const q: Question = quiz.questions[qIndex];
-  const selected = answers[q.id];
-  const isLast = qIndex === quiz.questions.length - 1;
-  const progress = (qIndex + 1) / quiz.questions.length;
+  const color = selectedSub ? subjectStyle(selectedSub.id).color : PRIMARY;
+  const icon = selectedSub ? subjectStyle(selectedSub.id).icon : '📘';
+  const totalTopics = chapters.reduce((sum, c) => sum + c.topics.length, 0);
 
-  return (
-    <SafeAreaView style={s.root}>
-      <View style={s.quizHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={s.quizHeaderTitle}>{quiz.title}</Text>
-          <Text style={s.quizHeaderSub}>
-            Question {qIndex + 1} of {quiz.questions.length}
-          </Text>
-        </View>
-        <View
-          style={[s.scoreBadge, { backgroundColor: theme.colors.primaryLight }]}
-        >
-          <Text style={[s.scorePct, { color: PRIMARY }]}>
-            {qIndex + 1}/{quiz.questions.length}
-          </Text>
-        </View>
-      </View>
+  const loadChapters = useCallback(async (subjectId: number) => {
+    setChaptersLoading(true);
+    try {
+      const list = await getChapters({ subject_id: subjectId });
+      setChapters(list);
+      setExpandedId(list[0]?.id ?? null);
+    } catch (e: any) {
+      console.log('[getChapters] Error:', e?.response?.status, e?.message);
+      setChapters([]);
+    } finally {
+      setChaptersLoading(false);
+    }
+  }, []);
 
-      {/* Progress bar */}
-      <View style={s.progressBg}>
-        <View style={[s.progressFill, { width: `${progress * 100}%` }]} />
-      </View>
+  const loadSubjects = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const subs = await getStudentSubjects();
+      setSubjects(subs);
+      if (subs.length > 0) {
+        setSelectedSub(prev => {
+          const keep = prev && subs.find(x => x.id === prev.id);
+          const next = keep ?? subs[0];
+          loadChapters(next.id);
+          return next;
+        });
+      }
+    } catch (e: any) {
+      console.log('[getStudentSubjects] Error:', e?.response?.status, e?.message);
+      setError(contentErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [loadChapters]);
 
-      <ScrollView contentContainerStyle={s.scroll}>
-        <View style={s.questionCard}>
-          <Text style={s.questionText}>{q.question}</Text>
-        </View>
+  const { refreshing, onRefresh } = useRefresh(loadSubjects);
+  useFocusLoad(loadSubjects);
 
-        {q.options.map(opt => (
-          <TouchableOpacity
-            key={opt.id}
-            style={[s.optionBtn, selected === opt.id && s.optionBtnActive]}
-            onPress={() => onSelect(q.id, opt.id)}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                s.optionCircle,
-                selected === opt.id && s.optionCircleActive,
-              ]}
-            >
-              {selected === opt.id && <View style={s.optionDot} />}
-            </View>
-            <Text
-              style={[s.optionText, selected === opt.id && s.optionTextActive]}
-            >
-              {opt.text}
-            </Text>
-          </TouchableOpacity>
-        ))}
+  const selectSubject = (sub: StudentSubject) => {
+    setSelectedSub(sub);
+    setChapters([]);
+    setExpandedId(null);
+    loadChapters(sub.id);
+  };
 
-        <View style={s.quizActions}>
-          <TouchableOpacity
-            style={s.skipBtn}
-            onPress={onSkip}
-            activeOpacity={0.8}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="play-skip-forward"
-              size={15}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={s.skipText}>Skip</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.nextBtn, !selected && s.nextBtnDisabled]}
-            onPress={isLast ? onFinish : onNext}
-            disabled={!selected}
-            activeOpacity={0.85}
-          >
-            <Text style={s.nextText}>{isLast ? 'Finish' : 'Next'}</Text>
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={isLast ? 'checkmark' : 'arrow-forward'}
-              size={15}
-              color="#fff"
-            />
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
-
-// ─── Result Screen ────────────────────────────────────────────────────────────
-interface ResultScreenProps {
-  quiz: Quiz;
-  record: AttemptRecord;
-  answers: Record<string, string | null>;
-  onRetry: () => void;
-  onHome: () => void;
-}
-const ResultScreen = ({
-  quiz,
-  record,
-  answers,
-  onRetry,
-  onHome,
-}: ResultScreenProps) => {
-  const pct = Math.round((record.correct / record.total) * 100);
-  const wrong = record.total - record.correct - record.skipped;
-  const passed = pct >= 60;
+  const openAttempt = (chapter: SyllabusChapter, topic: SyllabusTopic) =>
+    navigation.navigate('AttemptQuiz', {
+      chapterId: chapter.id,
+      topicId: topic.id,
+      topicName: topic.name,
+      chapterName: chapter.name,
+      subjectName: selectedSub?.name,
+      subjectColor: color,
+    });
 
   return (
-    <SafeAreaView style={s.root}>
-      <ScrollView contentContainerStyle={s.scroll}>
-        {/* Score card */}
-        <View
-          style={[
-            s.resultCard,
-            {
-              borderColor: passed ? theme.colors.success : theme.colors.danger,
-            },
-          ]}
-        >
-          <Text style={s.resultEmoji}>{passed ? '🎉' : '😔'}</Text>
-          <Text style={s.resultTitle}>
-            {passed ? 'Well Done!' : 'Keep Practicing!'}
-          </Text>
-          <Text
-            style={[
-              s.resultPct,
-              { color: passed ? theme.colors.success : theme.colors.danger },
-            ]}
-          >
-            {pct}%
-          </Text>
-          <Text style={s.resultScore}>
-            {record.correct} out of {record.total} correct
-          </Text>
+    <View style={s.root}>
+      <Header title="Quiz" onBackPress={() => navigation.goBack()} />
 
-          <View style={s.resultChips}>
-            <ResultChip
-              label="Correct"
-              value={record.correct}
-              color={theme.colors.success}
-              bg="#D1FAE5"
-            />
-            <ResultChip
-              label="Wrong"
-              value={wrong}
-              color={theme.colors.danger}
-              bg="#FEE2E2"
-            />
-            <ResultChip
-              label="Skipped"
-              value={record.skipped}
-              color={theme.colors.textMuted}
-              bg={theme.colors.border}
-            />
+      {loading ? (
+        <View style={s.stateBox}>
+          <ScreenSkeleton variant="list" />
+        </View>
+      ) : error ? (
+        <View style={s.stateBox}>
+          <View style={s.errorIconRing}>
+            <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
           </View>
-        </View>
-
-        {/* Answer review */}
-        <Text style={s.reviewTitle}>Answer Review</Text>
-        {quiz.questions.map((q, i) => {
-          const ans = answers[q.id];
-          const isSkipped = ans === null || ans === undefined;
-          const isCorrect = ans === q.correctId;
-          return (
-            <View key={q.id} style={s.reviewCard}>
-              <View style={s.reviewHeader}>
-                <Text style={s.reviewQ}>
-                  Q{i + 1}. {q.question}
-                </Text>
-                <View
-                  style={[
-                    s.reviewBadge,
-                    {
-                      backgroundColor: isSkipped
-                        ? theme.colors.border
-                        : isCorrect
-                        ? '#D1FAE5'
-                        : '#FEE2E2',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      s.reviewBadgeText,
-                      {
-                        color: isSkipped
-                          ? theme.colors.textMuted
-                          : isCorrect
-                          ? theme.colors.success
-                          : theme.colors.danger,
-                      },
-                    ]}
-                  >
-                    {isSkipped
-                      ? 'Skipped'
-                      : isCorrect
-                      ? '✓ Correct'
-                      : '✗ Wrong'}
-                  </Text>
-                </View>
-              </View>
-              {!isSkipped && !isCorrect && (
-                <Text style={s.correctAns}>
-                  Correct: {q.options.find(o => o.id === q.correctId)?.text}
-                </Text>
-              )}
-            </View>
-          );
-        })}
-
-        <View style={s.resultActions}>
-          <TouchableOpacity
-            style={s.retryBtn}
-            onPress={onRetry}
-            activeOpacity={0.85}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="refresh"
-              size={16}
-              color={PRIMARY}
-            />
+          <Text style={s.emptyTitle}>Couldn’t load quiz</Text>
+          <Text style={s.emptySubText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={loadSubjects} activeOpacity={0.85}>
+            <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={PRIMARY} />
             <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={s.homeBtn}
-            onPress={onHome}
-            activeOpacity={0.85}
-          >
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName="home"
-              size={16}
-              color="#fff"
-            />
-            <Text style={s.homeText}>Home</Text>
-          </TouchableOpacity>
         </View>
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
+      ) : !selectedSub ? (
+        <View style={s.stateBox}>
+          <VectorIcon iconSet="Ionicons" iconName="help-circle-outline" size={44} color={theme.colors.textMuted} />
+          <Text style={s.emptyTitle}>No Subjects Yet</Text>
+          <Text style={s.emptySubText}>No subjects have been assigned to your class yet.</Text>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <SubjectDropdown subjects={subjects} selected={selectedSub} onSelect={selectSubject} />
+
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <SubjectThumb image={selectedSub.detailImage || selectedSub.image} color={color} fallback={icon} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle} numberOfLines={1}>{selectedSub.name}</Text>
+                  <Text style={s.cardSubtitle} numberOfLines={1}>Pick a topic to start a quiz</Text>
+                </View>
+                <View style={[s.countBadge, { backgroundColor: color + '15' }]}>
+                  <Text style={[s.countBadgeText, { color }]}>{totalTopics} top</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                  <VectorIcon iconSet="Ionicons" iconName="help-circle-outline" size={20} color={color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>Chapters & Topics</Text>
+                  <Text style={s.cardSubtitle}>Tap a topic to attempt its quiz</Text>
+                </View>
+              </View>
+
+              {chaptersLoading ? (
+                <View style={s.chaptersLoading}>
+                  <ActivityIndicator size="small" color={color} />
+                </View>
+              ) : chapters.length === 0 ? (
+                <View style={s.empty}>
+                  <VectorIcon iconSet="Ionicons" iconName="book-outline" size={44} color={theme.colors.textMuted} />
+                  <Text style={s.emptyTitle}>No Quizzes Yet</Text>
+                  <Text style={s.emptySubText}>Your teacher hasn't added any quiz for {selectedSub.name} yet.</Text>
+                </View>
+              ) : (
+                chapters.map((chapter, i) => {
+                  const expanded = expandedId === chapter.id;
+                  return (
+                    <View key={chapter.id}>
+                      <TouchableOpacity
+                        style={[s.chapterRow, !expanded && i < chapters.length - 1 && s.rowBorder]}
+                        onPress={() => setExpandedId(expanded ? null : chapter.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[s.chapterBadge, { backgroundColor: color }]}>
+                          <Text style={s.chapterBadgeText}>{i + 1}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.chapterName} numberOfLines={1}>{chapter.name}</Text>
+                          <Text style={s.chapterMeta}>
+                            {chapter.topics.length} topic{chapter.topics.length !== 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                        <View style={[s.expandBtn, expanded && { backgroundColor: color + '18' }]}>
+                          <VectorIcon
+                            iconSet="Ionicons"
+                            iconName={expanded ? 'chevron-up' : 'chevron-down'}
+                            size={16}
+                            color={expanded ? color : theme.colors.textMuted}
+                          />
+                        </View>
+                      </TouchableOpacity>
+
+                      {expanded && (
+                        <View style={[s.topicsBox, i < chapters.length - 1 && s.rowBorder]}>
+                          {chapter.topics.length === 0 ? (
+                            <View style={s.noTopics}>
+                              <VectorIcon iconSet="Ionicons" iconName="document-outline" size={16} color={theme.colors.textMuted} />
+                              <Text style={s.noTopicsText}>No topics added yet</Text>
+                            </View>
+                          ) : (
+                            chapter.topics.map((topic, ti) => (
+                              <TouchableOpacity
+                                key={topic.id}
+                                style={[s.topicRow, ti === chapter.topics.length - 1 && { borderBottomWidth: 0 }]}
+                                onPress={() => openAttempt(chapter, topic)}
+                                activeOpacity={0.7}
+                              >
+                                <View style={[s.topicIndexBadge, { backgroundColor: color + '18' }]}>
+                                  <Text style={[s.topicIndexText, { color }]}>{ti + 1}</Text>
+                                </View>
+                                <Text style={s.topicName} numberOfLines={1}>{topic.name}</Text>
+                                <View style={[s.playBtn, { backgroundColor: color + '15' }]}>
+                                  <VectorIcon iconSet="Ionicons" iconName="play" size={12} color={color} />
+                                </View>
+                              </TouchableOpacity>
+                            ))
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      )}
+    </View>
   );
 };
-
-const ResultChip = ({
-  label,
-  value,
-  color,
-  bg,
-}: {
-  label: string;
-  value: number;
-  color: string;
-  bg: string;
-}) => (
-  <View style={[s.resultChip, { backgroundColor: bg }]}>
-    <Text style={[s.resultChipVal, { color }]}>{value}</Text>
-    <Text style={[s.resultChipLabel, { color }]}>{label}</Text>
-  </View>
-);
 
 export default StudentQuizScreen;
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { padding: 16 },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
 
-  // Dropdown
-  dropWrap: { marginBottom: 16, zIndex: 99 },
+  dropWrap: { zIndex: 99 },
   dropBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.card,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderWidth: 1.5,
-    borderColor: theme.colors.primaryLight,
-    shadowColor: PRIMARY,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: theme.colors.card, borderRadius: theme.radius.md,
+    paddingHorizontal: 16, paddingVertical: 13, borderWidth: 1, borderColor: theme.colors.border, elevation: 2,
   },
-  dropLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dropLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   dropIcon: { fontSize: 18 },
-  dropSelected: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
+  dropSelected: { flex: 1, fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
   dropList: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 14,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-    overflow: 'hidden',
+    backgroundColor: theme.colors.card, borderRadius: theme.radius.md, marginTop: 4,
+    borderWidth: 1, borderColor: theme.colors.border, elevation: 5, overflow: 'hidden',
   },
   dropItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13,
+    borderBottomWidth: 1, borderBottomColor: theme.colors.border,
   },
   dropItemActive: { backgroundColor: theme.colors.primaryLight },
-  dropItemText: {
-    flex: 1,
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
-  },
+  dropItemText: { flex: 1, fontSize: 14, color: theme.colors.textSecondary, fontWeight: '500' },
   dropItemTextActive: { color: PRIMARY, fontWeight: '700' },
 
-  // Stats bar
-  statsBar: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.card,
-    borderRadius: 14,
-    marginBottom: 16,
-    padding: 14,
-    justifyContent: 'space-around',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+  card: {
+    backgroundColor: theme.colors.card, borderRadius: theme.radius.md,
+    borderWidth: 1, borderColor: theme.colors.border, overflow: 'hidden', elevation: 2,
   },
-  statItem: { alignItems: 'center', gap: 2 },
-  statValue: { fontSize: 18, fontWeight: '900' },
-  statLabel: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconWrap: { width: 40, height: 40, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
+  thumb: { width: 40, height: 40, borderRadius: theme.radius.sm, backgroundColor: theme.colors.background },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  countBadge: { borderRadius: theme.radius.full, paddingHorizontal: 12, paddingVertical: 5 },
+  countBadgeText: { fontSize: 13, fontWeight: '800' },
 
-  // Quiz card
-  quizCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 16,
-    marginBottom: 12,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  quizCardTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  quizTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginBottom: 2,
-  },
-  quizMeta: { fontSize: 12, color: theme.colors.textMuted, marginBottom: 4 },
-  quizMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  quizMetaText: { fontSize: 12, color: theme.colors.textMuted, marginRight: 6 },
-  scoreBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    alignItems: 'center',
-    minWidth: 56,
-  },
-  scorePct: { fontSize: 16, fontWeight: '900' },
-  scoreLabel: { fontSize: 11, fontWeight: '700' },
-  attemptRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 10,
-    flexWrap: 'wrap',
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: theme.colors.background,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  chipText: { fontSize: 11, fontWeight: '700' },
-  startBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: PRIMARY,
-    borderRadius: 10,
-    paddingVertical: 10,
-  },
-  startBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
-
-  // Empty
-  empty: { alignItems: 'center', paddingTop: 48, gap: 8 },
-  emptyText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    fontWeight: '700',
+  chapterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 4, marginTop: 12 },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  chapterBadge: { width: 34, height: 34, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
+  chapterBadgeText: { fontSize: 14, fontWeight: '900', color: '#fff' },
+  chapterName: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
+  chapterMeta: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500', marginTop: 2 },
+  expandBtn: {
+    width: 30, height: 30, borderRadius: theme.radius.sm,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background,
   },
 
-  // Quiz screen
-  quizHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: theme.colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+  topicsBox: {
+    backgroundColor: theme.colors.background, borderRadius: theme.radius.sm,
+    paddingHorizontal: 12, paddingVertical: 4, marginBottom: 6,
   },
-  quizHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
+  topicRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: theme.colors.border,
   },
-  quizHeaderSub: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
-  progressBg: { height: 4, backgroundColor: theme.colors.border },
-  progressFill: { height: 4, backgroundColor: PRIMARY, borderRadius: 2 },
-  questionCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  questionText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-    lineHeight: 24,
-  },
-  optionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: theme.colors.card,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1.5,
-    borderColor: theme.colors.border,
-  },
-  optionBtnActive: {
-    borderColor: PRIMARY,
-    backgroundColor: theme.colors.primaryLight,
-  },
-  optionCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionCircleActive: { borderColor: PRIMARY },
-  optionDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: PRIMARY,
-  },
-  optionText: {
-    flex: 1,
-    fontSize: 14,
-    color: theme.colors.textPrimary,
-    fontWeight: '500',
-  },
-  optionTextActive: { color: PRIMARY, fontWeight: '700' },
-  quizActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  skipBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: theme.colors.border,
-  },
-  skipText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.textSecondary,
-  },
-  nextBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: PRIMARY,
-  },
-  nextBtnDisabled: { opacity: 0.4 },
-  nextText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  topicIndexBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  topicIndexText: { fontSize: 10, fontWeight: '800' },
+  topicName: { flex: 1, fontSize: 13, color: theme.colors.textSecondary, fontWeight: '500' },
+  playBtn: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
 
-  // Result screen
-  resultCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+  noTopics: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
+  noTopicsText: { fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' },
+
+  empty: { alignItems: 'center', paddingVertical: 36, gap: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textSecondary },
+  emptySubText: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 20, paddingHorizontal: 20 },
+
+  stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
+  chaptersLoading: { paddingVertical: 24, alignItems: 'center' },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
-  resultEmoji: { fontSize: 48, marginBottom: 8 },
-  resultTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: theme.colors.textPrimary,
-    marginBottom: 4,
-  },
-  resultPct: { fontSize: 48, fontWeight: '900', marginBottom: 4 },
-  resultScore: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  resultChips: { flexDirection: 'row', gap: 10 },
-  resultChip: {
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    alignItems: 'center',
-    minWidth: 70,
-  },
-  resultChipVal: { fontSize: 20, fontWeight: '900' },
-  resultChipLabel: { fontSize: 11, fontWeight: '700' },
-  reviewTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: theme.colors.textPrimary,
-    marginBottom: 10,
-  },
-  reviewCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  reviewHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  reviewQ: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-  },
-  reviewBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  reviewBadgeText: { fontSize: 11, fontWeight: '700' },
-  correctAns: {
-    fontSize: 12,
-    color: theme.colors.success,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  resultActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
   retryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: PRIMARY,
+    flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5,
+    borderColor: PRIMARY, borderRadius: theme.radius.full, paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
   },
-  retryText: { fontSize: 14, fontWeight: '800', color: PRIMARY },
-  homeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: PRIMARY,
-  },
-  homeText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  retryText: { fontSize: 13, fontWeight: '700', color: PRIMARY },
 });
 
 

@@ -38,6 +38,8 @@ import UploadMarksScreen from '../screens/teacherUpload/UploadMarksScreen';
 import ManageEntriesScreen from '../screens/teacherUpload/ManageEntriesScreen';
 import AddHomeworkScreen from '../screens/homework/AddHomeworkScreen';
 import ManageSyllabusScreen from '../screens/syllabus/ManageSyllabusScreen';
+import ManageQuizScreen from '../screens/quiz/ManageQuizScreen';
+import AttemptQuizScreen from '../screens/quiz/AttemptQuizScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import BookReaderScreen from '../screens/books/BookReaderScreen';
 
@@ -120,6 +122,10 @@ const AppNavigator = () => {
       <Stack.Screen name="ManageEntries" component={ManageEntriesScreen} />
       <Stack.Screen name="AddHomework" component={AddHomeworkScreen} />
       <Stack.Screen name="ManageSyllabus" component={ManageSyllabusScreen} />
+
+      {/* Quiz */}
+      <Stack.Screen name="ManageQuiz" component={ManageQuizScreen} />
+      <Stack.Screen name="AttemptQuiz" component={AttemptQuizScreen} />
 
       {/* Notifications */}
       <Stack.Screen name="Notifications" component={NotificationScreen} />
