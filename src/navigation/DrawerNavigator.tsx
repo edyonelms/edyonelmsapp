@@ -234,13 +234,11 @@ const DrawerNavigator = ({ route }: any) => {
 
     return (
       <>
-        <View style={styles.drawerRoot}>
-          <DrawerContentScrollView
-            {...props}
-            style={styles.scrollFlex}
-            contentContainerStyle={{ paddingTop: 0 }}
-          >
-            <View style={styles.header}>
+        <DrawerContentScrollView
+          {...props}
+          contentContainerStyle={{ paddingTop: 0, paddingBottom: 0 }}
+        >
+          <View style={styles.header}>
               {org?.logo ? (
                 <Image source={{ uri: org.logo }} style={styles.logoImage} />
               ) : (
@@ -305,7 +303,6 @@ const DrawerNavigator = ({ route }: any) => {
                 );
               })}
             </View>
-          </DrawerContentScrollView>
 
           <View style={styles.logoutContainer}>
             <TouchableOpacity
@@ -321,7 +318,7 @@ const DrawerNavigator = ({ route }: any) => {
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </DrawerContentScrollView>
 
         <Modal
           transparent
@@ -518,13 +515,12 @@ const DrawerNavigator = ({ route }: any) => {
 export default DrawerNavigator;
 
 const __mk_styles = () => StyleSheet.create({
-  drawerRoot: { flex: 1 },
-  scrollFlex: { flex: 1 },
   header: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.lg,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.xs,
   },
   headerDivider: {
     height: 1,
