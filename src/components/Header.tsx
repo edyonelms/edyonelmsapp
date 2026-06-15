@@ -15,9 +15,19 @@ interface HeaderProps {
   onBackPress?: () => void;
   showBack?: boolean;
   backgroundColor?: string;
+  /** Optional right-side action (e.g. a "manage / edit" icon). */
+  rightIcon?: string;
+  onRightPress?: () => void;
 }
 
-const Header = ({ title, onBackPress, showBack = true, backgroundColor }: HeaderProps) => {
+const Header = ({
+  title,
+  onBackPress,
+  showBack = true,
+  backgroundColor,
+  rightIcon,
+  onRightPress,
+}: HeaderProps) => {
   const navigation = useNavigation<any>();
 
   const handleBackPress = () => {
@@ -57,7 +67,22 @@ const Header = ({ title, onBackPress, showBack = true, backgroundColor }: Header
           {title}
         </Text>
 
-        <View style={styles.side} />
+        <View style={[styles.side, styles.sideRight]}>
+          {rightIcon && onRightPress ? (
+            <TouchableOpacity
+              onPress={onRightPress}
+              activeOpacity={0.7}
+              style={styles.backButton}
+            >
+              <VectorIcon
+                iconSet="Ionicons"
+                iconName={rightIcon}
+                size={20}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
     </>
   );
@@ -80,6 +105,9 @@ const __mk_styles = () => StyleSheet.create({
   side: {
     width: 36,
     alignItems: 'flex-start',
+  },
+  sideRight: {
+    alignItems: 'flex-end',
   },
   backButton: {
     width: 36,

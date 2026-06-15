@@ -8,6 +8,7 @@ export interface SyllabusTopic {
   id: number;
   name: string;
   content?: string | null;
+  order: number;
 }
 
 export interface SyllabusChapter {
@@ -15,6 +16,7 @@ export interface SyllabusChapter {
   name: string;
   description?: string | null;
   subjectId?: number;
+  order: number;
   topics: SyllabusTopic[];
 }
 
@@ -42,6 +44,7 @@ const mapTopic = (t: any): SyllabusTopic => ({
   id: t.id,
   name: t.topic_name ?? t.name ?? '',
   content: t.topic_content ?? null,
+  order: Number(t.order ?? 0),
 });
 
 const mapChapter = (c: any): SyllabusChapter => ({
@@ -49,6 +52,7 @@ const mapChapter = (c: any): SyllabusChapter => ({
   name: c.name ?? '',
   description: c.description ?? null,
   subjectId: c.subject_id,
+  order: Number(c.order ?? 0),
   topics: Array.isArray(c.topics) ? c.topics.map(mapTopic) : [],
 });
 
@@ -116,6 +120,7 @@ export interface NewChapter {
   subject_id: number;
   name: string;
   description?: string;
+  order?: number;
 }
 
 export const createChapter = async (payload: NewChapter): Promise<SyllabusChapter> => {
@@ -125,7 +130,7 @@ export const createChapter = async (payload: NewChapter): Promise<SyllabusChapte
 
 export const updateChapter = async (
   chapterId: number,
-  payload: { name: string; description?: string },
+  payload: { name?: string; description?: string; order?: number },
 ): Promise<SyllabusChapter> => {
   const { data } = await apiClient.post(`/content/chapter/${chapterId}`, payload);
   return mapChapter(unwrap(data));
@@ -139,12 +144,12 @@ export const deleteChapter = async (chapterId: number): Promise<void> => {
 export const createTopic = async (
   chapterId: number,
   topicName: string,
-  topicContent?: string,
+  order?: number,
 ): Promise<SyllabusTopic> => {
   const { data } = await apiClient.post('/content/topic', {
     chapter_id: chapterId,
     topic_name: topicName,
-    topic_content: topicContent,
+    order,
   });
   return mapTopic(unwrap(data));
 };
@@ -152,11 +157,11 @@ export const createTopic = async (
 export const updateTopic = async (
   topicId: number,
   topicName: string,
-  topicContent?: string,
+  order?: number,
 ): Promise<SyllabusTopic> => {
   const { data } = await apiClient.post(`/content/topic/${topicId}`, {
     topic_name: topicName,
-    topic_content: topicContent,
+    order,
   });
   return mapTopic(unwrap(data));
 };

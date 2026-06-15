@@ -36,6 +36,7 @@ import UploadCopyScreen from '../screens/teacherUpload/UploadCopyScreen';
 import UploadMarksScreen from '../screens/teacherUpload/UploadMarksScreen';
 import ManageEntriesScreen from '../screens/teacherUpload/ManageEntriesScreen';
 import AddHomeworkScreen from '../screens/homework/AddHomeworkScreen';
+import ManageSyllabusScreen from '../screens/syllabus/ManageSyllabusScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import BookReaderScreen from '../screens/books/BookReaderScreen';
 
@@ -116,6 +117,7 @@ const AppNavigator = () => {
       <Stack.Screen name="UploadMarksScreen" component={UploadMarksScreen} />
       <Stack.Screen name="ManageEntries" component={ManageEntriesScreen} />
       <Stack.Screen name="AddHomework" component={AddHomeworkScreen} />
+      <Stack.Screen name="ManageSyllabus" component={ManageSyllabusScreen} />
 
       {/* Notifications */}
       <Stack.Screen name="Notifications" component={NotificationScreen} />
