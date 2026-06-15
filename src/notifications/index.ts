@@ -50,7 +50,7 @@ export async function notify(input: NotifyInput): Promise<NotificationItem> {
   return item;
 }
 
-export { initNotifications } from './service';
+export { initNotifications, openNotificationTarget } from './service';
 export {
   syncDeviceToken,
   clearDeviceToken,

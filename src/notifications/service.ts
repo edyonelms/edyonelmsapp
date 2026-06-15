@@ -14,6 +14,21 @@ import notifee, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationStore, NotificationItem } from './store';
 import { initPushListeners, syncDeviceToken } from './push';
+import { navigateToScreen } from '../navigation/navigationRef';
+
+/**
+ * Open the screen a notification points at (looked up from the inbox by id, so
+ * we get the real `screen`/`params` objects regardless of OS serialisation).
+ * Safe to call from a cold start — navigation is queued until the app is ready.
+ */
+export function openNotificationTarget(id?: string): void {
+  if (!id) return;
+  const item = notificationStore.getById(id);
+  const data = item?.data as
+    | { screen?: string; params?: Record<string, any> }
+    | undefined;
+  if (data?.screen) navigateToScreen(data.screen, data.params);
+}
 
 export const CHANNEL_ID = 'edyone-default';
 export const SOUND_ANDROID = 'notification_tone';       // res/raw/notification_tone.wav
@@ -93,8 +108,17 @@ export async function initNotifications(): Promise<void> {
     if (!id) return;
     if (type === EventType.PRESS) {
       notificationStore.markRead(id);
+      openNotificationTarget(id);
     }
   });
+
+  // Cold start: app opened by tapping a notification while it was killed.
+  const initial = await notifee.getInitialNotification();
+  const initialId = initial?.notification?.id;
+  if (initialId) {
+    notificationStore.markRead(initialId);
+    openNotificationTarget(initialId);
+  }
 
   // Push (FCM): bind foreground/refresh listeners, and if the user is already
   // logged in (app relaunch), (re)register this device's token with the backend.

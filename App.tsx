@@ -1,10 +1,11 @@
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, StatusBar } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 import {
-  NavigationContainer,
-  createNavigationContainerRef,
-} from '@react-navigation/native';
+  navigationRef,
+  flushPendingNavigation,
+} from './src/navigation/navigationRef';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,8 +25,6 @@ const PUBLIC_ROUTES = new Set([
   'StudentLogin',
   'ForgotPassword',
 ]);
-
-const navigationRef = createNavigationContainerRef();
 
 const AppInner = () => {
   const [inMainApp, setInMainApp] = useState(false);
@@ -55,7 +54,11 @@ const AppInner = () => {
       <AppLock active={inMainApp}>
         <NavigationContainer
           ref={navigationRef}
-          onReady={recheckRoute}
+          onReady={() => {
+            recheckRoute();
+            // Open any notification tapped before the navigator was ready.
+            flushPendingNavigation();
+          }}
           onStateChange={recheckRoute}
         >
           <AppNavigator />

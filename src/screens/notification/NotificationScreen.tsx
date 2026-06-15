@@ -18,6 +18,7 @@ import {
   useNotifications,
   type NotificationItem,
 } from '../../notifications';
+import { navigateToScreen } from '../../navigation/navigationRef';
 
 // "3 mins ago" / "2 hrs ago" / "Yesterday" from an epoch-ms timestamp.
 const relativeTime = (ts: number): string => {
@@ -60,7 +61,13 @@ const NotificationScreen = () => {
     return (
       <TouchableOpacity
         style={[styles.card, !item.read && styles.cardUnread]}
-        onPress={() => markRead(item.id)}
+        onPress={() => {
+          markRead(item.id);
+          const data = item.data as
+            | { screen?: string; params?: Record<string, any> }
+            | undefined;
+          if (data?.screen) navigateToScreen(data.screen, data.params);
+        }}
         activeOpacity={0.8}
       >
         {!item.read && <View style={styles.unreadDot} />}

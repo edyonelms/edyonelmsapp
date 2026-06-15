@@ -51,6 +51,10 @@ class NotificationStore {
     return this.items;
   }
 
+  getById(id: string): NotificationItem | undefined {
+    return this.items.find(i => i.id === id);
+  }
+
   unreadCount(): number {
     return this.items.reduce((n, i) => (i.read ? n : n + 1), 0);
   }
