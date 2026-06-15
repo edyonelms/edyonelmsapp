@@ -52,6 +52,12 @@ export async function notify(input: NotifyInput): Promise<NotificationItem> {
 
 export { initNotifications } from './service';
 export {
+  syncDeviceToken,
+  clearDeviceToken,
+  initPushListeners,
+  handleRemoteMessage,
+} from './push';
+export {
   useNotifications,
   useUnreadCount,
   notificationStore,

@@ -11,7 +11,9 @@ import notifee, {
   AuthorizationStatus,
   EventType,
 } from '@notifee/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationStore, NotificationItem } from './store';
+import { initPushListeners, syncDeviceToken } from './push';
 
 export const CHANNEL_ID = 'edyone-default';
 export const SOUND_ANDROID = 'notification_tone';       // res/raw/notification_tone.wav
@@ -93,4 +95,12 @@ export async function initNotifications(): Promise<void> {
       notificationStore.markRead(id);
     }
   });
+
+  // Push (FCM): bind foreground/refresh listeners, and if the user is already
+  // logged in (app relaunch), (re)register this device's token with the backend.
+  initPushListeners();
+  const authToken = await AsyncStorage.getItem('auth_token');
+  if (authToken) {
+    syncDeviceToken();
+  }
 }

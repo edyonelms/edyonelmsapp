@@ -62,23 +62,37 @@ bundle. The references are `SOUND_ANDROID` / `SOUND_IOS` in
 
 ---
 
-## Phase 2 — Push notifications (app closed/background) — TODO
+## Phase 2 — Push notifications (FCM)
 
-Needs your Firebase project. Steps:
+### App side — DONE ✅
 
-1. **Create a Firebase project** and add the Android app with package
-   `com.edyoneapp`; download **`google-services.json`** → place in
-   `android/app/`. For iOS add **`GoogleService-Info.plist`** to the Xcode project.
-2. Install: `npm i @react-native-firebase/app @react-native-firebase/messaging`
-3. Android gradle:
-   - `android/build.gradle` → `classpath 'com.google.gms:google-services:4.4.2'`
-   - `android/app/build.gradle` → `apply plugin: 'com.google.gms.google-services'`
-4. Register the device token with the backend and forward messages into the
-   existing `notify()` so behaviour is identical to in-app. (Code is ready to drop
-   in — the architecture already funnels everything through `notify()`.)
-5. **Backend:** store device tokens + a "send notification" endpoint that pushes
-   via FCM. (`SendNotificationController` already exists in the API repo and can be
-   extended.)
+Firebase project `edyone-lms-57e8c`, Android app `com.edyoneapp`.
 
-Once you hand over `google-services.json` + confirm the backend, Phase 2 is a
-small wire-up.
+| Piece | File |
+| --- | --- |
+| `google-services.json` | `android/app/google-services.json` |
+| Firebase libs | `@react-native-firebase/app` + `/messaging` (v24) |
+| Gradle | `google-services:4.4.2` classpath + plugin in `android/(app/)build.gradle` |
+| Token register/refresh, foreground msgs → `notify()` | `src/notifications/push.ts` |
+| Backend token API | `src/api/notificationApi.ts` (`POST /device-token`, `/device-token/remove`) |
+| Background/quit msgs → `notify()` | `index.js` (`setBackgroundMessageHandler`) |
+| Token lifecycle | login → `syncDeviceToken()`, logout → `clearDeviceToken()` (`authApi.ts`); app start re-syncs if logged in (`service.ts`) |
+
+**Contract:** the backend must send **data-only** FCM messages (no `notification`
+block) so the app renders them with the custom sound + inbox entry in every state.
+Payload (string values): `{ type, title?, body?, screen?, params?, ...extra }`
+where `type` matches a key in `catalog.ts` and `params` is JSON-encoded.
+
+> Needs a **clean native rebuild** (new native modules added).
+
+### Still TODO
+
+1. **Backend** (`edyonelms` API): a `device_tokens` table + `POST /device-token`
+   (& `/device-token/remove`) endpoints, and a sender that pushes data-only
+   messages via **FCM HTTP v1** using the Firebase **service account key** (still
+   to be provided; goes in `storage/`, never committed). Extend the existing
+   `SendNotificationController`.
+2. **Event → notification rules**: which event fires which `type`, to whom. Each
+   becomes a `notify()` call (in-app) and/or a backend FCM send (push).
+3. **iOS** (only if/when building for iOS): add `GoogleService-Info.plist` + an
+   APNs key in Firebase.

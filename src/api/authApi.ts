@@ -1,5 +1,6 @@
 import apiClient from './apiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { syncDeviceToken, clearDeviceToken } from '../notifications';
 
 export type UserRole = 'student' | 'teacher';
 
@@ -257,6 +258,8 @@ export const updatePassword = async (
 // ─── Logout ───────────────────────────────────────────────────────────────────
 export const logout = async (): Promise<void> => {
   try {
+    // Stop pushes to this device before the token is dropped.
+    await clearDeviceToken();
     await apiClient.post('/logout');
   } finally {
     await AsyncStorage.multiRemove(['auth_token', 'user_data', 'user_role']);
@@ -273,6 +276,8 @@ const _persistAuth = async (data: AuthResponse, role: UserRole) => {
   // Verify it was saved
   const saved = await AsyncStorage.getItem('auth_token');
   console.log('[_persistAuth] Verified saved token:', saved ? `${saved.slice(0, 20)}...` : 'NULL');
+  // Register this device for push now that we're authenticated (fire-and-forget).
+  syncDeviceToken();
 };
 
 export const getStoredUser = async (): Promise<AuthUser | null> => {
