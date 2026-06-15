@@ -236,28 +236,20 @@ const DrawerNavigator = ({ route }: any) => {
       <>
         <DrawerContentScrollView
           {...props}
-          contentContainerStyle={{ flexGrow: 1, paddingTop: 0 }}
+          contentContainerStyle={{ paddingTop: 0 }}
         >
-          <View style={{ flex: 1 }}>
+          <View>
             <View style={styles.header}>
-              <View style={styles.brandBadge}>
-                {org?.logo ? (
-                  <Image
-                    source={{ uri: org.logo }}
-                    style={styles.brandBadgeImage}
-                  />
-                ) : (
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName="school"
-                    size={34}
-                    color={theme.colors.primary}
-                  />
-                )}
-              </View>
-              <Text style={styles.appName} numberOfLines={2}>
-                {org?.name || 'Edyone LMS'}
-              </Text>
+              {org?.logo ? (
+                <Image source={{ uri: org.logo }} style={styles.logoImage} />
+              ) : (
+                <VectorIcon
+                  iconSet="Ionicons"
+                  iconName="school"
+                  size={48}
+                  color={theme.colors.primary}
+                />
+              )}
             </View>
             <View style={styles.headerDivider} />
 
@@ -527,36 +519,19 @@ export default DrawerNavigator;
 const __mk_styles = () => StyleSheet.create({
   header: {
     width: '100%',
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.lg,
   },
   headerDivider: {
     height: 1,
     alignSelf: 'stretch',
     backgroundColor: theme.colors.border,
   },
-  brandBadge: {
-    width: 72,
+  logoImage: {
+    width: 170,
     height: 72,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  brandBadgeImage: {
-    width: '100%',
-    height: '100%',
     resizeMode: 'contain',
-  },
-  appName: {
-    flex: 1,
-    color: theme.colors.primary,
-    fontSize: 17,
-    fontWeight: '800',
   },
   userName: {
     color: theme.colors.textPrimary,
@@ -565,7 +540,6 @@ const __mk_styles = () => StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   menu: {
-    flex: 1,
     marginTop: theme.spacing.sm,
   },
   menuItem: {
@@ -585,7 +559,8 @@ const __mk_styles = () => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   logoutButton: {
     flexDirection: 'row',
