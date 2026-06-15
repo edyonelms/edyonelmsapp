@@ -8,6 +8,7 @@
 import { Platform } from 'react-native';
 import notifee, {
   AndroidImportance,
+  AndroidStyle,
   AuthorizationStatus,
   EventType,
 } from '@notifee/react-native';
@@ -77,6 +78,13 @@ export async function displaySystemNotification(item: NotificationItem): Promise
         sound: SOUND_ANDROID,
         importance: AndroidImportance.HIGH,
         pressAction: { id: 'default' },
+        // Expanding the notification in the tray shows the full body (collapsed
+        // it stays one line). `title` becomes the bold heading on expand.
+        style: {
+          type: AndroidStyle.BIGTEXT,
+          text: item.body,
+          title: item.title,
+        },
       },
       ios: {
         sound: SOUND_IOS,
