@@ -234,11 +234,12 @@ const DrawerNavigator = ({ route }: any) => {
 
     return (
       <>
-        <DrawerContentScrollView
-          {...props}
-          contentContainerStyle={{ paddingTop: 0 }}
-        >
-          <View>
+        <View style={styles.drawerRoot}>
+          <DrawerContentScrollView
+            {...props}
+            style={styles.scrollFlex}
+            contentContainerStyle={{ paddingTop: 0 }}
+          >
             <View style={styles.header}>
               {org?.logo ? (
                 <Image source={{ uri: org.logo }} style={styles.logoImage} />
@@ -246,7 +247,7 @@ const DrawerNavigator = ({ route }: any) => {
                 <VectorIcon
                   iconSet="Ionicons"
                   iconName="school"
-                  size={48}
+                  size={56}
                   color={theme.colors.primary}
                 />
               )}
@@ -304,7 +305,7 @@ const DrawerNavigator = ({ route }: any) => {
                 );
               })}
             </View>
-          </View>
+          </DrawerContentScrollView>
 
           <View style={styles.logoutContainer}>
             <TouchableOpacity
@@ -320,7 +321,7 @@ const DrawerNavigator = ({ route }: any) => {
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
-        </DrawerContentScrollView>
+        </View>
 
         <Modal
           transparent
@@ -517,6 +518,8 @@ const DrawerNavigator = ({ route }: any) => {
 export default DrawerNavigator;
 
 const __mk_styles = () => StyleSheet.create({
+  drawerRoot: { flex: 1 },
+  scrollFlex: { flex: 1 },
   header: {
     width: '100%',
     alignItems: 'center',
@@ -529,8 +532,8 @@ const __mk_styles = () => StyleSheet.create({
     backgroundColor: theme.colors.border,
   },
   logoImage: {
-    width: 170,
-    height: 72,
+    width: 220,
+    height: 104,
     resizeMode: 'contain',
   },
   userName: {
