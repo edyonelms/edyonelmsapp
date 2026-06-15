@@ -26,6 +26,7 @@ import {
   updateTopic,
   deleteTopic,
   contentErrorMessage,
+  subjectStyle,
   type TeacherCombo,
   type SyllabusChapter,
   type SyllabusTopic,
@@ -33,7 +34,7 @@ import {
 
 const PRIMARY = theme.colors.primary;
 
-// ─── Combo (class + subject) Dropdown ─────────────────────────────────────────
+// ─── Combo (class + subject) Dropdown — student template look ──────────────────
 const ComboDropdown = ({
   combos,
   selected,
@@ -45,18 +46,18 @@ const ComboDropdown = ({
 }) => {
   const [open, setOpen] = useState(false);
   return (
-    <View style={s.dropWrap}>
+    <View style={[s.dropWrap, open && { zIndex: 99 }]}>
       <TouchableOpacity style={s.dropBtn} onPress={() => setOpen(v => !v)} activeOpacity={0.8}>
         <View style={s.dropLeft}>
-          <View style={s.dropIconBox}>
-            <VectorIcon iconSet="Ionicons" iconName="library-outline" size={18} color={PRIMARY} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.dropLabel}>Class & Subject</Text>
-            <Text style={s.dropSelected} numberOfLines={1}>{selected.label}</Text>
-          </View>
+          <Text style={s.dropIcon}>{subjectStyle(selected.subjectId).icon}</Text>
+          <Text style={s.dropSelected} numberOfLines={1}>{selected.label}</Text>
         </View>
-        <VectorIcon iconSet="Ionicons" iconName={open ? 'chevron-up' : 'chevron-down'} size={18} color={PRIMARY} />
+        <VectorIcon
+          iconSet="Ionicons"
+          iconName={open ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color={PRIMARY}
+        />
       </TouchableOpacity>
       {open && (
         <View style={s.dropList}>
@@ -71,7 +72,11 @@ const ComboDropdown = ({
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[s.dropItemText, c.key === selected.key && s.dropItemTextActive]} numberOfLines={1}>
+                <Text style={s.dropIcon}>{subjectStyle(c.subjectId).icon}</Text>
+                <Text
+                  style={[s.dropItemText, c.key === selected.key && s.dropItemTextActive]}
+                  numberOfLines={1}
+                >
                   {c.label}
                 </Text>
                 {c.key === selected.key && (
@@ -197,111 +202,6 @@ const EditModal = ({
   );
 };
 
-// ─── Chapter Card ─────────────────────────────────────────────────────────────
-const ChapterCard = ({
-  chapter,
-  index,
-  expanded,
-  busy,
-  onToggle,
-  onEdit,
-  onDelete,
-  onAddTopic,
-  onEditTopic,
-  onDeleteTopic,
-}: {
-  chapter: SyllabusChapter;
-  index: number;
-  expanded: boolean;
-  busy: boolean;
-  onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onAddTopic: () => void;
-  onEditTopic: (t: SyllabusTopic) => void;
-  onDeleteTopic: (t: SyllabusTopic) => void;
-}) => {
-  return (
-    <View style={s.chapterCard}>
-      <TouchableOpacity style={s.chapterHeader} onPress={onToggle} activeOpacity={0.8}>
-        <View style={s.chapterLeft}>
-          <View style={s.chapterIndexBadge}>
-            <Text style={s.chapterIndexText}>{index + 1}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.chapterName} numberOfLines={1}>{chapter.name}</Text>
-            {!!chapter.description && (
-              <Text style={s.chapterDesc} numberOfLines={1}>{chapter.description}</Text>
-            )}
-          </View>
-        </View>
-        <View style={s.chapterRight}>
-          <View style={s.topicCountBadge}>
-            <Text style={s.topicCountText}>{chapter.topics.length}</Text>
-          </View>
-          {busy ? (
-            <ActivityIndicator size="small" color={theme.colors.textMuted} />
-          ) : (
-            <VectorIcon
-              iconSet="Ionicons"
-              iconName={expanded ? 'chevron-up' : 'chevron-down'}
-              size={16}
-              color={theme.colors.textMuted}
-            />
-          )}
-        </View>
-      </TouchableOpacity>
-
-      {expanded && (
-        <View style={s.chapterBody}>
-          {/* Chapter actions */}
-          <View style={s.chapterActions}>
-            <TouchableOpacity style={s.chapterActionBtn} onPress={onEdit} activeOpacity={0.8}>
-              <VectorIcon iconSet="Ionicons" iconName="create-outline" size={15} color={PRIMARY} />
-              <Text style={s.chapterActionText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.chapterActionBtn, s.chapterActionDanger]} onPress={onDelete} activeOpacity={0.8}>
-              <VectorIcon iconSet="Ionicons" iconName="trash-outline" size={15} color={theme.colors.danger} />
-              <Text style={[s.chapterActionText, { color: theme.colors.danger }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={s.topicsWrap}>
-            {chapter.topics.length === 0 && (
-              <Text style={s.noTopicsText}>No topics yet. Add one below.</Text>
-            )}
-            {chapter.topics.map((topic, ti) => (
-              <View key={topic.id} style={s.topicRow}>
-                <View style={s.topicIndexBadge}>
-                  <Text style={s.topicIndexText}>{ti + 1}</Text>
-                </View>
-                <Text style={s.topicName} numberOfLines={2}>{topic.name}</Text>
-                <TouchableOpacity
-                  onPress={() => onEditTopic(topic)}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <VectorIcon iconSet="Ionicons" iconName="create-outline" size={16} color={theme.colors.textMuted} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => onDeleteTopic(topic)}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <VectorIcon iconSet="Ionicons" iconName="close-circle-outline" size={17} color={theme.colors.danger} />
-                </TouchableOpacity>
-              </View>
-            ))}
-
-            <TouchableOpacity style={s.addTopicBtn} onPress={onAddTopic} activeOpacity={0.8}>
-              <VectorIcon iconSet="Ionicons" iconName="add" size={17} color={PRIMARY} />
-              <Text style={s.addTopicText}>Add Topic</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-};
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 type ChapterModalState = { mode: 'add' } | { mode: 'edit'; chapter: SyllabusChapter } | null;
 type TopicModalState =
@@ -313,17 +213,22 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
   const [combos, setCombos] = useState<TeacherCombo[]>([]);
   const [selected, setSelected] = useState<TeacherCombo | null>(null);
   const [chapters, setChapters] = useState<SyllabusChapter[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [chaptersLoading, setChaptersLoading] = useState(false);
-
-  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [busyChapterId, setBusyChapterId] = useState<number | null>(null);
 
   const [chapterModal, setChapterModal] = useState<ChapterModalState>(null);
   const [topicModal, setTopicModal] = useState<TopicModalState>(null);
   const [saving, setSaving] = useState(false);
+
+  // Subject theming (shared student template) + stats.
+  const color = selected ? subjectStyle(selected.subjectId).color : PRIMARY;
+  const icon = selected ? subjectStyle(selected.subjectId).icon : '📘';
+  const totalTopics = chapters.reduce((sum, c) => sum + c.topics.length, 0);
+  const activeChapters = chapters.filter(c => c.topics.length > 0).length;
 
   // ── Loaders ──────────────────────────────────────────────────────────────
   const loadChapters = useCallback(async (combo: TeacherCombo) => {
@@ -501,7 +406,7 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
           <View style={s.errorIconRing}>
             <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
           </View>
-          <Text style={s.emptyText}>Couldn’t load syllabus</Text>
+          <Text style={s.emptyTitle}>Couldn’t load syllabus</Text>
           <Text style={s.emptySubText}>{error}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={loadCombos} activeOpacity={0.85}>
             <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={PRIMARY} />
@@ -514,8 +419,8 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
       return (
         <View style={s.stateBox}>
           <VectorIcon iconSet="Ionicons" iconName="library-outline" size={48} color={theme.colors.textMuted} />
-          <Text style={s.emptyText}>No subjects assigned</Text>
-          <Text style={s.emptySubText}>You don’t teach any class+subject yet.</Text>
+          <Text style={s.emptyTitle}>No subjects assigned</Text>
+          <Text style={s.emptySubText}>You don’t teach any class + subject yet.</Text>
         </View>
       );
     }
@@ -531,46 +436,194 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
         >
           <ComboDropdown combos={combos} selected={selected} onSelect={selectCombo} />
 
-          <View style={s.chapterCountRow}>
-            <Text style={s.chapterCountTitle}>Chapters</Text>
-            <View style={s.chapterCountBadge}>
-              <Text style={s.chapterCountBadgeText}>{chapters.length}</Text>
+          {/* ── Subject overview card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                  <Text style={s.iconEmoji}>{icon}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle} numberOfLines={1}>{selected.label}</Text>
+                  <Text style={s.cardSubtitle} numberOfLines={1}>Syllabus overview</Text>
+                </View>
+                <View style={[s.countBadge, { backgroundColor: color + '15' }]}>
+                  <Text style={[s.countBadgeText, { color }]}>{chapters.length} ch</Text>
+                </View>
+              </View>
+
+              <View style={s.tableFooter}>
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: color }]} />
+                  <Text style={s.footerLabel}>Chapters</Text>
+                  <Text style={s.footerValue}>{chapters.length}</Text>
+                </View>
+                <View style={s.footerDivider} />
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: '#0EA5E9' }]} />
+                  <Text style={s.footerLabel}>Topics</Text>
+                  <Text style={s.footerValue}>{totalTopics}</Text>
+                </View>
+                <View style={s.footerDivider} />
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: '#16A34A' }]} />
+                  <Text style={s.footerLabel}>Active</Text>
+                  <Text style={s.footerValue}>{activeChapters}</Text>
+                </View>
+              </View>
             </View>
           </View>
 
-          {chaptersLoading ? (
-            <View style={s.chaptersLoading}>
-              <ActivityIndicator size="small" color={PRIMARY} />
+          {/* ── Chapters card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                  <VectorIcon iconSet="Ionicons" iconName="book-outline" size={20} color={color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>Chapters & Topics</Text>
+                  <Text style={s.cardSubtitle}>
+                    {chapters.length} chapters · {totalTopics} topics
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[s.headerAddBtn, { backgroundColor: color }]}
+                  onPress={() => setChapterModal({ mode: 'add' })}
+                  activeOpacity={0.85}
+                >
+                  <VectorIcon iconSet="Ionicons" iconName="add" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              {chaptersLoading ? (
+                <View style={s.chaptersLoading}>
+                  <ActivityIndicator size="small" color={color} />
+                </View>
+              ) : chapters.length === 0 ? (
+                <View style={s.empty}>
+                  <VectorIcon iconSet="Ionicons" iconName="book-outline" size={44} color={theme.colors.textMuted} />
+                  <Text style={s.emptyTitle}>No Chapters Yet</Text>
+                  <Text style={s.emptySubText}>Tap “Add New Chapter” below to get started.</Text>
+                </View>
+              ) : (
+                chapters.map((chapter, i) => {
+                  const expanded = expandedId === chapter.id;
+                  const busy = busyChapterId === chapter.id;
+                  return (
+                    <View key={chapter.id}>
+                      <TouchableOpacity
+                        style={[s.chapterRow, !expanded && i < chapters.length - 1 && s.rowBorder]}
+                        onPress={() => setExpandedId(expanded ? null : chapter.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[s.chapterBadge, { backgroundColor: color }]}>
+                          <Text style={s.chapterBadgeText}>{i + 1}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.chapterName} numberOfLines={1}>{chapter.name}</Text>
+                          <Text style={s.chapterMeta}>
+                            {chapter.topics.length} topic{chapter.topics.length !== 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                        {busy ? (
+                          <ActivityIndicator size="small" color={color} />
+                        ) : (
+                          <View style={[s.expandBtn, expanded && { backgroundColor: color + '18' }]}>
+                            <VectorIcon
+                              iconSet="Ionicons"
+                              iconName={expanded ? 'chevron-up' : 'chevron-down'}
+                              size={16}
+                              color={expanded ? color : theme.colors.textMuted}
+                            />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+
+                      {expanded && (
+                        <View style={[s.topicsBox, i < chapters.length - 1 && s.rowBorder]}>
+                          {/* Chapter edit / delete */}
+                          <View style={s.chapterActions}>
+                            <TouchableOpacity
+                              style={[s.chapterActionBtn, { backgroundColor: color + '18' }]}
+                              onPress={() => setChapterModal({ mode: 'edit', chapter })}
+                              activeOpacity={0.8}
+                            >
+                              <VectorIcon iconSet="Ionicons" iconName="create-outline" size={15} color={color} />
+                              <Text style={[s.chapterActionText, { color }]}>Edit</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[s.chapterActionBtn, s.chapterActionDanger]}
+                              onPress={() => confirmDeleteChapter(chapter)}
+                              activeOpacity={0.8}
+                            >
+                              <VectorIcon iconSet="Ionicons" iconName="trash-outline" size={15} color={theme.colors.danger} />
+                              <Text style={[s.chapterActionText, { color: theme.colors.danger }]}>Delete</Text>
+                            </TouchableOpacity>
+                          </View>
+
+                          {chapter.topics.length === 0 ? (
+                            <View style={s.noTopics}>
+                              <VectorIcon iconSet="Ionicons" iconName="document-outline" size={16} color={theme.colors.textMuted} />
+                              <Text style={s.noTopicsText}>No topics added yet</Text>
+                            </View>
+                          ) : (
+                            chapter.topics.map((topic, ti) => (
+                              <View
+                                key={topic.id}
+                                style={[
+                                  s.topicRow,
+                                  ti === chapter.topics.length - 1 && { borderBottomWidth: 0 },
+                                ]}
+                              >
+                                <View style={[s.topicIndexBadge, { backgroundColor: color + '18' }]}>
+                                  <Text style={[s.topicIndexText, { color }]}>{ti + 1}</Text>
+                                </View>
+                                <Text style={s.topicName} numberOfLines={2}>{topic.name}</Text>
+                                <TouchableOpacity
+                                  onPress={() => setTopicModal({ mode: 'edit', chapter, topic })}
+                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                >
+                                  <VectorIcon iconSet="Ionicons" iconName="create-outline" size={16} color={theme.colors.textMuted} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={() => confirmDeleteTopic(chapter, topic)}
+                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                >
+                                  <VectorIcon iconSet="Ionicons" iconName="close-circle-outline" size={17} color={theme.colors.danger} />
+                                </TouchableOpacity>
+                              </View>
+                            ))
+                          )}
+
+                          <TouchableOpacity
+                            style={[s.addTopicBtn, { borderColor: color }]}
+                            onPress={() => setTopicModal({ mode: 'add', chapter })}
+                            activeOpacity={0.8}
+                          >
+                            <VectorIcon iconSet="Ionicons" iconName="add" size={17} color={color} />
+                            <Text style={[s.addTopicText, { color }]}>Add Topic</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+              )}
             </View>
-          ) : chapters.length === 0 ? (
-            <View style={s.empty}>
-              <VectorIcon iconSet="Ionicons" iconName="book-outline" size={48} color={theme.colors.textMuted} />
-              <Text style={s.emptyText}>No chapters yet</Text>
-              <Text style={s.emptySubText}>Tap “Add New Chapter” to get started</Text>
-            </View>
-          ) : (
-            chapters.map((chapter, i) => (
-              <ChapterCard
-                key={chapter.id}
-                chapter={chapter}
-                index={i}
-                expanded={expandedId === chapter.id}
-                busy={busyChapterId === chapter.id}
-                onToggle={() => setExpandedId(expandedId === chapter.id ? null : chapter.id)}
-                onEdit={() => setChapterModal({ mode: 'edit', chapter })}
-                onDelete={() => confirmDeleteChapter(chapter)}
-                onAddTopic={() => setTopicModal({ mode: 'add', chapter })}
-                onEditTopic={topic => setTopicModal({ mode: 'edit', chapter, topic })}
-                onDeleteTopic={topic => confirmDeleteTopic(chapter, topic)}
-              />
-            ))
-          )}
+          </View>
 
           <View style={{ height: 100 }} />
         </ScrollView>
 
         {/* FAB */}
-        <TouchableOpacity style={s.fab} onPress={() => setChapterModal({ mode: 'add' })} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[s.fab, { backgroundColor: color, shadowColor: color }]}
+          onPress={() => setChapterModal({ mode: 'add' })}
+          activeOpacity={0.85}
+        >
           <VectorIcon iconSet="Ionicons" iconName="add" size={20} color="#fff" />
           <Text style={s.fabText}>Add New Chapter</Text>
         </TouchableOpacity>
@@ -595,7 +648,7 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
         initialName={chapterModal?.mode === 'edit' ? chapterModal.chapter.name : ''}
         initialDetail={chapterModal?.mode === 'edit' ? chapterModal.chapter.description ?? '' : ''}
         saving={saving}
-        accent={PRIMARY}
+        accent={color}
         onClose={() => !saving && setChapterModal(null)}
         onSubmit={submitChapter}
       />
@@ -612,7 +665,7 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
         initialName={topicModal?.mode === 'edit' ? topicModal.topic.name : ''}
         initialDetail={topicModal?.mode === 'edit' ? topicModal.topic.content ?? '' : ''}
         saving={saving}
-        accent={PRIMARY}
+        accent={color}
         onClose={() => !saving && setTopicModal(null)}
         onSubmit={submitTopic}
       />
@@ -624,36 +677,28 @@ export default TeacherSyllabusScreen;
 
 const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { padding: 16 },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
 
-  // Dropdown
-  dropWrap: { marginBottom: 18, zIndex: 99 },
+  // Dropdown (shared student template)
+  dropWrap: { zIndex: 99 },
   dropBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.card,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
     borderWidth: 1,
     borderColor: theme.colors.border,
     elevation: 2,
   },
-  dropLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  dropIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: theme.colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dropLabel: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500' },
-  dropSelected: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary, marginTop: 1 },
+  dropLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  dropIcon: { fontSize: 18 },
+  dropSelected: { flex: 1, fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
   dropList: {
     backgroundColor: theme.colors.card,
-    borderRadius: 14,
+    borderRadius: theme.radius.md,
     marginTop: 4,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -663,7 +708,7 @@ const __mk_s = () => StyleSheet.create({
   dropItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 13,
     borderBottomWidth: 1,
@@ -673,113 +718,125 @@ const __mk_s = () => StyleSheet.create({
   dropItemText: { flex: 1, fontSize: 14, color: theme.colors.textSecondary, fontWeight: '500' },
   dropItemTextActive: { color: PRIMARY, fontWeight: '700' },
 
-  // Chapter count
-  chapterCountRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  chapterCountTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
-  chapterCountBadge: {
-    backgroundColor: theme.colors.primaryLight,
-    minWidth: 26,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    alignItems: 'center',
-  },
-  chapterCountBadgeText: { fontSize: 12, fontWeight: '800', color: PRIMARY },
-
-  // Chapter card
-  chapterCard: {
+  // Card (shared student template)
+  card: {
     backgroundColor: theme.colors.card,
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    elevation: 2,
     overflow: 'hidden',
+    elevation: 2,
   },
-  chapterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  chapterLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  chapterIndexBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    backgroundColor: PRIMARY,
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chapterIndexText: { fontSize: 13, fontWeight: '900', color: '#fff' },
-  chapterName: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
-  chapterDesc: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
-  chapterRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  topicCountBadge: {
-    minWidth: 24,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+  iconEmoji: { fontSize: 20 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  countBadge: { borderRadius: theme.radius.full, paddingHorizontal: 12, paddingVertical: 5 },
+  countBadgeText: { fontSize: 13, fontWeight: '800' },
+  headerAddBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  topicCountText: { fontSize: 12, fontWeight: '800', color: theme.colors.textSecondary },
 
-  // Chapter body
-  chapterBody: { borderTopWidth: 1, borderTopColor: theme.colors.border },
-  chapterActions: {
+  // Stats footer (shared student template)
+  tableFooter: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 14,
+    alignItems: 'center',
     paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
+  footerItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  footerDot: { width: 7, height: 7, borderRadius: 4 },
+  footerLabel: { fontSize: 12, fontWeight: '600', color: theme.colors.textSecondary },
+  footerValue: { fontSize: 13, fontWeight: '900', color: theme.colors.textPrimary },
+  footerDivider: { width: 1, height: 24, backgroundColor: theme.colors.border },
+
+  // Chapter rows (shared student template)
+  chapterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  chapterBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chapterBadgeText: { fontSize: 14, fontWeight: '900', color: '#fff' },
+  chapterName: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
+  chapterMeta: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500', marginTop: 2 },
+  expandBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: theme.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.background,
+  },
+
+  // Topics (expanded) — student template + teacher CRUD
+  topicsBox: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 6,
+  },
+  chapterActions: { flexDirection: 'row', gap: 8, paddingVertical: 8 },
   chapterActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.sm,
   },
   chapterActionDanger: { backgroundColor: '#FEE2E2' },
-  chapterActionText: { fontSize: 12, fontWeight: '700', color: PRIMARY },
-
-  // Topics
-  topicsWrap: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 6 },
-  noTopicsText: { fontSize: 12, color: theme.colors.textMuted, paddingVertical: 10, fontStyle: 'italic' },
+  chapterActionText: { fontSize: 12, fontWeight: '700' },
   topicRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
-  topicIndexBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topicIndexText: { fontSize: 11, fontWeight: '800', color: PRIMARY },
-  topicName: { flex: 1, fontSize: 14, color: theme.colors.textPrimary, fontWeight: '500' },
+  topicIndexBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  topicIndexText: { fontSize: 10, fontWeight: '800' },
+  topicName: { flex: 1, fontSize: 13, color: theme.colors.textSecondary, fontWeight: '500' },
+  noTopics: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
+  noTopicsText: { fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' },
   addTopicBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
-    marginTop: 12,
+    marginTop: 10,
+    marginBottom: 4,
     paddingVertical: 10,
     borderWidth: 1.5,
-    borderColor: PRIMARY,
     borderStyle: 'dashed',
-    borderRadius: 10,
+    borderRadius: theme.radius.sm,
   },
-  addTopicText: { fontSize: 13, fontWeight: '700', color: PRIMARY },
+  addTopicText: { fontSize: 13, fontWeight: '700' },
 
   // FAB
   fab: {
@@ -789,11 +846,9 @@ const __mk_s = () => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: PRIMARY,
     paddingHorizontal: 28,
     paddingVertical: 15,
     borderRadius: 999,
-    shadowColor: PRIMARY,
     shadowOpacity: 0.4,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
@@ -803,18 +858,24 @@ const __mk_s = () => StyleSheet.create({
 
   // States
   stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
-  chaptersLoading: { paddingVertical: 30, alignItems: 'center' },
+  chaptersLoading: { paddingVertical: 24, alignItems: 'center' },
   errorIconRing: {
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: '#FEE2E2',
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
-  empty: { alignItems: 'center', paddingTop: 48, gap: 8 },
-  emptyText: { fontSize: 16, color: theme.colors.textSecondary, fontWeight: '700' },
-  emptySubText: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', paddingHorizontal: 24, lineHeight: 19 },
+  empty: { alignItems: 'center', paddingVertical: 36, gap: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textSecondary },
+  emptySubText: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
+  },
   retryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderWidth: 1.5, borderColor: PRIMARY, borderRadius: 999,
+    borderWidth: 1.5, borderColor: PRIMARY, borderRadius: theme.radius.full,
     paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
   },
   retryText: { fontSize: 13, fontWeight: '700', color: PRIMARY },
