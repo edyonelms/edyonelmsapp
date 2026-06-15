@@ -29,16 +29,17 @@ const ViewContentScreen = ({ navigation, route }: any) => {
   const content = topic?.content?.trim() ?? '';
   const imageUrl = topic?.imageUrl ?? null;
   const pdfUrl = topic?.pdfUrl ?? null;
-  const hasAny = !!(content || imageUrl || pdfUrl);
+  const link = topic?.link?.trim() ?? '';
+  const hasAny = !!(content || imageUrl || pdfUrl || link);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const openPdf = async () => {
-    if (!pdfUrl) return;
+  const openUrl = async (url: string) => {
+    if (!url) return;
     try {
-      await Linking.openURL(pdfUrl);
+      await Linking.openURL(url);
     } catch {
-      Alert.alert('Error', 'Unable to open the PDF on this device.');
+      Alert.alert('Error', 'Unable to open the link on this device.');
     }
   };
 
@@ -111,14 +112,36 @@ const ViewContentScreen = ({ navigation, route }: any) => {
                   </>
                 )}
 
+                {/* Link */}
+                {!!link && (
+                  <>
+                    {(content || imageUrl) && <View style={s.divider} />}
+                    <Text style={s.sectionLabel}>Link</Text>
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={() => openUrl(link)}
+                      style={[s.attachBtn, { borderColor: subjectColor + '40' }]}
+                    >
+                      <View style={[s.attachIconBox, { backgroundColor: subjectColor + '15' }]}>
+                        <VectorIcon iconSet="Ionicons" iconName="link-outline" size={18} color={subjectColor} />
+                      </View>
+                      <View style={s.attachTextBox}>
+                        <Text style={s.attachTitle}>Open Link</Text>
+                        <Text style={s.attachSub} numberOfLines={1}>{link}</Text>
+                      </View>
+                      <VectorIcon iconSet="Feather" iconName="external-link" size={16} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
+                  </>
+                )}
+
                 {/* PDF attachment */}
                 {!!pdfUrl && (
                   <>
-                    {(content || imageUrl) && <View style={s.divider} />}
+                    {(content || imageUrl || link) && <View style={s.divider} />}
                     <Text style={s.sectionLabel}>Attachment</Text>
                     <TouchableOpacity
                       activeOpacity={0.85}
-                      onPress={openPdf}
+                      onPress={() => openUrl(pdfUrl)}
                       style={[s.attachBtn, { borderColor: '#EF444440' }]}
                     >
                       <View style={[s.attachIconBox, { backgroundColor: '#FEE2E2' }]}>

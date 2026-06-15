@@ -27,7 +27,7 @@ import {
 const PRIMARY = theme.colors.primary;
 
 const hasMaterial = (t: SyllabusTopic) =>
-  !!(t.content?.trim() || t.imageUrl || t.pdfUrl);
+  !!(t.content?.trim() || t.imageUrl || t.pdfUrl || t.link);
 
 // ─── Subject thumbnail (real image with emoji fallback) ───────────────────────
 const SubjectThumb = ({

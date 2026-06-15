@@ -27,7 +27,7 @@ import {
 const PRIMARY = theme.colors.primary;
 
 const hasMaterial = (t: SyllabusTopic) =>
-  !!(t.content?.trim() || t.imageUrl || t.pdfUrl);
+  !!(t.content?.trim() || t.imageUrl || t.pdfUrl || t.link);
 
 // ─── Subject thumbnail (real image with emoji fallback) ───────────────────────
 const SubjectThumb = ({
@@ -98,7 +98,7 @@ const ComboDropdown = ({
   );
 };
 
-// ─── Main Screen (read-only; CRUD lives in ManageContentScreen) ───────────────
+// ─── Main Screen (browse; tap a topic to add its content) ─────────────────────
 const TeacherContentScreen = ({ navigation }: any) => {
   const [combos, setCombos] = useState<TeacherCombo[]>([]);
   const [selected, setSelected] = useState<TeacherCombo | null>(null);
@@ -167,27 +167,20 @@ const TeacherContentScreen = ({ navigation }: any) => {
     loadChapters(c);
   };
 
-  const openManage = () =>
-    navigation.navigate('ManageContent', { comboKey: selected?.key });
-
+  // Tap a topic's arrow → open the editor to add material INTO that topic.
+  // Chapters/topics themselves are created on the Syllabus screen.
   const openTopic = (chapter: SyllabusChapter, topic: SyllabusTopic) =>
-    navigation.navigate('ViewContent', {
+    navigation.navigate('EditTopicContent', {
       topic,
       chapterName: chapter.name,
       subjectName: selected?.subjectName,
-      subjectIcon: icon,
       subjectColor: color,
       subjectImage: selected?.subjectImage || null,
     });
 
   return (
     <View style={s.root}>
-      <Header
-        title="Study Content"
-        onBackPress={() => navigation.goBack()}
-        rightIcon={selected ? 'create-outline' : undefined}
-        onRightPress={selected ? openManage : undefined}
-      />
+      <Header title="Study Content" onBackPress={() => navigation.goBack()} />
 
       {loading ? (
         <View style={s.stateBox}>
@@ -266,7 +259,7 @@ const TeacherContentScreen = ({ navigation }: any) => {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.cardTitle}>Chapters & Topics</Text>
-                  <Text style={s.cardSubtitle}>Tap a topic to preview its content</Text>
+                  <Text style={s.cardSubtitle}>Tap a topic to add its content</Text>
                 </View>
               </View>
 
@@ -277,8 +270,8 @@ const TeacherContentScreen = ({ navigation }: any) => {
               ) : chapters.length === 0 ? (
                 <View style={s.empty}>
                   <VectorIcon iconSet="Ionicons" iconName="book-outline" size={44} color={theme.colors.textMuted} />
-                  <Text style={s.emptyTitle}>No Content Yet</Text>
-                  <Text style={s.emptySubText}>Tap the edit icon above to add chapters, topics and study material.</Text>
+                  <Text style={s.emptyTitle}>No Chapters Yet</Text>
+                  <Text style={s.emptySubText}>Add chapters & topics from the Syllabus screen, then tap a topic here to add its content.</Text>
                 </View>
               ) : (
                 chapters.map((chapter, i) => {

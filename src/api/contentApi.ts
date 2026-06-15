@@ -10,6 +10,7 @@ export interface SyllabusTopic {
   content?: string | null;
   imageUrl?: string | null;
   pdfUrl?: string | null;
+  link?: string | null;
   order: number;
 }
 
@@ -57,6 +58,7 @@ const mapTopic = (t: any): SyllabusTopic => ({
   content: t.topic_content ?? null,
   imageUrl: t.image_url ?? t.image_path ?? null,
   pdfUrl: t.pdf_url ?? t.pdf_path ?? null,
+  link: t.link ?? null,
   order: Number(t.order ?? 0),
 });
 
@@ -196,6 +198,7 @@ export const deleteTopic = async (topicId: number): Promise<void> => {
 export interface TopicContentPayload {
   name: string;
   content?: string;
+  link?: string;
   order?: number;
   image?: ContentFile | null;
   pdf?: ContentFile | null;
@@ -221,6 +224,7 @@ export const createTopicContent = async (
     fd.append('chapter_id', String(chapterId));
     fd.append('topic_name', payload.name);
     if (payload.content != null) fd.append('topic_content', payload.content);
+    if (payload.link != null) fd.append('link', payload.link);
     if (payload.order != null) fd.append('order', String(payload.order));
     appendFile(fd, 'image', payload.image);
     appendFile(fd, 'pdf', payload.pdf);
@@ -233,6 +237,7 @@ export const createTopicContent = async (
     chapter_id: chapterId,
     topic_name: payload.name,
     topic_content: payload.content,
+    link: payload.link,
     order: payload.order,
   });
   return mapTopic(unwrap(data));
@@ -247,6 +252,7 @@ export const updateTopicContent = async (
     const fd = new FormData();
     fd.append('topic_name', payload.name);
     if (payload.content != null) fd.append('topic_content', payload.content);
+    if (payload.link != null) fd.append('link', payload.link);
     if (payload.order != null) fd.append('order', String(payload.order));
     appendFile(fd, 'image', payload.image);
     appendFile(fd, 'pdf', payload.pdf);
@@ -258,6 +264,7 @@ export const updateTopicContent = async (
   const { data } = await apiClient.post(`/content/topic/${topicId}`, {
     topic_name: payload.name,
     topic_content: payload.content,
+    link: payload.link,
     order: payload.order,
   });
   return mapTopic(unwrap(data));

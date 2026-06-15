@@ -24,7 +24,7 @@ import ChatsListScreen from '../screens/chats/ChatsListScreen';
 import InstructorProfileScreen from '../screens/instructor/InstructorProfileScreen';
 import SubjectDetailsScreen from '../screens/subjects/SubjectDetailsScreen';
 import ViewContentScreen from '../screens/content/ViewContentScreen';
-import ManageContentScreen from '../screens/content/ManageContentScreen';
+import EditTopicContentScreen from '../screens/content/EditTopicContentScreen';
 import ChangePasswordScreen from '../screens/setting/ChangePasswordScreen';
 import ExamsScreen from '../screens/exam/ExamsScreen';
 import TeacherExamsScreen from '../screens/exam/TeacherExamsScreen';
@@ -102,7 +102,7 @@ const AppNavigator = () => {
 
       {/* Study Content */}
       <Stack.Screen name="ViewContent" component={ViewContentScreen} />
-      <Stack.Screen name="ManageContent" component={ManageContentScreen} />
+      <Stack.Screen name="EditTopicContent" component={EditTopicContentScreen} />
 
       {/* Settings */}
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
