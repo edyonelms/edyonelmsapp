@@ -1,434 +1,454 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import ScreenSkeleton from '../../components/Skeleton';
 import {
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet,
-  Text, TextInput, TouchableOpacity, View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
-import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
 import { theme, onThemeChange } from '../../utils/theme';
+import AppRefreshControl from '../../components/AppRefreshControl';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import {
-  addContent, ContentItem, CONTENT_STORE, ContentType,
-  SUBJECTS, TYPE_META,
-} from './contentData';
-import type { Subject, Chapter } from '../subjects/subjectsData';
+  getTeacherSubjects,
+  getChapters,
+  contentErrorMessage,
+  subjectStyle,
+  type TeacherCombo,
+  type SyllabusChapter,
+  type SyllabusTopic,
+} from '../../api/contentApi';
 
 const PRIMARY = theme.colors.primary;
-const TYPES: ContentType[] = ['text', 'url', 'pdf', 'image'];
 
-// ─── Subject Dropdown ─────────────────────────────────────────────────────────
-const SubjectDropdown = ({
-  selected, onSelect,
-}: { selected: Subject; onSelect: (s: Subject) => void }) => {
+const hasMaterial = (t: SyllabusTopic) =>
+  !!(t.content?.trim() || t.imageUrl || t.pdfUrl);
+
+// ─── Subject thumbnail (real image with emoji fallback) ───────────────────────
+const SubjectThumb = ({
+  image,
+  color,
+  fallback,
+  size = 40,
+}: {
+  image?: string | null;
+  color: string;
+  fallback: string;
+  size?: number;
+}) =>
+  image ? (
+    <Image source={{ uri: image }} style={[s.thumb, { width: size, height: size }]} />
+  ) : (
+    <View style={[s.iconWrap, { width: size, height: size, backgroundColor: color + '20' }]}>
+      <Text style={{ fontSize: size * 0.5 }}>{fallback}</Text>
+    </View>
+  );
+
+// ─── Combo (class + subject) Dropdown ─────────────────────────────────────────
+const ComboDropdown = ({
+  combos,
+  selected,
+  onSelect,
+}: {
+  combos: TeacherCombo[];
+  selected: TeacherCombo;
+  onSelect: (c: TeacherCombo) => void;
+}) => {
   const [open, setOpen] = useState(false);
   return (
     <View style={[s.dropWrap, open && { zIndex: 99 }]}>
       <TouchableOpacity style={s.dropBtn} onPress={() => setOpen(v => !v)} activeOpacity={0.8}>
         <View style={s.dropLeft}>
-          <Text style={s.dropIcon}>{selected.icon}</Text>
-          <Text style={s.dropSelected}>{selected.name}</Text>
+          <Text style={s.dropIcon}>{subjectStyle(selected.subjectId).icon}</Text>
+          <Text style={s.dropSelected} numberOfLines={1}>{selected.label}</Text>
         </View>
         <VectorIcon iconSet="Ionicons" iconName={open ? 'chevron-up' : 'chevron-down'} size={18} color={PRIMARY} />
       </TouchableOpacity>
       {open && (
         <View style={s.dropList}>
-          {SUBJECTS.map(sub => (
-            <TouchableOpacity
-              key={sub.id}
-              style={[s.dropItem, sub.id === selected.id && s.dropItemActive]}
-              onPress={() => { onSelect(sub); setOpen(false); }}
-              activeOpacity={0.7}
-            >
-              <Text style={s.dropIcon}>{sub.icon}</Text>
-              <Text style={[s.dropItemText, sub.id === selected.id && s.dropItemTextActive]}>{sub.name}</Text>
-              {sub.id === selected.id && <VectorIcon iconSet="Ionicons" iconName="checkmark" size={16} color={PRIMARY} />}
-            </TouchableOpacity>
-          ))}
+          <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled>
+            {combos.map(c => (
+              <TouchableOpacity
+                key={c.key}
+                style={[s.dropItem, c.key === selected.key && s.dropItemActive]}
+                onPress={() => {
+                  onSelect(c);
+                  setOpen(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={s.dropIcon}>{subjectStyle(c.subjectId).icon}</Text>
+                <Text style={[s.dropItemText, c.key === selected.key && s.dropItemTextActive]} numberOfLines={1}>
+                  {c.label}
+                </Text>
+                {c.key === selected.key && (
+                  <VectorIcon iconSet="Ionicons" iconName="checkmark" size={16} color={PRIMARY} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       )}
     </View>
   );
 };
 
-// ─── Add Content Panel ────────────────────────────────────────────────────────
-const AddContentPanel = ({
-  subjectId, chapterId, onSaved,
-}: { subjectId: string; chapterId: string; onSaved: () => void }) => {
-  const [type, setType]   = useState<ContentType>('text');
-  const [title, setTitle] = useState('');
-  const [value, setValue] = useState('');
-  const [error, setError] = useState('');
+// ─── Main Screen (read-only; CRUD lives in ManageContentScreen) ───────────────
+const TeacherContentScreen = ({ navigation }: any) => {
+  const [combos, setCombos] = useState<TeacherCombo[]>([]);
+  const [selected, setSelected] = useState<TeacherCombo | null>(null);
+  const [chapters, setChapters] = useState<SyllabusChapter[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const meta = TYPE_META[type];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
 
-  const handleSave = () => {
-    if (!title.trim()) { setError('Enter a title.'); return; }
-    if (!value.trim()) { setError(`Enter ${meta.label} content.`); return; }
-    addContent({ subjectId, chapterId, type, title: title.trim(), value: value.trim() });
-    setTitle(''); setValue(''); setError('');
-    onSaved();
+  const color = selected ? subjectStyle(selected.subjectId).color : PRIMARY;
+  const icon = selected ? subjectStyle(selected.subjectId).icon : '📘';
+  const totalTopics = chapters.reduce((sum, c) => sum + c.topics.length, 0);
+  const totalResources = chapters.reduce(
+    (sum, c) => sum + c.topics.filter(hasMaterial).length,
+    0,
+  );
+
+  const loadChapters = useCallback(async (combo: TeacherCombo) => {
+    setChaptersLoading(true);
+    try {
+      const list = await getChapters({
+        standard_id: combo.standardId,
+        section_id: combo.sectionId,
+        subject_id: combo.subjectId,
+      });
+      setChapters(list);
+      setExpandedId(list[0]?.id ?? null);
+    } catch (e: any) {
+      console.log('[getChapters] Error:', e?.response?.status, e?.message);
+      setChapters([]);
+    } finally {
+      setChaptersLoading(false);
+    }
+  }, []);
+
+  const loadCombos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await getTeacherSubjects();
+      setCombos(list);
+      if (list.length > 0) {
+        setSelected(prev => {
+          const keep = prev && list.find(c => c.key === prev.key);
+          const next = keep ?? list[0];
+          loadChapters(next);
+          return next;
+        });
+      }
+    } catch (e: any) {
+      console.log('[getTeacherSubjects] Error:', e?.response?.status, e?.message);
+      setError(contentErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [loadChapters]);
+
+  const { refreshing, onRefresh } = useRefresh(loadCombos);
+  useFocusLoad(loadCombos);
+
+  const selectCombo = (c: TeacherCombo) => {
+    setSelected(c);
+    setChapters([]);
+    setExpandedId(null);
+    loadChapters(c);
   };
 
+  const openManage = () =>
+    navigation.navigate('ManageContent', { comboKey: selected?.key });
+
+  const openTopic = (chapter: SyllabusChapter, topic: SyllabusTopic) =>
+    navigation.navigate('ViewContent', {
+      topic,
+      chapterName: chapter.name,
+      subjectName: selected?.subjectName,
+      subjectIcon: icon,
+      subjectColor: color,
+      subjectImage: selected?.subjectImage || null,
+    });
+
   return (
-    <View style={s.panel}>
-      {/* Type selector */}
-      <View style={s.typeRow}>
-        {TYPES.map(t => {
-          const m = TYPE_META[t];
-          const active = t === type;
-          return (
-            <TouchableOpacity
-              key={t}
-              style={[s.typeBtn, active && { backgroundColor: m.color, borderColor: m.color }]}
-              onPress={() => { setType(t); setValue(''); setError(''); }}
-              activeOpacity={0.8}
-            >
-              <VectorIcon iconSet="Ionicons" iconName={m.icon} size={14} color={active ? '#fff' : theme.colors.textMuted} />
-              <Text style={[s.typeBtnText, active && { color: '#fff' }]}>{m.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {!!error && (
-        <View style={s.errorBox}>
-          <VectorIcon iconSet="Ionicons" iconName="alert-circle-outline" size={13} color={theme.colors.danger} />
-          <Text style={s.errorText}>{error}</Text>
-        </View>
-      )}
-
-      {/* Title */}
-      <Text style={s.label}>Title</Text>
-      <TextInput
-        style={s.input}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Content title..."
-        placeholderTextColor={theme.colors.textMuted}
+    <View style={s.root}>
+      <Header
+        title="Study Content"
+        onBackPress={() => navigation.goBack()}
+        rightIcon={selected ? 'create-outline' : undefined}
+        onRightPress={selected ? openManage : undefined}
       />
 
-      {/* Dynamic input by type */}
-      <Text style={s.label}>{meta.label} Content</Text>
-
-      {type === 'text' && (
-        <TextInput
-          style={[s.input, s.inputMulti]}
-          value={value}
-          onChangeText={setValue}
-          placeholder="Type your content here..."
-          placeholderTextColor={theme.colors.textMuted}
-          multiline
-          textAlignVertical="top"
-        />
-      )}
-
-      {type === 'url' && (
-        <TextInput
-          style={s.input}
-          value={value}
-          onChangeText={setValue}
-          placeholder="https://..."
-          placeholderTextColor={theme.colors.textMuted}
-          keyboardType="url"
-          autoCapitalize="none"
-        />
-      )}
-
-      {(type === 'pdf' || type === 'image') && (
-        <TouchableOpacity
-          style={[s.filePicker, value ? { borderColor: meta.color, backgroundColor: meta.bg } : {}]}
-          onPress={() => setValue(type === 'pdf' ? 'sample_document.pdf' : 'sample_image.jpg')}
-          activeOpacity={0.8}
+      {loading ? (
+        <View style={s.stateBox}>
+          <ScreenSkeleton variant="list" />
+        </View>
+      ) : error ? (
+        <View style={s.stateBox}>
+          <View style={s.errorIconRing}>
+            <VectorIcon iconSet="Ionicons" iconName="cloud-offline-outline" size={32} color={theme.colors.danger} />
+          </View>
+          <Text style={s.emptyTitle}>Couldn’t load content</Text>
+          <Text style={s.emptySubText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={loadCombos} activeOpacity={0.85}>
+            <VectorIcon iconSet="Ionicons" iconName="refresh" size={15} color={PRIMARY} />
+            <Text style={s.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : !selected ? (
+        <View style={s.stateBox}>
+          <VectorIcon iconSet="Ionicons" iconName="library-outline" size={44} color={theme.colors.textMuted} />
+          <Text style={s.emptyTitle}>No subjects assigned</Text>
+          <Text style={s.emptySubText}>You don’t teach any class + subject yet.</Text>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
-          <VectorIcon
-            iconSet="Ionicons"
-            iconName={value ? 'checkmark-circle' : (type === 'pdf' ? 'document-outline' : 'image-outline')}
-            size={22}
-            color={value ? meta.color : theme.colors.textMuted}
-          />
-          <Text style={[s.filePickerText, value && { color: meta.color, fontWeight: '700' }]}>
-            {value || (type === 'pdf' ? 'Select PDF Document' : 'Select Image')}
-          </Text>
-          {value && (
-            <TouchableOpacity onPress={() => setValue('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <VectorIcon iconSet="Ionicons" iconName="close-circle" size={16} color={theme.colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
-      )}
+          <ComboDropdown combos={combos} selected={selected} onSelect={selectCombo} />
 
-      {/* Save button */}
-      <TouchableOpacity style={s.saveBtn} onPress={handleSave} activeOpacity={0.85}>
-        <VectorIcon iconSet="Ionicons" iconName="save-outline" size={16} color="#fff" />
-        <Text style={s.saveBtnText}>Save Content</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
+          {/* ── Overview card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <SubjectThumb image={selected.subjectImage} color={color} fallback={icon} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle} numberOfLines={1}>{selected.label}</Text>
+                  <Text style={s.cardSubtitle} numberOfLines={1}>Study material overview</Text>
+                </View>
+                <View style={[s.countBadge, { backgroundColor: color + '15' }]}>
+                  <Text style={[s.countBadgeText, { color }]}>{totalResources} res</Text>
+                </View>
+              </View>
 
-// ─── Content Pill ─────────────────────────────────────────────────────────────
-const ContentPill = ({ item }: { item: ContentItem }) => {
-  const meta = TYPE_META[item.type];
-  return (
-    <View style={[s.pill, { backgroundColor: meta.bg }]}>
-      <VectorIcon iconSet="Ionicons" iconName={meta.icon} size={13} color={meta.color} />
-      <Text style={[s.pillText, { color: meta.color }]} numberOfLines={1}>{item.title}</Text>
-      <Text style={[s.pillType, { color: meta.color }]}>{meta.label}</Text>
-    </View>
-  );
-};
-
-// ─── Chapter Card ─────────────────────────────────────────────────────────────
-const ChapterCard = ({
-  chapter, chapterIndex, subjectId, onStoreChange,
-}: {
-  chapter: Chapter; chapterIndex: number; subjectId: string; onStoreChange: () => void;
-}) => {
-  const [expanded, setExpanded]   = useState(chapterIndex === 0);
-  const [addOpen, setAddOpen]     = useState(false);
-  const [, forceUpdate]           = useState(0);
-
-  const items = CONTENT_STORE.filter(c => c.subjectId === subjectId && c.chapterId === chapter.id);
-
-  const handleSaved = () => {
-    forceUpdate(n => n + 1);
-    onStoreChange();
-    setAddOpen(false);
-  };
-
-  return (
-    <View style={s.chapterCard}>
-      {/* Header */}
-      <TouchableOpacity style={s.chapterHeader} onPress={() => setExpanded(v => !v)} activeOpacity={0.8}>
-        <View style={s.chapterLeft}>
-          <View style={s.chapterBadge}>
-            <Text style={s.chapterBadgeText}>{chapterIndex + 1}</Text>
-          </View>
-          <VectorIcon iconSet="Ionicons" iconName="book-outline" size={17} color={PRIMARY} />
-          <Text style={s.chapterName} numberOfLines={1}>{chapter.name}</Text>
-        </View>
-        <View style={s.chapterRight}>
-          {items.length > 0 && (
-            <View style={s.countBadge}>
-              <Text style={s.countBadgeText}>{items.length}</Text>
+              <View style={s.tableFooter}>
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: color }]} />
+                  <Text style={s.footerLabel}>Chapters</Text>
+                  <Text style={s.footerValue}>{chapters.length}</Text>
+                </View>
+                <View style={s.footerDivider} />
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: '#0EA5E9' }]} />
+                  <Text style={s.footerLabel}>Topics</Text>
+                  <Text style={s.footerValue}>{totalTopics}</Text>
+                </View>
+                <View style={s.footerDivider} />
+                <View style={s.footerItem}>
+                  <View style={[s.footerDot, { backgroundColor: '#16A34A' }]} />
+                  <Text style={s.footerLabel}>Resources</Text>
+                  <Text style={s.footerValue}>{totalResources}</Text>
+                </View>
+              </View>
             </View>
-          )}
-          <VectorIcon iconSet="Ionicons" iconName={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.textMuted} />
-        </View>
-      </TouchableOpacity>
+          </View>
 
-      {expanded && (
-        <View style={s.chapterBody}>
-          {/* Saved content pills */}
-          {items.length > 0 && (
-            <View style={s.pillsWrap}>
-              {items.map(item => <ContentPill key={item.id} item={item} />)}
+          {/* ── Chapters card ── */}
+          <View style={s.card}>
+            <View style={[s.accentBar, { backgroundColor: color }]} />
+            <View style={s.cardInner}>
+              <View style={s.cardTop}>
+                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                  <VectorIcon iconSet="Ionicons" iconName="folder-open-outline" size={20} color={color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardTitle}>Chapters & Topics</Text>
+                  <Text style={s.cardSubtitle}>Tap a topic to preview its content</Text>
+                </View>
+              </View>
+
+              {chaptersLoading ? (
+                <View style={s.chaptersLoading}>
+                  <ActivityIndicator size="small" color={color} />
+                </View>
+              ) : chapters.length === 0 ? (
+                <View style={s.empty}>
+                  <VectorIcon iconSet="Ionicons" iconName="book-outline" size={44} color={theme.colors.textMuted} />
+                  <Text style={s.emptyTitle}>No Content Yet</Text>
+                  <Text style={s.emptySubText}>Tap the edit icon above to add chapters, topics and study material.</Text>
+                </View>
+              ) : (
+                chapters.map((chapter, i) => {
+                  const expanded = expandedId === chapter.id;
+                  return (
+                    <View key={chapter.id}>
+                      <TouchableOpacity
+                        style={[s.chapterRow, !expanded && i < chapters.length - 1 && s.rowBorder]}
+                        onPress={() => setExpandedId(expanded ? null : chapter.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[s.chapterBadge, { backgroundColor: color }]}>
+                          <Text style={s.chapterBadgeText}>{i + 1}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.chapterName} numberOfLines={1}>{chapter.name}</Text>
+                          <Text style={s.chapterMeta}>
+                            {chapter.topics.length} topic{chapter.topics.length !== 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                        <View style={[s.expandBtn, expanded && { backgroundColor: color + '18' }]}>
+                          <VectorIcon
+                            iconSet="Ionicons"
+                            iconName={expanded ? 'chevron-up' : 'chevron-down'}
+                            size={16}
+                            color={expanded ? color : theme.colors.textMuted}
+                          />
+                        </View>
+                      </TouchableOpacity>
+
+                      {expanded && (
+                        <View style={[s.topicsBox, i < chapters.length - 1 && s.rowBorder]}>
+                          {chapter.topics.length === 0 ? (
+                            <View style={s.noTopics}>
+                              <VectorIcon iconSet="Ionicons" iconName="document-outline" size={16} color={theme.colors.textMuted} />
+                              <Text style={s.noTopicsText}>No topics added yet</Text>
+                            </View>
+                          ) : (
+                            chapter.topics.map((topic, ti) => {
+                              const ready = hasMaterial(topic);
+                              return (
+                                <TouchableOpacity
+                                  key={topic.id}
+                                  style={[s.topicRow, ti === chapter.topics.length - 1 && { borderBottomWidth: 0 }]}
+                                  onPress={() => openTopic(chapter, topic)}
+                                  activeOpacity={0.7}
+                                >
+                                  <View style={[s.topicIndexBadge, { backgroundColor: color + '18' }]}>
+                                    <Text style={[s.topicIndexText, { color }]}>{ti + 1}</Text>
+                                  </View>
+                                  <Text style={s.topicName} numberOfLines={1}>{topic.name}</Text>
+                                  {topic.imageUrl ? (
+                                    <VectorIcon iconSet="Ionicons" iconName="image" size={13} color={color} />
+                                  ) : null}
+                                  {topic.pdfUrl ? (
+                                    <VectorIcon iconSet="Ionicons" iconName="document-text" size={13} color="#EF4444" />
+                                  ) : null}
+                                  {ready && <View style={[s.readyDot, { backgroundColor: '#16A34A' }]} />}
+                                  <VectorIcon iconSet="Ionicons" iconName="chevron-forward" size={14} color={theme.colors.textMuted} />
+                                </TouchableOpacity>
+                              );
+                            })
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+              )}
             </View>
-          )}
-
-          {/* Add button — hidden once 1 content exists */}
-          {items.length === 0 && (
-            <TouchableOpacity
-              style={[s.addToggleBtn, addOpen && s.addToggleBtnActive]}
-              onPress={() => setAddOpen(v => !v)}
-              activeOpacity={0.85}
-            >
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName={addOpen ? 'close' : 'add-circle-outline'}
-                size={15}
-                color={addOpen ? theme.colors.danger : PRIMARY}
-              />
-              <Text style={[s.addToggleBtnText, addOpen && { color: theme.colors.danger }]}>
-                {addOpen ? 'Cancel' : 'Add Content'}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Inline add panel */}
-          {addOpen && items.length === 0 && (
-            <AddContentPanel
-              subjectId={subjectId}
-              chapterId={chapter.id}
-              onSaved={handleSaved}
-            />
-          )}
-        </View>
+          </View>
+        </ScrollView>
       )}
     </View>
-  );
-};
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
-const TeacherContentScreen = ({ navigation }: any) => {
-  const [selectedSub, setSelectedSub] = useState<Subject>(SUBJECTS[0]);
-  const [, forceUpdate] = useState(0);
-
-  // TODO: wire to the content API loader once integrated.
-  const { refreshing, onRefresh } = useRefresh(() => {});
-
-  return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Header title="Content Management" onBackPress={() => navigation.goBack()} />
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-
-        <SubjectDropdown selected={selectedSub} onSelect={sub => setSelectedSub(sub)} />
-
-        <View style={s.rowBetween}>
-          <Text style={s.sectionTitle}>Chapters</Text>
-          <View style={s.countBadge}>
-            <Text style={s.countBadgeText}>{selectedSub.chapters.length} chapters</Text>
-          </View>
-        </View>
-
-        {selectedSub.chapters.length === 0 ? (
-          <View style={s.empty}>
-            <VectorIcon iconSet="Ionicons" iconName="book-outline" size={48} color={theme.colors.textMuted} />
-            <Text style={s.emptyText}>No chapters yet</Text>
-          </View>
-        ) : (
-          selectedSub.chapters.map((ch, i) => (
-            <ChapterCard
-              key={ch.id}
-              chapter={ch}
-              chapterIndex={i}
-              subjectId={selectedSub.id}
-              onStoreChange={() => forceUpdate(n => n + 1)}
-            />
-          ))
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </KeyboardAvoidingView>
   );
 };
 
 export default TeacherContentScreen;
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const __mk_s = () => StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { padding: 16 },
+  scroll: { padding: theme.spacing.lg, paddingBottom: 32, gap: 14 },
 
-  // Dropdown
-  dropWrap: { marginBottom: 20, zIndex: 99 },
+  dropWrap: { zIndex: 99 },
   dropBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: theme.colors.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13,
-    borderWidth: 1.5, borderColor: theme.colors.primaryLight,
-    shadowColor: PRIMARY, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2,
+    backgroundColor: theme.colors.card, borderRadius: theme.radius.md,
+    paddingHorizontal: 16, paddingVertical: 13, borderWidth: 1, borderColor: theme.colors.border, elevation: 2,
   },
-  dropLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dropLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   dropIcon: { fontSize: 18 },
-  dropSelected: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
+  dropSelected: { flex: 1, fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
   dropList: {
-    backgroundColor: theme.colors.card, borderRadius: 14, marginTop: 4,
-    borderWidth: 1, borderColor: theme.colors.border,
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5, overflow: 'hidden',
+    backgroundColor: theme.colors.card, borderRadius: theme.radius.md, marginTop: 4,
+    borderWidth: 1, borderColor: theme.colors.border, elevation: 5, overflow: 'hidden',
   },
   dropItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 16, paddingVertical: 13,
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13,
     borderBottomWidth: 1, borderBottomColor: theme.colors.border,
   },
   dropItemActive: { backgroundColor: theme.colors.primaryLight },
   dropItemText: { flex: 1, fontSize: 14, color: theme.colors.textSecondary, fontWeight: '500' },
   dropItemTextActive: { color: PRIMARY, fontWeight: '700' },
 
-  // Section header
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
-  countBadge: { backgroundColor: theme.colors.primaryLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  countBadgeText: { fontSize: 12, fontWeight: '700', color: PRIMARY },
+  card: {
+    backgroundColor: theme.colors.card, borderRadius: theme.radius.md,
+    borderWidth: 1, borderColor: theme.colors.border, overflow: 'hidden', elevation: 2,
+  },
+  accentBar: { height: 4, width: '100%' },
+  cardInner: { padding: theme.spacing.md },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  iconWrap: { width: 40, height: 40, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
+  thumb: { borderRadius: theme.radius.sm, backgroundColor: theme.colors.background },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  countBadge: { borderRadius: theme.radius.full, paddingHorizontal: 12, paddingVertical: 5 },
+  countBadgeText: { fontSize: 13, fontWeight: '800' },
 
-  // Chapter card
-  chapterCard: {
-    backgroundColor: theme.colors.card, borderRadius: 16, marginBottom: 12, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2,
+  tableFooter: {
+    flexDirection: 'row', alignItems: 'center', paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: theme.colors.border,
   },
-  chapterHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 13,
-  },
-  chapterLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  chapterBadge: {
-    width: 24, height: 24, borderRadius: 7, backgroundColor: PRIMARY,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  chapterBadgeText: { fontSize: 11, fontWeight: '900', color: '#fff' },
-  chapterName: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, flex: 1 },
-  chapterRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  chapterBody: { borderTopWidth: 1, borderTopColor: theme.colors.border, padding: 14 },
+  footerItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  footerDot: { width: 7, height: 7, borderRadius: 4 },
+  footerLabel: { fontSize: 12, fontWeight: '600', color: theme.colors.textSecondary },
+  footerValue: { fontSize: 13, fontWeight: '900', color: theme.colors.textPrimary },
+  footerDivider: { width: 1, height: 24, backgroundColor: theme.colors.border },
 
-  // Pills
-  pillsWrap: { gap: 6, marginBottom: 10 },
-  pill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7,
+  chapterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 4 },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  chapterBadge: { width: 34, height: 34, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
+  chapterBadgeText: { fontSize: 14, fontWeight: '900', color: '#fff' },
+  chapterName: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
+  chapterMeta: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '500', marginTop: 2 },
+  expandBtn: {
+    width: 30, height: 30, borderRadius: theme.radius.sm,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background,
   },
-  pillText: { flex: 1, fontSize: 12, fontWeight: '700' },
-  pillType: { fontSize: 10, fontWeight: '800', opacity: 0.7 },
 
-  // Add toggle button
-  addToggleBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    borderWidth: 1.5, borderColor: PRIMARY, borderRadius: 10,
-    paddingVertical: 9, marginBottom: 0,
+  topicsBox: {
+    backgroundColor: theme.colors.background, borderRadius: theme.radius.sm,
+    paddingHorizontal: 12, paddingVertical: 4, marginBottom: 6,
   },
-  addToggleBtnActive: { borderColor: theme.colors.danger, backgroundColor: '#FFF3F3' },
-  addToggleBtnText: { fontSize: 13, fontWeight: '800', color: PRIMARY },
+  topicRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9,
+    borderBottomWidth: 1, borderBottomColor: theme.colors.border,
+  },
+  topicIndexBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  topicIndexText: { fontSize: 10, fontWeight: '800' },
+  topicName: { flex: 1, fontSize: 13, color: theme.colors.textSecondary, fontWeight: '500' },
+  readyDot: { width: 7, height: 7, borderRadius: 4 },
 
-  // Add panel
-  panel: {
-    marginTop: 12, backgroundColor: '#FAFBFF',
-    borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: theme.colors.primaryLight,
-  },
-  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  typeBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
-    paddingVertical: 8, borderRadius: 10,
-    borderWidth: 1.5, borderColor: theme.colors.border, backgroundColor: theme.colors.card,
-  },
-  typeBtnText: { fontSize: 11, fontWeight: '800', color: theme.colors.textMuted },
-  label: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary, marginBottom: 6, marginTop: 4 },
-  input: {
-    backgroundColor: theme.colors.card, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 14,
-    color: theme.colors.textPrimary, borderWidth: 1.5, borderColor: theme.colors.border, marginBottom: 8,
-  },
-  inputMulti: { minHeight: 90 },
-  filePicker: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    borderWidth: 1.5, borderColor: theme.colors.border, borderStyle: 'dashed',
-    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
-    backgroundColor: theme.colors.card, marginBottom: 8,
-  },
-  filePickerText: { flex: 1, fontSize: 13, color: theme.colors.textMuted, fontWeight: '600' },
-  errorBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#FFF3F3', borderWidth: 1, borderColor: '#F6C7C7',
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 10,
-  },
-  errorText: { flex: 1, fontSize: 12, color: theme.colors.danger, fontWeight: '600' },
-  saveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: PRIMARY, borderRadius: 12, paddingVertical: 13, marginTop: 6,
-  },
-  saveBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  noTopics: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
+  noTopicsText: { fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' },
 
-  // Empty
-  empty: { alignItems: 'center', paddingTop: 48, gap: 8 },
-  emptyText: { fontSize: 16, color: theme.colors.textSecondary, fontWeight: '700' },
+  empty: { alignItems: 'center', paddingVertical: 36, gap: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textSecondary },
+  emptySubText: { fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', lineHeight: 20, paddingHorizontal: 20 },
+
+  stateBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
+  chaptersLoading: { paddingVertical: 24, alignItems: 'center' },
+  errorIconRing: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  retryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5,
+    borderColor: PRIMARY, borderRadius: theme.radius.full, paddingHorizontal: 18, paddingVertical: 9, marginTop: 4,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: PRIMARY },
 });
 
 

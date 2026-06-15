@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -191,11 +192,18 @@ const StudentSyllabusScreen = ({ navigation }: any) => {
             <View style={[s.accentBar, { backgroundColor: color }]} />
             <View style={s.cardInner}>
               <View style={s.cardTop}>
-                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
-                  <Text style={s.iconEmoji}>{icon}</Text>
-                </View>
+                {selectedSub.detailImage || selectedSub.image ? (
+                  <Image
+                    source={{ uri: selectedSub.detailImage || selectedSub.image! }}
+                    style={s.thumb}
+                  />
+                ) : (
+                  <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                    <Text style={s.iconEmoji}>{icon}</Text>
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
-                  <Text style={s.cardTitle}>{selectedSub.name}</Text>
+                  <Text style={s.cardTitle} numberOfLines={1}>{selectedSub.name}</Text>
                   <Text style={s.cardSubtitle} numberOfLines={1}>
                     Syllabus overview
                   </Text>
@@ -443,6 +451,7 @@ const __mk_s = () => StyleSheet.create({
     justifyContent: 'center',
   },
   iconEmoji: { fontSize: 20 },
+  thumb: { width: 40, height: 40, borderRadius: theme.radius.sm, backgroundColor: theme.colors.background },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',

@@ -8,7 +8,16 @@ export interface SyllabusTopic {
   id: number;
   name: string;
   content?: string | null;
+  imageUrl?: string | null;
+  pdfUrl?: string | null;
   order: number;
+}
+
+// A pickable file (image/pdf) in the shape RN FormData expects.
+export interface ContentFile {
+  uri: string;
+  name: string;
+  type?: string;
 }
 
 export interface SyllabusChapter {
@@ -26,6 +35,7 @@ export interface TeacherCombo {
   subjectId: number;
   subjectName: string;
   subjectCode?: string | null;
+  subjectImage?: string | null;
   standardId: number;
   standardName: string | null;
   sectionId: number;
@@ -37,6 +47,7 @@ export interface StudentSubject {
   id: number;
   name: string;
   image?: string | null;
+  detailImage?: string | null;
 }
 
 // ─── Mappers ───────────────────────────────────────────────────────────────────
@@ -44,6 +55,8 @@ const mapTopic = (t: any): SyllabusTopic => ({
   id: t.id,
   name: t.topic_name ?? t.name ?? '',
   content: t.topic_content ?? null,
+  imageUrl: t.image_url ?? t.image_path ?? null,
+  pdfUrl: t.pdf_url ?? t.pdf_path ?? null,
   order: Number(t.order ?? 0),
 });
 
@@ -63,7 +76,12 @@ export const getStudentSubjects = async (): Promise<StudentSubject[]> => {
   const { data } = await apiClient.get('/subject/');
   const list = unwrap(data);
   return Array.isArray(list)
-    ? list.map((s: any) => ({ id: s.id, name: s.name ?? 'Subject', image: s.image ?? null }))
+    ? list.map((s: any) => ({
+        id: s.id,
+        name: s.name ?? 'Subject',
+        image: s.image ?? null,
+        detailImage: s.detail_image ?? null,
+      }))
     : [];
 };
 
@@ -84,6 +102,7 @@ export const getTeacherSubjects = async (): Promise<TeacherCombo[]> => {
         subjectId: r.subject_id,
         subjectName: r.subject_name ?? 'Subject',
         subjectCode: r.subject_code ?? null,
+        subjectImage: r.subject_image ?? r.subject_detail_image ?? null,
         standardId: r.standard_id,
         standardName: r.standard_name ?? null,
         sectionId: r.section_id,
@@ -168,6 +187,80 @@ export const updateTopic = async (
 
 export const deleteTopic = async (topicId: number): Promise<void> => {
   await apiClient.delete(`/content/topic-delete/${topicId}`);
+};
+
+// ─── Study-content topic CRUD (teacher) ─────────────────────────────────────────
+// Same /content/topic endpoints, but carry the rich study material: content text
+// + an optional image (and pdf). Sent as multipart when a file is attached so the
+// backend stores it; teacher edits reflect for students and admin (shared tables).
+export interface TopicContentPayload {
+  name: string;
+  content?: string;
+  order?: number;
+  image?: ContentFile | null;
+  pdf?: ContentFile | null;
+}
+
+const appendFile = (fd: FormData, field: string, file?: ContentFile | null) => {
+  if (file?.uri) {
+    fd.append(field, {
+      uri: file.uri,
+      name: file.name,
+      type: file.type ?? 'application/octet-stream',
+    } as any);
+  }
+};
+
+export const createTopicContent = async (
+  chapterId: number,
+  payload: TopicContentPayload,
+): Promise<SyllabusTopic> => {
+  const hasFile = !!(payload.image?.uri || payload.pdf?.uri);
+  if (hasFile) {
+    const fd = new FormData();
+    fd.append('chapter_id', String(chapterId));
+    fd.append('topic_name', payload.name);
+    if (payload.content != null) fd.append('topic_content', payload.content);
+    if (payload.order != null) fd.append('order', String(payload.order));
+    appendFile(fd, 'image', payload.image);
+    appendFile(fd, 'pdf', payload.pdf);
+    const { data } = await apiClient.post('/content/topic', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return mapTopic(unwrap(data));
+  }
+  const { data } = await apiClient.post('/content/topic', {
+    chapter_id: chapterId,
+    topic_name: payload.name,
+    topic_content: payload.content,
+    order: payload.order,
+  });
+  return mapTopic(unwrap(data));
+};
+
+export const updateTopicContent = async (
+  topicId: number,
+  payload: TopicContentPayload,
+): Promise<SyllabusTopic> => {
+  const hasFile = !!(payload.image?.uri || payload.pdf?.uri);
+  if (hasFile) {
+    const fd = new FormData();
+    fd.append('topic_name', payload.name);
+    if (payload.content != null) fd.append('topic_content', payload.content);
+    if (payload.order != null) fd.append('order', String(payload.order));
+    appendFile(fd, 'image', payload.image);
+    appendFile(fd, 'pdf', payload.pdf);
+    const { data } = await apiClient.post(`/content/topic/${topicId}`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return mapTopic(unwrap(data));
+  }
+  const { data } = await apiClient.post(`/content/topic/${topicId}`, {
+    topic_name: payload.name,
+    topic_content: payload.content,
+    order: payload.order,
+  });
+  return mapTopic(unwrap(data));
 };
 
 // ─── Error → friendly message ──────────────────────────────────────────────────

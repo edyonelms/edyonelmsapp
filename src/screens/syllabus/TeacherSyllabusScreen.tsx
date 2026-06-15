@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import ScreenSkeleton from '../../components/Skeleton';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -187,9 +188,13 @@ const TeacherSyllabusScreen = ({ navigation }: any) => {
             <View style={[s.accentBar, { backgroundColor: color }]} />
             <View style={s.cardInner}>
               <View style={s.cardTop}>
-                <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
-                  <Text style={s.iconEmoji}>{icon}</Text>
-                </View>
+                {selected.subjectImage ? (
+                  <Image source={{ uri: selected.subjectImage }} style={s.thumb} />
+                ) : (
+                  <View style={[s.iconWrap, { backgroundColor: color + '20' }]}>
+                    <Text style={s.iconEmoji}>{icon}</Text>
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={s.cardTitle} numberOfLines={1}>{selected.label}</Text>
                   <Text style={s.cardSubtitle} numberOfLines={1}>Syllabus overview</Text>
@@ -374,6 +379,7 @@ const __mk_s = () => StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   iconWrap: { width: 40, height: 40, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
   iconEmoji: { fontSize: 20 },
+  thumb: { width: 40, height: 40, borderRadius: theme.radius.sm, backgroundColor: theme.colors.background },
   cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
   cardSubtitle: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
   countBadge: { borderRadius: theme.radius.full, paddingHorizontal: 12, paddingVertical: 5 },
