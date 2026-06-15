@@ -10,124 +10,87 @@ export interface IdCardField {
   value: string;
 }
 
-// Normalized shape the IDCardScreen renders — keeps the existing card layout
-// (school band, photo, grid, back rows) but filled from the live API.
-export interface IdCardData {
-  role: IdRole;
+export interface IdCardSchool {
   name: string;
-  photo: string;
-  idNo: string;
-  validUpto: string;
-  school: {
-    name: string;
-    address: string;
-    phone: string | null;
-  };
-  grid: IdCardField[];
-  back: IdCardField[];
+  logo: string | null;
+  address: string | null;
+  website: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
-// ─── Formatting helpers ────────────────────────────────────────────────────────
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Mirror of the backend IdCardService::cardViewData() shape — the SAME data the
+// admin "Executive Navy" ID card renders, so the app card is identical.
+export interface IdCardData {
+  type: IdRole;
+  name: string;
+  subtitle: string;
+  photo: string | null;
+  cardNumber: string;
+  issueDate: string;
+  expiryDate: string;
+  status: string;
+  qrCode: string | null; // full data URI ready for <Image>
+  school: IdCardSchool;
+  frontRows: IdCardField[];
+  transport: IdCardField[] | null;
+  daysRemaining: number | null;
+  isExpired: boolean;
+}
 
-const fmtDate = (iso?: string | null): string => {
-  if (!iso) return '';
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!m) return iso;
-  const [, y, mo, d] = m;
-  return `${d} ${MONTHS[Number(mo) - 1] ?? mo} ${y}`;
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Backend front_rows / transport are associative objects ({ "Reg No": "123" }).
+// Convert to an ordered [{label,value}] list, keeping admin's row order, and
+// dropping rows whose value is empty or the placeholder dash.
+const toFields = (obj: any): IdCardField[] => {
+  if (!obj || typeof obj !== 'object') return [];
+  return Object.entries(obj)
+    .map(([label, v]) => ({ label, value: v == null ? '' : String(v) }))
+    .filter(f => f.value.trim() !== '' && f.value.trim() !== '—');
 };
 
-const cap = (v?: string | null): string =>
-  v ? v.charAt(0).toUpperCase() + v.slice(1) : '';
-
-// Build a [{label,value}] list, dropping any entry whose value is empty.
-const fields = (entries: [string, string | null | undefined][]): IdCardField[] =>
-  entries
-    .filter(([, v]) => v != null && String(v).trim() !== '')
-    .map(([label, v]) => ({ label, value: String(v) }));
-
-// Fall back to an initials avatar when the backend has no photo.
-const avatar = (name: string): string =>
-  `https://ui-avatars.com/api/?background=4F46E5&color=fff&size=128&name=${encodeURIComponent(name || 'User')}`;
-
-// ─── Mappers ───────────────────────────────────────────────────────────────────
-const mapStudent = (d: any): IdCardData => {
-  const st = d.student ?? {};
-  const org = d.organization ?? {};
-  const klass = [st.standard, st.section].filter(Boolean).join(' — ');
-
-  return {
-    role: 'student',
-    name: st.full_name || 'Student',
-    photo: st.image_url || avatar(st.full_name),
-    idNo: d.card_number || '—',
-    validUpto: fmtDate(d.expiry_date),
-    school: {
-      name: org.name || 'School',
-      address: org.address || '',
-      phone: org.phone ?? null,
-    },
-    grid: fields([
-      ['Class', klass],
-      ['Roll No', st.roll_no],
-      ['Admission No', st.admission_no],
-      ['Date of Birth', fmtDate(st.dob)],
-      ['Gender', cap(st.gender)],
-      ['Status', cap(d.status)],
-    ]),
-    back: fields([
-      ['Email', st.email],
-      ['Contact', st.contact_number],
-      ['Issue Date', fmtDate(d.issue_date)],
-      ['Valid Upto', fmtDate(d.expiry_date)],
-      ['Card No', d.card_number],
-    ]),
-  };
+// QR comes back as raw base64 (no prefix). Build a data URI for <Image>.
+const qrUri = (qr?: string | null): string | null => {
+  if (!qr) return null;
+  return qr.startsWith('data:') ? qr : `data:image/png;base64,${qr}`;
 };
 
-const mapTeacher = (d: any): IdCardData => {
-  const t = d.teacher ?? {};
-  const org = d.organization ?? {};
-  const classes = Array.isArray(t.assigned_classes)
-    ? t.assigned_classes.map((c: any) => c.display).filter(Boolean).join(', ')
-    : '';
-  const address = [t.address, t.city, t.state, t.pincode].filter(Boolean).join(', ');
+const str = (v: any, fallback = ''): string =>
+  v == null || String(v).trim() === '' ? fallback : String(v);
 
+// ─── Mapper ──────────────────────────────────────────────────────────────────
+const mapCard = (d: any, role: IdRole): IdCardData => {
+  const school = d.school ?? {};
   return {
-    role: 'teacher',
-    name: t.full_name || 'Teacher',
-    photo: t.image_url || avatar(t.full_name),
-    idNo: d.card_number || '—',
-    validUpto: fmtDate(d.expiry_date),
+    type: (d.type as IdRole) || role,
+    name: str(d.name, role === 'teacher' ? 'Teacher' : 'Student'),
+    subtitle: str(d.subtitle, role === 'teacher' ? 'Teacher' : 'Student'),
+    photo: d.photo || null,
+    cardNumber: str(d.card_number, '—'),
+    issueDate: str(d.issue_date, '—'),
+    expiryDate: str(d.expiry_date, '—'),
+    status: str(d.status, 'active').toLowerCase(),
+    qrCode: qrUri(d.qr_code),
     school: {
-      name: org.name || 'School',
-      address: org.address || '',
-      phone: org.phone ?? null,
+      name: str(school.name, 'School'),
+      logo: school.logo || null,
+      address: school.address || null,
+      website: school.website || null,
+      email: school.email || null,
+      phone: school.phone || null,
     },
-    grid: fields([
-      ['Employee ID', t.employee_id],
-      ['Qualification', t.qualification],
-      ['Joining Date', fmtDate(t.date_of_joining)],
-      ['Classes', classes],
-      ['Phone', t.phone],
-      ['Status', cap(d.status)],
-    ]),
-    back: fields([
-      ['Email', t.email],
-      ['Address', address],
-      ['Issue Date', fmtDate(d.issue_date)],
-      ['Valid Upto', fmtDate(d.expiry_date)],
-      ['Card No', d.card_number],
-    ]),
+    frontRows: toFields(d.front_rows),
+    transport: d.transport ? toFields(d.transport) : null,
+    daysRemaining:
+      typeof d.days_remaining === 'number' ? d.days_remaining : null,
+    isExpired: Boolean(d.is_expired),
   };
 };
 
 // ─── Endpoints ─────────────────────────────────────────────────────────────────
 export const getIdCard = async (role: IdRole): Promise<IdCardData> => {
   const { data } = await apiClient.get(`/id-card/${role}`);
-  const d = unwrap(data);
-  return role === 'teacher' ? mapTeacher(d) : mapStudent(d);
+  return mapCard(unwrap(data), role);
 };
 
 // ─── Error → friendly message ──────────────────────────────────────────────────
