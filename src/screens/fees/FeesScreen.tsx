@@ -22,6 +22,7 @@ import {
   PINK,
 } from './feesData';
 import type { Category } from './feesData';
+import PayFeeButton from './PayFeeButton';
 
 const { width } = Dimensions.get('window');
 const CARD_W = width - 32;
@@ -255,18 +256,12 @@ const OverallTab = () => {
             </View>
             <View style={s.divider} />
             <Row label="Total Amount" value={fmt(item.subtotal)} bold />
-            <TouchableOpacity
+            <PayFeeButton
+              amount={item.subtotal}
+              feeType="academic"
               style={[s.payBtn, { backgroundColor: data.color }]}
-              activeOpacity={0.85}
-            >
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="flash"
-                size={16}
-                color="#fff"
-              />
-              <Text style={s.payBtnText}>Pay Now</Text>
-            </TouchableOpacity>
+              textStyle={s.payBtnText}
+            />
           </View>
         )}
       />
@@ -449,18 +444,12 @@ const CategoryTab = ({ cat }: { cat: Exclude<Category, 'Overall'> }) => {
             </View>
             <View style={s.divider} />
             <Row label="Total Amount" value={fmt(item.subtotal)} bold />
-            <TouchableOpacity
+            <PayFeeButton
+              amount={item.subtotal}
+              feeType={cat === 'Transport' ? 'transport' : 'academic'}
               style={[s.payBtn, { backgroundColor: data.color }]}
-              activeOpacity={0.85}
-            >
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="flash"
-                size={16}
-                color="#fff"
-              />
-              <Text style={s.payBtnText}>Pay Now</Text>
-            </TouchableOpacity>
+              textStyle={s.payBtnText}
+            />
           </View>
         )}
       />
