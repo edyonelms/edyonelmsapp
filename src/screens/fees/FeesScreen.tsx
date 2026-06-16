@@ -1,7 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  Dimensions,
-  FlatList,
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,24 +10,57 @@ import {
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
-import { useRefresh } from '../../hooks/useRefresh';
+import { useRefresh, useFocusLoad } from '../../hooks/useRefresh';
 import { theme, onThemeChange } from '../../utils/theme';
 import {
-  CATEGORIES,
-  FEE_DATA,
-  fmt,
-  calcBreakupTotal,
-  PURPLE,
-  PINK,
-} from './feesData';
-import type { Category } from './feesData';
+  AcademicFees,
+  FeeDashboard,
+  FeePenalties,
+  Installment,
+  InstallmentStatus,
+  PaymentRow,
+  getAcademicFees,
+  getFeeDashboard,
+  getFeePenalties,
+} from '../../api/feeApi';
+import { TransportRoute, getMyTransport } from '../../api/transportApi';
 import PayFeeButton from './PayFeeButton';
 
-const { width } = Dimensions.get('window');
-const CARD_W = width - 32;
+const PURPLE = '#7C3AED';
+const PINK = '#EC4899';
 
-// ─── Shared Row ───────────────────────────────────────────────────────────────
-const Row = ({
+const TABS = ['Dashboard', 'Academic', 'Transport', 'Penalties'] as const;
+type Tab = (typeof TABS)[number];
+
+const TAB_META: Record<Tab, { icon: string; color: string }> = {
+  Dashboard: { icon: 'grid-outline', color: PURPLE },
+  Academic: { icon: 'school-outline', color: '#6366F1' },
+  Transport: { icon: 'bus-outline', color: '#0EA5E9' },
+  Penalties: { icon: 'alert-circle-outline', color: '#EF4444' },
+};
+
+const inr = (n: number) =>
+  `₹ ${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+
+const STATUS_COLOR: Record<InstallmentStatus, string> = {
+  paid: theme.colors.success,
+  partial: '#F59E0B',
+  due: theme.colors.primary,
+  overdue: theme.colors.danger,
+};
+
+// ─── Small shared bits ──────────────────────────────────────────────────────
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <Text style={s.sectionTitle}>{children}</Text>
+);
+
+const ProgressBar = ({ pct, color }: { pct: number; color: string }) => (
+  <View style={s.track}>
+    <View style={[s.fill, { width: `${Math.min(100, Math.max(0, pct))}%`, backgroundColor: color }]} />
+  </View>
+);
+
+const KeyVal = ({
   label,
   value,
   color,
@@ -39,995 +71,548 @@ const Row = ({
   color?: string;
   bold?: boolean;
 }) => (
-  <View style={s.row}>
-    <Text style={[s.rowLabel, bold && s.rowLabelBold]}>{label}</Text>
-    <Text style={[s.rowValue, bold && s.rowValueBold, !!color && { color }]}>
-      {value}
-    </Text>
+  <View style={s.kv}>
+    <Text style={s.kvLabel}>{label}</Text>
+    <Text style={[s.kvValue, bold && s.kvValueBold, !!color && { color }]}>{value}</Text>
   </View>
 );
 
-// ─── Overall Tab ──────────────────────────────────────────────────────────────
-const OverallTab = () => {
-  const entries = (
-    Object.entries(FEE_DATA) as [
-      Exclude<Category, 'Overall'>,
-      (typeof FEE_DATA)[keyof typeof FEE_DATA],
-    ][]
-  ).filter(([key]) => key !== 'Penalty');
-  const totalPaid = entries.reduce((sum, [, d]) => sum + d.paid, 0);
-  const totalTotal = entries.reduce((sum, [, d]) => sum + d.total, 0);
-  const totalPct = Math.round((totalPaid / totalTotal) * 100);
+const EmptyState = ({ icon, text }: { icon: string; text: string }) => (
+  <View style={s.empty}>
+    <VectorIcon iconSet="Ionicons" iconName={icon} size={40} color={theme.colors.textMuted} />
+    <Text style={s.emptyText}>{text}</Text>
+  </View>
+);
 
-  const data = {
-    paid: 41000,
-    total: 50000,
-    color: '#6366F1',
-    icon: 'school-outline',
-    breakup: [
-      {
-        label: 'Tuition Fee',
-        value: '₹ 2,000',
-      },
-      {
-        label: 'Discount Applied',
-        value: '- ₹ 200',
-        color: '#10B981',
-      },
-      {
-        label: 'Promo Code',
-        value: 'EXTRA10',
-        color: '#10B981',
-      },
-      {
-        label: 'Subtotal',
-        value: '₹ 1,800',
-      },
-      {
-        label: 'GST 18%',
-        value: '₹ 324.00',
-      },
-    ],
-    upcoming: [
-      {
-        installment: '1st Installment',
-        dueDate: '31/03/2025',
-        penalty: 500,
-        subtotal: 15500,
-      },
-      {
-        installment: '2nd Installment',
-        dueDate: '30/06/2025',
-        penalty: 0,
-        subtotal: 9000,
-      },
-    ],
-    paidFees: [
-      {
-        installment: '1st Installment',
-        dueDate: '31/05/2025',
-        penalty: 500,
-        paidOn: '28/05/2025',
-        subtotal: 789.45,
-      },
-    ],
-  };
+// ─── Dashboard tab ──────────────────────────────────────────────────────────
+const InstallmentCard = ({ item, onPaid }: { item: Installment; onPaid: () => void }) => {
+  const color = STATUS_COLOR[item.status];
+  const isPaid = item.status === 'paid';
+
+  return (
+    <View style={[s.card, { borderTopColor: color, borderTopWidth: 4 }]}>
+      <View style={s.cardHeadRow}>
+        <Text style={s.cardTitle}>{item.label}</Text>
+        <View style={[s.badge, { backgroundColor: color + '1A' }]}>
+          <Text style={[s.badgeText, { color }]}>{item.status.toUpperCase()}</Text>
+        </View>
+      </View>
+
+      <View style={[s.amountBox, { backgroundColor: color + '12' }]}>
+        <Text style={s.amountLabel}>{isPaid ? 'Amount' : 'Payable now'}</Text>
+        <Text style={[s.amountValue, { color }]}>{inr(isPaid ? item.amount : item.payable)}</Text>
+      </View>
+
+      <KeyVal label="Installment" value={inr(item.amount)} />
+      {item.paid > 0 && !isPaid && <KeyVal label="Already paid" value={inr(item.paid)} color={theme.colors.success} />}
+      {item.penalty > 0 && (
+        <KeyVal label={`Penalty (${item.days_overdue}d overdue)`} value={inr(item.penalty)} color={theme.colors.danger} />
+      )}
+      {item.due_date && <KeyVal label="Due date" value={item.due_date} color={item.status === 'overdue' ? theme.colors.danger : undefined} />}
+
+      {!isPaid && item.payable > 0 && (
+        <PayFeeButton
+          amount={item.payable}
+          feeType="academic"
+          style={[s.payBtn, { backgroundColor: color }]}
+          textStyle={s.payBtnText}
+          onPaid={onPaid}
+        />
+      )}
+    </View>
+  );
+};
+
+const PaymentItem = ({ p }: { p: PaymentRow }) => (
+  <View style={s.payRow}>
+    <View style={[s.payRowIcon, { backgroundColor: theme.colors.success + '18' }]}>
+      <VectorIcon iconSet="Ionicons" iconName="checkmark-circle" size={20} color={theme.colors.success} />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={s.payRowTitle} numberOfLines={1}>
+        {p.receipt_number}
+      </Text>
+      <Text style={s.payRowSub}>
+        {p.fee_type === 'transport' ? 'Transport' : 'Academic'} · {p.payment_mode} · {p.payment_date ?? '-'}
+      </Text>
+    </View>
+    <Text style={s.payRowAmt}>{inr(p.amount)}</Text>
+  </View>
+);
+
+const DashboardTab = ({ data, onPaid }: { data: FeeDashboard | null; onPaid: () => void }) => {
+  if (!data) return <EmptyState icon="document-text-outline" text="No fee data available yet." />;
+
+  const sm = data.summary;
 
   return (
     <>
-      {/* ── Dark hero card ── */}
-      <View style={s.heroCard}>
-        {/* <View style={s.heroBlob1} /> */}
-        {/* <View style={s.heroBlob2} /> */}
-        <Text style={s.heroEyebrow}>Total Fees Overview</Text>
-        <Text style={s.heroAmount}>{fmt(totalTotal)}</Text>
+      {/* Hero */}
+      <View style={s.hero}>
+        <Text style={s.heroEyebrow}>Total Fees</Text>
+        <Text style={s.heroAmount}>{inr(sm.total_due)}</Text>
         <View style={s.heroStatsRow}>
           <View style={s.heroStat}>
-            <Text style={s.heroStatVal}>{fmt(totalPaid)}</Text>
+            <Text style={[s.heroStatVal, { color: '#4ADE80' }]}>{inr(sm.total_paid)}</Text>
             <Text style={s.heroStatLbl}>Paid</Text>
           </View>
-          <View style={s.heroStatDivider} />
+          <View style={s.heroDivider} />
           <View style={s.heroStat}>
-            <Text style={[s.heroStatVal, { color: '#FCA5A5' }]}>
-              {fmt(totalTotal - totalPaid)}
-            </Text>
-            <Text style={s.heroStatLbl}>Due</Text>
+            <Text style={[s.heroStatVal, { color: '#FCA5A5' }]}>{inr(sm.remaining)}</Text>
+            <Text style={s.heroStatLbl}>Remaining</Text>
           </View>
-          <View style={s.heroStatDivider} />
+          <View style={s.heroDivider} />
           <View style={s.heroStat}>
-            <Text style={[s.heroStatVal, { color: '#A5B4FC' }]}>
-              {totalPct}%
-            </Text>
+            <Text style={[s.heroStatVal, { color: '#A5B4FC' }]}>{sm.cleared_percent}%</Text>
             <Text style={s.heroStatLbl}>Cleared</Text>
           </View>
         </View>
         <View style={s.heroTrack}>
-          <View style={[s.heroFill, { width: `${totalPct}%` }]} />
+          <View style={[s.heroFill, { width: `${sm.cleared_percent}%` }]} />
         </View>
       </View>
 
-      {/* ── Category cards ── */}
-      <Text style={s.sectionTitle}>Category Breakdown</Text>
-      <View
-        style={{
-          paddingTop: 6,
-          marginHorizontal: 16,
-          marginBottom: 10,
-          backgroundColor: theme.colors.card,
-          borderRadius: 18,
-          alignItems: 'center',
-          gap: 12,
-          shadowColor: '#000',
-          shadowOpacity: 0.04,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 2,
-        }}
-      >
-        {entries.map(([name, data]) => {
-          const pct = Math.round((data.paid / data.total) * 100);
-          return (
-            <View key={name} style={s.catCard}>
-              {/* <View
-                style={[s.catIconBox, { backgroundColor: data.color + '18' }]}
-              >
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName={data.icon}
-                  size={22}
-                  color={data.color}
-                />
-              </View> */}
-              <View style={s.catBody}>
-                <View style={s.catTopRow}>
-                  <Text style={s.catName}>{name}</Text>
-                  <Text style={[s.catPct, { color: data.color }]}>{pct}%</Text>
-                </View>
-                <View style={s.catTrack}>
-                  <View
-                    style={[
-                      s.catFill,
-                      { width: `${pct}%`, backgroundColor: data.color },
-                    ]}
-                  />
-                </View>
-                <View style={s.catBottomRow}>
-                  <Text style={[s.catPaid, { color: data.color }]}>
-                    {fmt(data.paid)} paid
-                  </Text>
-                  <Text style={s.catTotal}>{fmt(data.total)} total</Text>
-                </View>
-              </View>
-            </View>
-          );
-        })}
-      </View>
-
-      {/* ── Upcoming ── */}
-      <Text style={s.sectionTitle}>Upcoming Dues</Text>
-      <FlatList
-        data={data.upcoming}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              s.upcomingCard,
-              { width: CARD_W, borderTopColor: '#F59E0B' },
-            ]}
-          >
-            <View style={s.upcomingHeader}>
-              <View style={s.upcomingBadge}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="time-outline"
-                  size={12}
-                  color="#F59E0B"
-                />
-                <Text style={s.upcomingBadgeText}>Upcoming</Text>
-              </View>
-              <View style={s.dueDateChip}>
-                <Text style={s.dueDateText}>Due {item.dueDate}</Text>
-              </View>
-            </View>
-            <Text style={s.upcomingTitle}>{item.installment}</Text>
-            <View style={[s.amountBox, { backgroundColor: data.color + '12' }]}>
-              <Text style={s.amountBoxLabel}>Amount</Text>
-              <Text style={[s.amountBoxValue, { color: data.color }]}>
-                {fmt(item.subtotal - item.penalty)}
-              </Text>
-            </View>
-            <View style={s.upcomingDetails}>
-              <Row label="Penalties" value={fmt(item.penalty)} />
-              <Row label="Subtotal" value={fmt(item.subtotal)} />
-            </View>
-            <View style={s.penaltyNote}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="alert-circle-outline"
-                size={12}
-                color="#EF4444"
-              />
-              <Text style={s.penaltyNoteText}>
-                *₹100/day penalty for late payments
-              </Text>
-            </View>
-            <View style={s.divider} />
-            <Row label="Total Amount" value={fmt(item.subtotal)} bold />
-            <PayFeeButton
-              amount={item.subtotal}
-              feeType="academic"
-              style={[s.payBtn, { backgroundColor: data.color }]}
-              textStyle={s.payBtnText}
-            />
-          </View>
-        )}
-      />
-
-      {/* ── Paid Fees ── */}
-      <Text style={s.sectionTitle}>Paid fees</Text>
-      {data.paidFees.map((item, i) => (
-        <View key={i} style={[s.paidCard, { borderTopColor: '#10B981' }]}>
-          <View style={s.paidHeader}>
-            <View style={s.paidBadge}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="checkmark-circle"
-                size={13}
-                color="#10B981"
-              />
-              <Text style={s.paidBadgeText}>Paid</Text>
-            </View>
-            <View style={s.paidOnChip}>
-              <Text style={s.paidOnText}>Paid on {item.paidOn}</Text>
-            </View>
-          </View>
-          <Text style={s.paidTitle}>{item.installment}</Text>
-          <View style={s.paidAmountBox}>
-            <Text style={s.paidAmountLabel}>Amount Paid</Text>
-            <Text style={s.paidAmountValue}>{`₹ ${item.subtotal.toFixed(
-              2,
-            )}`}</Text>
-          </View>
-          <View style={s.paidDetails}>
-            <Row label="Due Date" value={item.dueDate} color="#10B981" />
-            <Row
-              label="Penalties"
-              value={String(item.penalty)}
-              color="#10B981"
-            />
-            <Row label="Subtotal" value={`₹ ${item.subtotal.toFixed(2)}`} />
-          </View>
-          <TouchableOpacity style={s.receiptBtn} activeOpacity={0.8}>
-            <VectorIcon
-              iconSet="Feather"
-              iconName="download"
-              size={15}
-              color="#10B981"
-            />
-            <Text style={s.receiptBtnText}>Download Receipt</Text>
-          </TouchableOpacity>
+      {/* Quick stats */}
+      <View style={s.quickRow}>
+        <View style={[s.quickCard, { backgroundColor: theme.colors.danger + '12' }]}>
+          <Text style={[s.quickVal, { color: theme.colors.danger }]}>{inr(sm.total_penalties)}</Text>
+          <Text style={s.quickLbl}>Penalties</Text>
         </View>
-      ))}
-    </>
-  );
-};
-
-// ─── Category Tab ─────────────────────────────────────────────────────────────
-const CategoryTab = ({ cat }: { cat: Exclude<Category, 'Overall'> }) => {
-  const data = FEE_DATA[cat];
-  const pct = Math.round((data.paid / data.total) * 100);
-  const [slideIdx, setSlideIdx] = useState(0);
-
-  return (
-    <>
-      {/* ── Summary card ── */}
-      <View style={[s.summaryCard, { borderTopColor: data.color }]}>
-        <View style={s.summaryTop}>
-          <View>
-            <Text style={s.summaryEyebrow}>{cat} Fees</Text>
-            <Text style={s.summaryBig}>
-              {data.paid.toLocaleString('en-IN')}
-              <Text style={s.summarySlash}> / </Text>
-              <Text style={s.summaryTotal}>
-                {data.total.toLocaleString('en-IN')}
-              </Text>
-            </Text>
-            <Text style={[s.summarySubLabel, { color: data.color }]}>
-              Paid / Total
-            </Text>
-          </View>
-          <View style={[s.pctRing, { borderColor: data.color + '40' }]}>
-            <Text style={[s.pctRingNum, { color: data.color }]}>{pct}%</Text>
-            <Text style={s.pctRingSub}>Paid</Text>
-          </View>
+        <View style={[s.quickCard, { backgroundColor: theme.colors.success + '12' }]}>
+          <Text style={[s.quickVal, { color: theme.colors.success }]}>{inr(sm.concession)}</Text>
+          <Text style={s.quickLbl}>Concession</Text>
         </View>
-        <View style={s.summaryTrack}>
-          <View
-            style={[
-              s.summaryFill,
-              { width: `${pct}%`, backgroundColor: data.color },
-            ]}
-          />
-        </View>
-        <View style={s.summaryFooter}>
-          <View style={s.summaryFooterItem}>
-            <View style={[s.footerDot, { backgroundColor: data.color }]} />
-            <Text style={s.footerLbl}>Paid </Text>
-            <Text style={[s.footerVal, { color: data.color }]}>
-              {fmt(data.paid)}
-            </Text>
-          </View>
-          <View style={s.summaryFooterItem}>
-            <View style={[s.footerDot, { backgroundColor: '#EF4444' }]} />
-            <Text style={s.footerLbl}>Due </Text>
-            <Text style={[s.footerVal, { color: '#EF4444' }]}>
-              {fmt(data.total - data.paid)}
-            </Text>
-          </View>
+        <View style={[s.quickCard, { backgroundColor: PURPLE + '12' }]}>
+          <Text style={[s.quickVal, { color: PURPLE }]}>{inr(sm.total_waived)}</Text>
+          <Text style={s.quickLbl}>Waived</Text>
         </View>
       </View>
 
-      {/* ── Fee Breakup ── */}
-      <Text style={s.sectionTitle}>Fee Breakup</Text>
-      <View style={s.card}>
-        <View style={s.cardTitleRow}>
-          <View style={[s.cardTitleDot, { backgroundColor: data.color }]} />
-          <Text style={s.cardTitleText}>Price Details</Text>
-        </View>
-        {data.breakup.map((r, i) => (
-          <Row key={i} label={r.label} value={r.value} color={r.color} />
-        ))}
-        <View style={s.divider} />
-        <Row
-          label="Total Amount"
-          value={`₹ ${calcBreakupTotal(data.breakup)}`}
-          bold
-        />
-      </View>
+      {/* Upcoming installments */}
+      <SectionTitle>Upcoming & Due Installments</SectionTitle>
+      {data.upcoming.length === 0 ? (
+        <Text style={s.muted}>No installment schedule configured.</Text>
+      ) : (
+        data.upcoming.map(item => <InstallmentCard key={item.serial} item={item} onPaid={onPaid} />)
+      )}
 
-      {/* ── Upcoming Dues ── */}
-      <Text style={s.sectionTitle}>Upcoming Dues</Text>
-      <FlatList
-        data={data.upcoming}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
-        onMomentumScrollEnd={e =>
-          setSlideIdx(Math.round(e.nativeEvent.contentOffset.x / CARD_W))
-        }
-        renderItem={({ item }) => (
-          <View
-            style={[
-              s.upcomingCard,
-              { width: CARD_W, borderTopColor: '#F59E0B' },
-            ]}
-          >
-            <View style={s.upcomingHeader}>
-              <View style={s.upcomingBadge}>
-                <VectorIcon
-                  iconSet="Ionicons"
-                  iconName="time-outline"
-                  size={12}
-                  color="#F59E0B"
-                />
-                <Text style={s.upcomingBadgeText}>Upcoming</Text>
-              </View>
-              <View style={s.dueDateChip}>
-                <Text style={s.dueDateText}>Due {item.dueDate}</Text>
-              </View>
-            </View>
-            <Text style={s.upcomingTitle}>{item.installment}</Text>
-            <View style={[s.amountBox, { backgroundColor: data.color + '12' }]}>
-              <Text style={s.amountBoxLabel}>Amount</Text>
-              <Text style={[s.amountBoxValue, { color: data.color }]}>
-                {fmt(item.subtotal - item.penalty)}
-              </Text>
-            </View>
-            <View style={s.upcomingDetails}>
-              <Row label="Penalties" value={fmt(item.penalty)} />
-              <Row label="Subtotal" value={fmt(item.subtotal)} />
-            </View>
-            <View style={s.penaltyNote}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="alert-circle-outline"
-                size={12}
-                color="#EF4444"
-              />
-              <Text style={s.penaltyNoteText}>
-                *₹100/day penalty for late payments
-              </Text>
-            </View>
-            <View style={s.divider} />
-            <Row label="Total Amount" value={fmt(item.subtotal)} bold />
-            <PayFeeButton
-              amount={item.subtotal}
-              feeType={cat === 'Transport' ? 'transport' : 'academic'}
-              style={[s.payBtn, { backgroundColor: data.color }]}
-              textStyle={s.payBtnText}
-            />
-          </View>
-        )}
-      />
-      {data.upcoming.length > 1 && (
-        <View style={s.dots}>
-          {data.upcoming.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                s.dot,
-                i === slideIdx && { width: 18, backgroundColor: data.color },
-              ]}
-            />
+      {/* Recent payments */}
+      <SectionTitle>Recent Payments</SectionTitle>
+      {data.recent_payments.length === 0 ? (
+        <Text style={s.muted}>No payments recorded yet.</Text>
+      ) : (
+        <View style={s.listCard}>
+          {data.recent_payments.map(p => (
+            <PaymentItem key={p.id} p={p} />
           ))}
         </View>
       )}
+    </>
+  );
+};
 
-      {/* ── Paid Fees ── */}
-      <Text style={s.sectionTitle}>Paid Fees</Text>
-      {data.paidFees.map((item, i) => (
-        <View key={i} style={[s.paidCard, { borderTopColor: '#10B981' }]}>
-          <View style={s.paidHeader}>
-            <View style={s.paidBadge}>
-              <VectorIcon
-                iconSet="Ionicons"
-                iconName="checkmark-circle"
-                size={13}
-                color="#10B981"
+// ─── Academic tab ───────────────────────────────────────────────────────────
+const AcademicTab = ({ data, onPaid }: { data: AcademicFees | null; onPaid: () => void }) => {
+  if (!data) return <EmptyState icon="school-outline" text="No academic fee structure found." />;
+
+  const t = data.totals;
+  const pct = t.net_due > 0 ? Math.round((t.paid / t.net_due) * 100) : 0;
+  const color = TAB_META.Academic.color;
+
+  return (
+    <>
+      <View style={[s.card, { borderTopColor: color, borderTopWidth: 4 }]}>
+        <Text style={s.cardTitle}>Academic Fees{data.academic_year ? ` · ${data.academic_year}` : ''}</Text>
+        <View style={s.bigAmtRow}>
+          <Text style={[s.bigAmt, { color: theme.colors.textPrimary }]}>{inr(t.paid)}</Text>
+          <Text style={s.bigAmtSlash}> / {inr(t.net_due)}</Text>
+        </View>
+        <ProgressBar pct={pct} color={color} />
+        <Text style={[s.subLabel, { color }]}>{pct}% cleared</Text>
+
+        <View style={s.divider} />
+        <KeyVal label="Structure total" value={inr(t.structure_total)} />
+        {t.concession > 0 && <KeyVal label="Concession" value={`- ${inr(t.concession)}`} color={theme.colors.success} />}
+        <KeyVal label="Net payable" value={inr(t.net_due)} bold />
+        <KeyVal label="Remaining" value={inr(t.remaining)} color={theme.colors.danger} bold />
+
+        {t.remaining > 0 && (
+          <PayFeeButton
+            amount={t.remaining}
+            feeType="academic"
+            style={[s.payBtn, { backgroundColor: color }]}
+            textStyle={s.payBtnText}
+            onPaid={onPaid}
+          />
+        )}
+      </View>
+
+      <SectionTitle>Fee Structure</SectionTitle>
+      <View style={s.listCard}>
+        {data.structures.length === 0 ? (
+          <Text style={s.muted}>No fee items configured for your class.</Text>
+        ) : (
+          data.structures.map(item => (
+            <View key={item.id} style={s.feeLine}>
+              <Text style={s.feeLineName}>{item.fee_name}</Text>
+              <Text style={s.feeLineAmt}>{inr(item.amount)}</Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      {/* Penalty policy */}
+      <SectionTitle>School Penalty Policy</SectionTitle>
+      <View style={[s.card, { borderTopColor: theme.colors.danger, borderTopWidth: 4 }]}>
+        <View style={s.penaltyHeadRow}>
+          <VectorIcon iconSet="Ionicons" iconName="alert-circle" size={18} color={theme.colors.danger} />
+          <Text style={s.penaltyHeadText}>Late fee applies after the due date</Text>
+        </View>
+        <KeyVal label="Penalty per day" value={inr(data.penalty.per_day)} color={theme.colors.danger} />
+        <KeyVal label="Due day of month" value={String(data.penalty.due_day_of_month)} />
+        <KeyVal label="Billing cycle" value={data.penalty.cycle_type} />
+        <KeyVal label="Penalty charged so far" value={inr(data.penalty.charged)} color={theme.colors.danger} bold />
+      </View>
+    </>
+  );
+};
+
+// ─── Transport tab ──────────────────────────────────────────────────────────
+const MONTH_STATUS_COLOR: Record<string, string> = {
+  paid: theme.colors.success,
+  partial: '#F59E0B',
+  pending: theme.colors.danger,
+  no_transport: theme.colors.textMuted,
+};
+
+const TransportTab = ({ data, onPaid }: { data: TransportRoute | null; onPaid: () => void }) => {
+  if (!data) return <EmptyState icon="bus-outline" text="No transport route assigned to you." />;
+
+  const fees = data.fees;
+  const color = TAB_META.Transport.color;
+
+  return (
+    <>
+      <View style={[s.card, { borderTopColor: color, borderTopWidth: 4 }]}>
+        <Text style={s.cardTitle}>{data.route_name}</Text>
+        <Text style={s.routeSub}>
+          {data.pickup_location ?? '-'} → {data.drop_location ?? '-'}
+        </Text>
+        {!!data.pickup_time && <Text style={s.routeSub}>Pickup: {data.pickup_time}</Text>}
+        <View style={s.divider} />
+        <KeyVal label="Monthly fee" value={inr(data.monthly_fee)} />
+        {data.driver?.name && <KeyVal label="Driver" value={data.driver.name} />}
+        {!!data.vehicle_no && <KeyVal label="Vehicle" value={data.vehicle_no} />}
+      </View>
+
+      {fees && (
+        <>
+          <View style={[s.card, { borderTopColor: color, borderTopWidth: 4 }]}>
+            <Text style={s.cardTitle}>Transport Fee Summary</Text>
+            <View style={s.bigAmtRow}>
+              <Text style={[s.bigAmt, { color: theme.colors.textPrimary }]}>{inr(fees.total_paid)}</Text>
+              <Text style={s.bigAmtSlash}> / {inr(fees.annual_fee)}</Text>
+            </View>
+            <ProgressBar pct={fees.annual_fee > 0 ? (fees.total_paid / fees.annual_fee) * 100 : 0} color={color} />
+            <View style={s.divider} />
+            <KeyVal label="Billable months" value={String(fees.months_count)} />
+            <KeyVal label="Total due" value={inr(fees.total_due)} color={theme.colors.danger} bold />
+
+            {fees.total_due > 0 && (
+              <PayFeeButton
+                amount={fees.total_due}
+                feeType="transport"
+                style={[s.payBtn, { backgroundColor: color }]}
+                textStyle={s.payBtnText}
+                onPaid={onPaid}
               />
-              <Text style={s.paidBadgeText}>Paid</Text>
+            )}
+          </View>
+
+          <SectionTitle>12-Month Status</SectionTitle>
+          <View style={s.monthGrid}>
+            {fees.schedule.map(m => {
+              const c = MONTH_STATUS_COLOR[m.status] ?? theme.colors.textMuted;
+              return (
+                <View key={m.key} style={[s.monthCell, { borderColor: c + '40', backgroundColor: c + '0F' }]}>
+                  <Text style={s.monthName}>{m.month.slice(0, 3)}</Text>
+                  <View style={[s.monthDot, { backgroundColor: c }]} />
+                  <Text style={[s.monthStatus, { color: c }]}>
+                    {m.status === 'no_transport' ? '—' : m.status}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </>
+      )}
+    </>
+  );
+};
+
+// ─── Penalties tab ──────────────────────────────────────────────────────────
+const PenaltiesTab = ({ data }: { data: FeePenalties | null }) => {
+  if (!data || data.count === 0) {
+    return <EmptyState icon="happy-outline" text="No penalties charged. Great job staying on time!" />;
+  }
+
+  return (
+    <>
+      <View style={[s.card, { borderTopColor: theme.colors.danger, borderTopWidth: 4 }]}>
+        <Text style={s.cardTitle}>Total Penalties</Text>
+        <Text style={[s.bigAmt, { color: theme.colors.danger }]}>{inr(data.total_penalty)}</Text>
+        <Text style={s.subLabel}>Across {data.count} payment(s) · {inr(data.penalty_per_day)}/day rate</Text>
+      </View>
+
+      <SectionTitle>Penalty Details</SectionTitle>
+      {data.items.map(item => (
+        <View key={item.payment_id} style={[s.card, { borderLeftColor: theme.colors.danger, borderLeftWidth: 4 }]}>
+          <View style={s.cardHeadRow}>
+            <Text style={s.cardTitle}>{inr(item.penalty_amount)} penalty</Text>
+            <View style={[s.badge, { backgroundColor: theme.colors.danger + '1A' }]}>
+              <Text style={[s.badgeText, { color: theme.colors.danger }]}>
+                {item.fee_type === 'transport' ? 'TRANSPORT' : 'ACADEMIC'}
+              </Text>
             </View>
-            <View style={s.paidOnChip}>
-              <Text style={s.paidOnText}>Paid on {item.paidOn}</Text>
-            </View>
           </View>
-          <Text style={s.paidTitle}>{item.installment}</Text>
-          <View style={s.paidAmountBox}>
-            <Text style={s.paidAmountLabel}>Amount Paid</Text>
-            <Text style={s.paidAmountValue}>{`₹ ${item.subtotal.toFixed(
-              2,
-            )}`}</Text>
-          </View>
-          <View style={s.paidDetails}>
-            <Row label="Due Date" value={item.dueDate} color="#10B981" />
-            <Row
-              label="Penalties"
-              value={String(item.penalty)}
-              color="#10B981"
-            />
-            <Row label="Subtotal" value={`₹ ${item.subtotal.toFixed(2)}`} />
-          </View>
-          <TouchableOpacity style={s.receiptBtn} activeOpacity={0.8}>
-            <VectorIcon
-              iconSet="Feather"
-              iconName="download"
-              size={15}
-              color="#10B981"
-            />
-            <Text style={s.receiptBtnText}>Download Receipt</Text>
-          </TouchableOpacity>
+          <Text style={s.penaltyOn}>Charged on payment {item.receipt_number}</Text>
+          <View style={s.divider} />
+          <KeyVal label="Base amount" value={inr(item.base_amount)} />
+          <KeyVal label="Penalty" value={inr(item.penalty_amount)} color={theme.colors.danger} bold />
+          <KeyVal label="Mode" value={item.payment_mode} />
+          {!!item.payment_date && <KeyVal label="Date" value={item.payment_date} />}
         </View>
       ))}
     </>
   );
 };
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ─── Main Screen ────────────────────────────────────────────────────────────
 const FeesScreen = ({ navigation }: any) => {
-  const [activeTab, setActiveTab] = useState<Category>('Overall');
-  const tabScrollRef = useRef<ScrollView>(null);
+  const [tab, setTab] = useState<Tab>('Dashboard');
+  const [dashboard, setDashboard] = useState<FeeDashboard | null>(null);
+  const [academic, setAcademic] = useState<AcademicFees | null>(null);
+  const [penalties, setPenalties] = useState<FeePenalties | null>(null);
+  const [transport, setTransport] = useState<TransportRoute | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: wire to the fees API loader once integrated.
-  const { refreshing, onRefresh } = useRefresh(() => {});
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [d, a, p, t] = await Promise.all([
+        getFeeDashboard().catch(() => null),
+        getAcademicFees().catch(() => null),
+        getFeePenalties().catch(() => null),
+        getMyTransport().catch(() => null), // 404 when no transport assigned
+      ]);
+      setDashboard(d);
+      setAcademic(a);
+      setPenalties(p);
+      setTransport(t);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusLoad(load);
+  const { refreshing, onRefresh } = useRefresh(load);
 
   return (
     <View style={s.root}>
-      <Header title="Fee" onBackPress={() => navigation.goBack()} />
+      <Header title="Fees" onBackPress={() => navigation.goBack()} />
 
-      {/* ── Tab Bar ── */}
+      {/* Tab bar */}
       <View style={s.tabBarWrap}>
-        <ScrollView
-          ref={tabScrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.tabBar}
-        >
-          {CATEGORIES.map(cat => {
-            const isActive = activeTab === cat;
-            const color =
-              cat === 'Overall'
-                ? PURPLE
-                : FEE_DATA[cat as Exclude<Category, 'Overall'>]?.color ??
-                  PURPLE;
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabBar}>
+          {TABS.map(t => {
+            const active = tab === t;
+            const color = TAB_META[t].color;
             return (
               <TouchableOpacity
-                key={cat}
-                onPress={() => setActiveTab(cat)}
+                key={t}
                 activeOpacity={0.8}
+                onPress={() => setTab(t)}
                 style={[
                   s.tabPill,
-                  isActive
-                    ? { backgroundColor: color }
-                    : {
-                        backgroundColor: color + '14',
-                        borderColor: color + '30',
-                        borderWidth: 1,
-                      },
+                  active ? { backgroundColor: color } : { backgroundColor: color + '14', borderColor: color + '30', borderWidth: 1 },
                 ]}
               >
-                {cat !== 'Overall' && (
-                  <VectorIcon
-                    iconSet="Ionicons"
-                    iconName={
-                      FEE_DATA[cat as Exclude<Category, 'Overall'>].icon
-                    }
-                    size={13}
-                    color={isActive ? '#fff' : color}
-                  />
-                )}
-                <Text
-                  style={[s.tabPillText, { color: isActive ? '#fff' : color }]}
-                >
-                  {cat}
-                </Text>
+                <VectorIcon iconSet="Ionicons" iconName={TAB_META[t].icon} size={13} color={active ? '#fff' : color} />
+                <Text style={[s.tabPillText, { color: active ? '#fff' : color }]}>{t}</Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
       </View>
 
-      {/* ── Content ── */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-        refreshControl={
-          <AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {activeTab === 'Overall' ? (
-          <OverallTab />
-        ) : (
-          <CategoryTab cat={activeTab as Exclude<Category, 'Overall'>} />
-        )}
-      </ScrollView>
+      {loading && !refreshing ? (
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {tab === 'Dashboard' && <DashboardTab data={dashboard} onPaid={load} />}
+          {tab === 'Academic' && <AcademicTab data={academic} onPaid={load} />}
+          {tab === 'Transport' && <TransportTab data={transport} onPaid={load} />}
+          {tab === 'Penalties' && <PenaltiesTab data={penalties} />}
+        </ScrollView>
+      )}
     </View>
   );
 };
 
 export default FeesScreen;
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const __mk_s = () => StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { paddingBottom: 40 },
+// ─── Styles ─────────────────────────────────────────────────────────────────
+const __mk_s = () =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: theme.colors.background },
+    scroll: { paddingBottom: 40, paddingTop: 8 },
+    loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Tab bar
-  tabBarWrap: {
-    backgroundColor: theme.colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  tabBar: { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
-  tabPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  tabPillText: { fontSize: 12, fontWeight: '700' },
+    // Tabs
+    tabBarWrap: { backgroundColor: theme.colors.card, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+    tabBar: { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
+    tabPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
+    tabPillText: { fontSize: 12, fontWeight: '700' },
 
-  // Section title
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: theme.colors.textPrimary,
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 10,
-  },
+    sectionTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginHorizontal: 16, marginTop: 10, marginBottom: 10 },
+    muted: { fontSize: 13, color: theme.colors.textMuted, marginHorizontal: 18, marginBottom: 12 },
 
-  // ── Overall hero ──
-  heroCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 20,
-    backgroundColor: '#1E1B4B',
-    borderRadius: 24,
-    padding: 22,
-    overflow: 'hidden',
-    shadowColor: PURPLE,
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  heroBlob1: {
-    position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: '#4F46E522',
-    top: -50,
-    right: -40,
-  },
-  heroBlob2: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#818CF815',
-    bottom: -20,
-    left: 10,
-  },
-  heroEyebrow: {
-    fontSize: 12,
-    color: '#A5B4FC',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  heroAmount: {
-    fontSize: 34,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: -1,
-    marginBottom: 16,
-  },
-  heroStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  heroStat: { flex: 1, alignItems: 'center' },
-  heroStatVal: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#4ADE80',
-    marginBottom: 2,
-  },
-  heroStatLbl: { fontSize: 10, color: theme.colors.textMuted, fontWeight: '600' },
-  heroStatDivider: { width: 1, height: 30, backgroundColor: '#ffffff18' },
-  heroTrack: {
-    height: 6,
-    borderRadius: 4,
-    backgroundColor: '#ffffff18',
-    overflow: 'hidden',
-  },
-  heroFill: { height: '100%', borderRadius: 4, backgroundColor: '#818CF8' },
+    // Hero
+    hero: {
+      marginHorizontal: 16,
+      marginTop: 12,
+      marginBottom: 16,
+      backgroundColor: '#1E1B4B',
+      borderRadius: 24,
+      padding: 22,
+      shadowColor: PURPLE,
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    },
+    heroEyebrow: { fontSize: 12, color: '#A5B4FC', fontWeight: '600', marginBottom: 4 },
+    heroAmount: { fontSize: 32, fontWeight: '900', color: '#fff', letterSpacing: -1, marginBottom: 16 },
+    heroStatsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+    heroStat: { flex: 1, alignItems: 'center' },
+    heroStatVal: { fontSize: 13, fontWeight: '800', marginBottom: 2 },
+    heroStatLbl: { fontSize: 10, color: '#C7D2FE', fontWeight: '600' },
+    heroDivider: { width: 1, height: 30, backgroundColor: '#ffffff18' },
+    heroTrack: { height: 6, borderRadius: 4, backgroundColor: '#ffffff18', overflow: 'hidden' },
+    heroFill: { height: '100%', borderRadius: 4, backgroundColor: '#818CF8' },
 
-  // Category breakdown card
-  catCard: {
-    marginHorizontal: 16,
-    marginBottom: 10,
-    backgroundColor: theme.colors.card,
-    borderRadius: 18,
-    paddingVertical: 6,
-    // padding: 14,
-    flexDirection: 'row',
-    // alignItems: 'center',
-    // gap: 12,
-  },
-  catIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  catBody: { flex: 1 },
-  catTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  catName: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
-  catPct: { fontSize: 13, fontWeight: '800' },
-  catTrack: {
-    height: 6,
-    borderRadius: 4,
-    backgroundColor: theme.colors.border,
-    overflow: 'hidden',
-    marginBottom: 5,
-  },
-  catFill: { height: '100%', borderRadius: 4 },
-  catBottomRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  catPaid: { fontSize: 11, fontWeight: '700' },
-  catTotal: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
+    // Quick stats
+    quickRow: { flexDirection: 'row', marginHorizontal: 16, gap: 10, marginBottom: 8 },
+    quickCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: 'center', gap: 4 },
+    quickVal: { fontSize: 15, fontWeight: '900' },
+    quickLbl: { fontSize: 10, fontWeight: '600', color: theme.colors.textSecondary },
 
-  // Quick stats
-  quickRow: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    gap: 10,
-    marginBottom: 8,
-  },
-  quickCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 14,
-    alignItems: 'center',
-    gap: 4,
-  },
-  quickVal: { fontSize: 22, fontWeight: '900' },
-  quickLbl: { fontSize: 10, fontWeight: '600', color: theme.colors.textSecondary },
+    // Card
+    card: {
+      marginHorizontal: 16,
+      marginBottom: 12,
+      backgroundColor: theme.colors.card,
+      borderRadius: 20,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 2,
+    },
+    cardHeadRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    cardTitle: { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary },
+    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+    badgeText: { fontSize: 10, fontWeight: '800' },
 
-  // ── Summary card ──
-  summaryCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 20,
-    backgroundColor: theme.colors.card,
-    borderRadius: 22,
-    padding: 18,
-    borderTopWidth: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
-  },
-  summaryTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  summaryEyebrow: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  summaryBig: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: theme.colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  summarySlash: { color: '#CBD5E1', fontWeight: '400', fontSize: 20 },
-  summaryTotal: { fontSize: 18, fontWeight: '600', color: theme.colors.textMuted },
-  summarySubLabel: { fontSize: 11, fontWeight: '700', marginTop: 2 },
-  pctRing: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FAFAFA',
-  },
-  pctRingNum: { fontSize: 15, fontWeight: '900' },
-  pctRingSub: { fontSize: 9, color: theme.colors.textMuted, fontWeight: '600' },
-  summaryTrack: {
-    height: 8,
-    borderRadius: 5,
-    backgroundColor: theme.colors.border,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  summaryFill: { height: '100%', borderRadius: 5 },
-  summaryFooter: { flexDirection: 'row', gap: 20 },
-  summaryFooterItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  footerDot: { width: 7, height: 7, borderRadius: 4 },
-  footerLbl: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
-  footerVal: { fontSize: 12, fontWeight: '800' },
+    bigAmtRow: { flexDirection: 'row', alignItems: 'flex-end', marginVertical: 6 },
+    bigAmt: { fontSize: 26, fontWeight: '900', letterSpacing: -0.5 },
+    bigAmtSlash: { fontSize: 15, fontWeight: '600', color: theme.colors.textMuted, marginBottom: 3 },
+    subLabel: { fontSize: 11, fontWeight: '700', marginTop: 4, color: theme.colors.textMuted },
 
-  // Shared card
-  card: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: theme.colors.card,
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
-  },
-  cardTitleDot: { width: 4, height: 18, borderRadius: 3 },
-  cardTitleText: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
-  divider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 10 },
+    track: { height: 8, borderRadius: 5, backgroundColor: theme.colors.border, overflow: 'hidden', marginTop: 8 },
+    fill: { height: '100%', borderRadius: 5 },
 
-  // Row
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  rowLabel: { fontSize: 13, color: theme.colors.textMuted, fontWeight: '500' },
-  rowLabelBold: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
-  rowValue: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
-  rowValueBold: { fontSize: 16, fontWeight: '900', color: theme.colors.textPrimary },
+    divider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 10 },
 
-  // Upcoming card
-  upcomingCard: {
-    marginHorizontal: 16,
-    marginBottom: 4,
-    backgroundColor: theme.colors.card,
-    borderRadius: 22,
-    padding: 18,
-    borderTopWidth: 4,
-    shadowColor: '#F59E0B',
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
-  },
-  upcomingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  upcomingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  upcomingBadgeText: { fontSize: 11, fontWeight: '700', color: '#F59E0B' },
-  dueDateChip: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  dueDateText: { fontSize: 11, fontWeight: '700', color: '#EF4444' },
-  upcomingTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: theme.colors.textPrimary,
-    marginBottom: 12,
-  },
-  amountBox: {
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  amountBoxLabel: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: '600' },
-  amountBoxValue: { fontSize: 22, fontWeight: '900' },
-  upcomingDetails: {
-    backgroundColor: '#FAFAFA',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 8,
-  },
-  penaltyNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 5,
-    marginBottom: 4,
-  },
-  penaltyNoteText: {
-    fontSize: 11,
-    color: '#EF4444',
-    fontStyle: 'italic',
-    flex: 1,
-  },
-  payBtn: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 999,
-    paddingVertical: 14,
-    shadowColor: PINK,
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-  payBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-  },
+    // Key-value rows
+    kv: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    kvLabel: { fontSize: 13, color: theme.colors.textMuted, fontWeight: '500' },
+    kvValue: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+    kvValueBold: { fontSize: 15, fontWeight: '900' },
 
-  // Dots
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#E2E8F0' },
+    // Amount box
+    amountBox: { borderRadius: 14, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    amountLabel: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: '600' },
+    amountValue: { fontSize: 20, fontWeight: '900' },
 
-  // Paid card
-  paidCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: theme.colors.card,
-    borderRadius: 22,
-    padding: 18,
-    borderTopWidth: 4,
-    shadowColor: '#10B981',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 3,
-  },
-  paidHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  paidBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  paidBadgeText: { fontSize: 11, fontWeight: '700', color: '#10B981' },
-  paidOnChip: {
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  paidOnText: { fontSize: 11, fontWeight: '700', color: '#10B981' },
-  paidTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: theme.colors.textPrimary,
-    marginBottom: 12,
-  },
-  paidAmountBox: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  paidAmountLabel: { fontSize: 13, color: '#10B981', fontWeight: '600' },
-  paidAmountValue: { fontSize: 22, fontWeight: '900', color: '#10B981' },
-  paidDetails: {
-    backgroundColor: '#FAFAFA',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 12,
-  },
-  receiptBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: '#10B981',
-    borderRadius: 999,
-    paddingVertical: 12,
-  },
-  receiptBtnText: { fontSize: 14, fontWeight: '700', color: '#10B981' },
-});
+    // Pay button
+    payBtn: {
+      marginTop: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 999,
+      paddingVertical: 14,
+      shadowColor: PINK,
+      shadowOpacity: 0.3,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 5,
+    },
+    payBtnText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
 
+    // List card / payment rows
+    listCard: {
+      marginHorizontal: 16,
+      marginBottom: 12,
+      backgroundColor: theme.colors.card,
+      borderRadius: 18,
+      paddingHorizontal: 14,
+      paddingVertical: 4,
+      shadowColor: '#000',
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 2,
+    },
+    payRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+    payRowIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    payRowTitle: { fontSize: 13, fontWeight: '800', color: theme.colors.textPrimary },
+    payRowSub: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2, textTransform: 'capitalize' },
+    payRowAmt: { fontSize: 14, fontWeight: '900', color: theme.colors.textPrimary },
+
+    feeLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+    feeLineName: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
+    feeLineAmt: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
+
+    // Penalty
+    penaltyHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+    penaltyHeadText: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary, flex: 1 },
+    penaltyOn: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: '600' },
+
+    // Transport
+    routeSub: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+    monthGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 12, gap: 8 },
+    monthCell: { width: '22%', borderRadius: 14, borderWidth: 1, paddingVertical: 10, alignItems: 'center', gap: 5, marginBottom: 2 },
+    monthName: { fontSize: 12, fontWeight: '800', color: theme.colors.textPrimary },
+    monthDot: { width: 8, height: 8, borderRadius: 4 },
+    monthStatus: { fontSize: 9, fontWeight: '700', textTransform: 'capitalize' },
+
+    // Empty
+    empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
+    emptyText: { fontSize: 14, color: theme.colors.textMuted, textAlign: 'center', marginHorizontal: 40 },
+  });
 
 // Themed stylesheets — rebuilt on light/dark toggle.
 let s = __mk_s();
-onThemeChange(() => { s = __mk_s(); });
+onThemeChange(() => {
+  s = __mk_s();
+});
