@@ -16,6 +16,9 @@ import { CommonActions } from '@react-navigation/native';
 import { theme, onThemeChange } from '../utils/theme';
 import VectorIcon from '../components/VectorIcon';
 import AdminTabNavigator from './AdminTabNavigator';
+import AdminAnnouncementScreen from '../screens/admin/AdminAnnouncementScreen';
+import AdminCalendarScreen from '../screens/admin/AdminCalendarScreen';
+import AdminEnquiriesScreen from '../screens/admin/AdminEnquiriesScreen';
 import AccountsDashboardScreen from '../screens/accounts/AccountsDashboardScreen';
 import { AdminUser, AccountsUser, getStoredUser, logout } from '../api/authApi';
 
@@ -43,13 +46,13 @@ const ADMIN_MENU: MenuItem[] = [
   { label: 'Homework', icon: 'create-outline' },
   { label: 'Time Table', icon: 'time-outline' },
   { label: 'Arrangement', icon: 'grid-outline' },
-  { label: 'Announcement', icon: 'megaphone-outline' },
-  { label: 'Calender', icon: 'calendar-outline' },
+  { label: 'Announcement', icon: 'megaphone-outline', route: 'AdminAnnouncement' },
+  { label: 'Calender', icon: 'calendar-outline', route: 'AdminCalendar' },
   { label: 'Syllabus', icon: 'document-text-outline' },
   { label: 'Content', icon: 'folder-outline' },
   { label: 'Quiz', icon: 'help-circle-outline' },
   { label: 'Book', icon: 'book-outline' },
-  { label: 'Enquiries', icon: 'chatbubbles-outline' },
+  { label: 'Enquiries', icon: 'chatbubbles-outline', route: 'AdminEnquiries' },
   { label: 'ID Card', icon: 'id-card-outline' },
   { label: 'Exam', icon: 'school-outline' },
   { label: 'Admit Card', icon: 'ticket-outline' },
@@ -288,6 +291,9 @@ const PanelDrawerNavigator = ({ route }: any) => {
         name="PanelHome"
         component={panel === 'accounts' ? AccountsDashboardScreen : AdminTabNavigator}
       />
+      {panel === 'admin' && <Drawer.Screen name="AdminAnnouncement" component={AdminAnnouncementScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminCalendar" component={AdminCalendarScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminEnquiries" component={AdminEnquiriesScreen} />}
     </Drawer.Navigator>
   );
 };

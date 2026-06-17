@@ -52,12 +52,20 @@ const AdminDashboardScreen = ({ navigation }: any) => {
   const { refreshing, onRefresh } = useRefresh(load);
   const unreadCount = useUnreadCount();
 
+  const moduleRoutes: Record<string, string> = {
+    'quick-links': 'QuickLinks',
+    announcement: 'AdminAnnouncement',
+    calender: 'AdminCalendar',
+    enquiries: 'AdminEnquiries',
+  };
+
   const openModule = (m: { key: string; label: string }) => {
-    if (m.key === 'quick-links') {
-      navigation.navigate('QuickLinks');
+    if (m.key === 'dashboard') return; // already on the dashboard
+    const route = moduleRoutes[m.key];
+    if (route) {
+      navigation.navigate(route);
       return;
     }
-    if (m.key === 'dashboard') return; // already on the dashboard
     Alert.alert(m.label, 'This module is coming soon to the admin app.');
   };
 
