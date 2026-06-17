@@ -4,6 +4,7 @@ import apiClient from './apiClient';
 export type FeeType = 'academic' | 'transport';
 export type PaymentState = 'PENDING' | 'COMPLETED' | 'FAILED';
 export type InstallmentStatus = 'paid' | 'partial' | 'due' | 'overdue';
+export type MonthStatus = 'paid' | 'partial' | 'pending' | 'no_transport';
 
 export interface FeeSummary {
   total_due: number;
@@ -45,13 +46,6 @@ export interface PaymentRow {
   remark?: string | null;
 }
 
-export interface FeeDashboard {
-  summary: FeeSummary;
-  upcoming: Installment[];
-  recent_payments: PaymentRow[];
-  counts: { overdue_installments: number; total_installments: number };
-}
-
 export interface AcademicFeeItem {
   id: number;
   fee_name: string;
@@ -69,12 +63,55 @@ export interface AcademicFees {
     paid: number;
     remaining: number;
   };
+  upcoming: Installment[];
+  paid: PaymentRow[];
   penalty: {
     per_day: number;
     due_day_of_month: number;
     cycle_type: string;
     charged: number;
   };
+}
+
+export interface MonthRow {
+  key: string;
+  month: string;
+  amount: number;
+  paid: number;
+  outstanding: number;
+  status: MonthStatus;
+}
+
+export interface TransportRouteInfo {
+  id: number;
+  route_name: string;
+  pickup_location: string | null;
+  drop_location: string | null;
+  pickup_time: string | null;
+  monthly_fee: number;
+  driver: string | null;
+  vehicle_no: string | null;
+}
+
+export interface TransportFees {
+  route: TransportRouteInfo;
+  totals: {
+    monthly_fee: number;
+    annual_fee: number;
+    months_count: number;
+    paid: number;
+    remaining: number;
+  };
+  schedule: MonthRow[];
+  upcoming: MonthRow[];
+  paid: PaymentRow[];
+}
+
+export interface FeeDashboard {
+  summary: FeeSummary;
+  academic: AcademicFees;
+  transport: TransportFees | null;
+  overall_payments: PaymentRow[];
 }
 
 export interface PenaltyItem {
@@ -96,24 +133,7 @@ export interface FeePenalties {
   items: PenaltyItem[];
 }
 
-// GET /fees/dashboard — overview + upcoming installments + recent payments
-export const getFeeDashboard = async (): Promise<FeeDashboard> => {
-  const { data } = await apiClient.get('/fees/dashboard');
-  return data?.data ?? data;
-};
-
-// GET /fees/academic — academic structure + penalty policy
-export const getAcademicFees = async (): Promise<AcademicFees> => {
-  const { data } = await apiClient.get('/fees/academic');
-  return data?.data ?? data;
-};
-
-// GET /fees/penalties — penalties charged + which payment each is on
-export const getFeePenalties = async (): Promise<FeePenalties> => {
-  const { data } = await apiClient.get('/fees/penalties');
-  return data?.data ?? data;
-};
-
+// ─── Payment ──────────────────────────────────────────────────────────────────
 export interface InitiatePaymentResponse {
   merchant_order_id: string;
   redirect_url: string;
@@ -130,14 +150,43 @@ export interface PaymentStatusResponse {
   receipt_number: string | null;
 }
 
-// POST /fees/pay — start an online PhonePe payment; returns a checkout URL.
+export interface PayOptions {
+  months?: string[];
+  transportationId?: number;
+}
+
+// ─── Fetchers ───────────────────────────────────────────────────────────────
+export const getFeeDashboard = async (): Promise<FeeDashboard> => {
+  const { data } = await apiClient.get('/fees/dashboard');
+  return data?.data ?? data;
+};
+
+export const getAcademicFees = async (): Promise<AcademicFees> => {
+  const { data } = await apiClient.get('/fees/academic');
+  return data?.data ?? data;
+};
+
+export const getTransportFees = async (): Promise<TransportFees> => {
+  const { data } = await apiClient.get('/fees/transport');
+  return data?.data ?? data;
+};
+
+export const getFeePenalties = async (): Promise<FeePenalties> => {
+  const { data } = await apiClient.get('/fees/penalties');
+  return data?.data ?? data;
+};
+
+// POST /fees/pay — start an online PhonePe payment (academic or transport).
 export const initiateFeePayment = async (
   amount: number,
   feeType: FeeType = 'academic',
+  opts: PayOptions = {},
 ): Promise<InitiatePaymentResponse> => {
   const { data } = await apiClient.post('/fees/pay', {
     amount,
     fee_type: feeType,
+    ...(opts.months && opts.months.length ? { months: opts.months } : {}),
+    ...(opts.transportationId ? { transportation_id: opts.transportationId } : {}),
   });
   return data?.data ?? data;
 };

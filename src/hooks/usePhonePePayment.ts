@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, Linking } from 'react-native';
 import {
   FeeType,
+  PayOptions,
   PaymentStatusResponse,
   getFeePaymentStatus,
   initiateFeePayment,
@@ -21,7 +22,7 @@ interface UsePhonePePayment {
   result: PaymentStatusResponse | null;
   error: string | null;
   /** Start a payment for the given amount (₹). Opens the PhonePe checkout. */
-  payFees: (amount: number, feeType?: FeeType) => Promise<void>;
+  payFees: (amount: number, feeType?: FeeType, opts?: PayOptions) => Promise<void>;
   /** Manually re-check the current order's status (e.g. an "I've paid" button). */
   checkStatus: () => Promise<void>;
   /** Clear state back to idle. */
@@ -94,12 +95,12 @@ export function usePhonePePayment(
     await pollUntilFinal();
   }, [pollUntilFinal]);
 
-  const payFees = useCallback(async (amount: number, feeType: FeeType = 'academic') => {
+  const payFees = useCallback(async (amount: number, feeType: FeeType = 'academic', opts: PayOptions = {}) => {
     setError(null);
     setResult(null);
     setPhase('initiating');
     try {
-      const init = await initiateFeePayment(amount, feeType);
+      const init = await initiateFeePayment(amount, feeType, opts);
       orderIdRef.current = init.merchant_order_id;
 
       if (!init.redirect_url) {

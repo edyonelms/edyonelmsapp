@@ -42,6 +42,8 @@ import ManageQuizScreen from '../screens/quiz/ManageQuizScreen';
 import AttemptQuizScreen from '../screens/quiz/AttemptQuizScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import BookReaderScreen from '../screens/books/BookReaderScreen';
+import PayAmountScreen from '../screens/fees/PayAmountScreen';
+import TransportPayScreen from '../screens/fees/TransportPayScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -132,6 +134,10 @@ const AppNavigator = () => {
 
       {/* In-app PDF reader (books) */}
       <Stack.Screen name="BookReader" component={BookReaderScreen} />
+
+      {/* Fee payment */}
+      <Stack.Screen name="PayAmount" component={PayAmountScreen} />
+      <Stack.Screen name="TransportPay" component={TransportPayScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
