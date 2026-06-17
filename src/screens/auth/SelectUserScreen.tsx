@@ -22,6 +22,8 @@ const SelectUserScreen = () => {
       navigation.navigate('StudentLogin');
     } else if (selectedUser === 'Admin') {
       navigation.navigate('AdminLogin');
+    } else if (selectedUser === 'Accounts') {
+      navigation.navigate('AccountsLogin');
     }
   };
 
@@ -56,7 +58,7 @@ const SelectUserScreen = () => {
         </Text>
         <Text style={styles.title}>Edyone LMS</Text>
         <Text style={styles.subtitle}>
-          Continue as Student, Teacher or Admin to access your dashboard.
+          Continue as Student, Teacher, Admin or Accounts to access your dashboard.
         </Text>
 
         <View style={styles.gridContainer}>
@@ -87,18 +89,30 @@ const SelectUserScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Admin */}
-        <View style={styles.adminRow}>
+        {/* Staff: Admin + Accounts */}
+        <View style={styles.staffRow}>
           <TouchableOpacity
             style={[
-              styles.adminCard,
+              styles.staffCard,
               selectedUser === 'Admin' && styles.selectedCard,
             ]}
             onPress={() => setSelectedUser('Admin')}
             activeOpacity={0.9}
           >
-            <Text style={styles.adminEmoji}>🏫</Text>
-            <Text style={styles.gridTitle}>School Admin</Text>
+            <Text style={styles.staffEmoji}>🏫</Text>
+            <Text style={styles.gridTitle}>Admin</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.staffCard,
+              selectedUser === 'Accounts' && styles.selectedCard,
+            ]}
+            onPress={() => setSelectedUser('Accounts')}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.staffEmoji}>🧮</Text>
+            <Text style={styles.gridTitle}>Accounts</Text>
           </TouchableOpacity>
         </View>
 
@@ -170,26 +184,26 @@ const __mk_styles = () => StyleSheet.create({
   selectedCard: {
     borderColor: '#5B7FFF',
   },
-  adminRow: {
+  staffRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 30,
+    gap: 30,
   },
-  adminCard: {
-    width: '83%',
-    height: 96,
+  staffCard: {
+    width: '40%',
+    height: 110,
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 12,
     padding: 12,
   },
-  adminEmoji: {
-    fontSize: 40,
+  staffEmoji: {
+    fontSize: 44,
+    marginBottom: 6,
   },
   cardEmoji: {
     fontSize: 56,
