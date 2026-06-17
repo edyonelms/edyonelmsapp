@@ -14,20 +14,15 @@ import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { AdminDashboard, getAdminDashboard } from '../../api/adminApi';
 import { AdminUser, getStoredUser, logout } from '../../api/authApi';
+import { ADMIN_MODULES as MODULES } from './adminModules';
 
 const inr = (n: number) => `₹ ${Number(n || 0).toLocaleString('en-IN')}`;
 
-// Phase 1+ modules — visible now as the shell, wired in later phases.
-const MODULES: { key: string; label: string; icon: string; color: string }[] = [
-  { key: 'students', label: 'Students', icon: 'people', color: '#6366F1' },
-  { key: 'attendance', label: 'Attendance', icon: 'checkbox', color: '#22C55E' },
-  { key: 'fees', label: 'Fees', icon: 'cash', color: '#0EA5E9' },
-  { key: 'announcements', label: 'Announcements', icon: 'megaphone', color: '#F59E0B' },
-  { key: 'exams', label: 'Exams', icon: 'document-text', color: '#EC4899' },
-  { key: 'admissions', label: 'Admissions', icon: 'person-add', color: '#8B5CF6' },
-  { key: 'timetable', label: 'Timetable', icon: 'calendar', color: '#14B8A6' },
-  { key: 'more', label: 'More', icon: 'grid', color: '#64748B' },
-];
+// Academic year badge, e.g. "2026–27" — mirrors the web top bar.
+const academicYear = () => {
+  const y = new Date().getFullYear();
+  return `${y}–${String((y + 1) % 100).padStart(2, '0')}`;
+};
 
 const AdminDashboardScreen = ({ navigation }: any) => {
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -62,14 +57,21 @@ const AdminDashboardScreen = ({ navigation }: any) => {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          navigation.reset({ index: 0, routes: [{ name: 'SelectUser' }] });
+          const rootNav = navigation.getParent?.() ?? navigation;
+          rootNav.reset({ index: 0, routes: [{ name: 'SelectUser' }] });
         },
       },
     ]);
   };
 
-  const openModule = (label: string) =>
-    Alert.alert(label, 'This module is coming soon to the admin app.');
+  const openModule = (m: { key: string; label: string }) => {
+    if (m.key === 'quick-links') {
+      navigation.navigate('QuickLinks');
+      return;
+    }
+    if (m.key === 'home') return; // already on the dashboard
+    Alert.alert(m.label, 'This module is coming soon to the admin app.');
+  };
 
   const statCards = [
     { label: 'Students', value: String(stats?.students ?? '—'), icon: 'people', color: '#6366F1' },
@@ -82,10 +84,16 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     <View style={s.root}>
       {/* Top bar */}
       <View style={s.topbar}>
+        <TouchableOpacity style={s.menuBtn} onPress={() => navigation.openDrawer()} activeOpacity={0.8}>
+          <VectorIcon iconSet="Feather" iconName="menu" size={20} color={theme.colors.primary} />
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.hello}>Welcome back</Text>
           <Text style={s.name} numberOfLines={1}>{user?.name ?? 'Admin'}</Text>
-          {!!user?.organization?.name && <Text style={s.org} numberOfLines={1}>{user.organization.name}</Text>}
+          <View style={s.metaRow}>
+            {!!user?.organization?.name && <Text style={s.org} numberOfLines={1}>{user.organization.name}</Text>}
+            <View style={s.yearBadge}><Text style={s.yearTxt}>{academicYear()}</Text></View>
+          </View>
         </View>
         <TouchableOpacity style={s.logoutBtn} onPress={onLogout} activeOpacity={0.8}>
           <VectorIcon iconSet="Ionicons" iconName="log-out-outline" size={20} color={theme.colors.danger} />
@@ -117,7 +125,7 @@ const AdminDashboardScreen = ({ navigation }: any) => {
           <Text style={s.section}>Manage</Text>
           <View style={s.modGrid}>
             {MODULES.map(m => (
-              <TouchableOpacity key={m.key} style={s.modCard} activeOpacity={0.8} onPress={() => openModule(m.label)}>
+              <TouchableOpacity key={m.key} style={s.modCard} activeOpacity={0.8} onPress={() => openModule(m)}>
                 <View style={[s.modIcon, { backgroundColor: m.color + '18' }]}>
                   <VectorIcon iconSet="Ionicons" iconName={m.icon} size={24} color={m.color} />
                 </View>
@@ -141,6 +149,7 @@ const s = StyleSheet.create({
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 14,
@@ -148,9 +157,27 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  menuBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   hello: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '600' },
   name: { fontSize: 20, fontWeight: '900', color: theme.colors.textPrimary, marginTop: 1 },
-  org: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 1 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  org: { fontSize: 12, color: theme.colors.textSecondary, flexShrink: 1 },
+  yearBadge: {
+    backgroundColor: theme.colors.primary + '14',
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.primary + '22',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  yearTxt: { fontSize: 10, fontWeight: '700', color: theme.colors.primary },
   logoutBtn: {
     width: 40,
     height: 40,

@@ -17,16 +17,32 @@ import { AccountsUser, getStoredUser, logout } from '../../api/authApi';
 
 const inr = (n: number) => `₹ ${Number(n || 0).toLocaleString('en-IN')}`;
 
-// Accounts modules — visible now as the shell, wired in later phases.
+// Academic year badge, e.g. "2026–27" — mirrors the web top bar.
+const academicYear = () => {
+  const y = new Date().getFullYear();
+  return `${y}–${String((y + 1) % 100).padStart(2, '0')}`;
+};
+
+// Modules mirror the web accounts sidebar, in the same order (config/menu.php → 'accounts').
+// Most are still wired in later phases.
 const MODULES: { key: string; label: string; icon: string; color: string }[] = [
-  { key: 'fee_submission', label: 'Collect Fee', icon: 'wallet', color: '#22C55E' },
-  { key: 'view_fee', label: 'View Fee', icon: 'document-text', color: '#6366F1' },
-  { key: 'payments', label: 'Payments', icon: 'cash', color: '#0EA5E9' },
-  { key: 'penalties', label: 'Penalties', icon: 'alert-circle', color: '#EF4444' },
-  { key: 'fee_structure', label: 'Fee Structure', icon: 'list', color: '#8B5CF6' },
-  { key: 'transport', label: 'Transport', icon: 'bus', color: '#14B8A6' },
-  { key: 'payroll', label: 'Payroll', icon: 'people', color: '#F59E0B' },
-  { key: 'admissions', label: 'Admissions', icon: 'person-add', color: '#EC4899' },
+  { key: 'dashboard', label: 'Dashboard', icon: 'home', color: '#6366F1' },
+  { key: 'payroll', label: 'Payroll', icon: 'wallet', color: '#22C55E' },
+  { key: 'credit', label: 'Credit', icon: 'card', color: '#0EA5E9' },
+  { key: 'admissions', label: 'Admissions', icon: 'person-add', color: '#F59E0B' },
+  { key: 'fee-submission', label: 'Fee Submission', icon: 'cash', color: '#EC4899' },
+  { key: 'view-fee', label: 'View Fee', icon: 'eye', color: '#8B5CF6' },
+  { key: 'fee-structure', label: 'Fee Structure', icon: 'list', color: '#14B8A6' },
+  { key: 'payments', label: 'Payments', icon: 'cash', color: '#EF4444' },
+  { key: 'penalties', label: 'Penalties', icon: 'alert-circle', color: '#3B82F6' },
+  { key: 'fee-cycles', label: 'Fee Cycles', icon: 'refresh', color: '#10B981' },
+  { key: 'attendance', label: 'Attendance', icon: 'checkbox', color: '#F97316' },
+  { key: 'transport', label: 'Transport', icon: 'bus', color: '#6366F1' },
+  { key: 'calendar', label: 'Calendar', icon: 'calendar', color: '#22C55E' },
+  { key: 'id-card', label: 'ID Card', icon: 'card', color: '#0EA5E9' },
+  { key: 'admit-card', label: 'Admit Card', icon: 'ticket', color: '#F59E0B' },
+  { key: 'report-card', label: 'Report Card', icon: 'documents', color: '#EC4899' },
+  { key: 'tc-certificate', label: 'TC & Certificates', icon: 'ribbon', color: '#8B5CF6' },
 ];
 
 const AccountsDashboardScreen = ({ navigation }: any) => {
@@ -62,7 +78,8 @@ const AccountsDashboardScreen = ({ navigation }: any) => {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          navigation.reset({ index: 0, routes: [{ name: 'SelectUser' }] });
+          const rootNav = navigation.getParent?.() ?? navigation;
+          rootNav.reset({ index: 0, routes: [{ name: 'SelectUser' }] });
         },
       },
     ]);
@@ -83,10 +100,16 @@ const AccountsDashboardScreen = ({ navigation }: any) => {
   return (
     <View style={s.root}>
       <View style={s.topbar}>
+        <TouchableOpacity style={s.menuBtn} onPress={() => navigation.openDrawer()} activeOpacity={0.8}>
+          <VectorIcon iconSet="Feather" iconName="menu" size={20} color={theme.colors.primary} />
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.hello}>Accounts</Text>
           <Text style={s.name} numberOfLines={1}>{user?.name ?? 'Accounts'}</Text>
-          {!!user?.organization?.name && <Text style={s.org} numberOfLines={1}>{user.organization.name}</Text>}
+          <View style={s.metaRow}>
+            {!!user?.organization?.name && <Text style={s.org} numberOfLines={1}>{user.organization.name}</Text>}
+            <View style={s.yearBadge}><Text style={s.yearTxt}>{academicYear()}</Text></View>
+          </View>
         </View>
         <TouchableOpacity style={s.logoutBtn} onPress={onLogout} activeOpacity={0.8}>
           <VectorIcon iconSet="Ionicons" iconName="log-out-outline" size={20} color={theme.colors.danger} />
@@ -140,6 +163,7 @@ const s = StyleSheet.create({
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 14,
@@ -147,9 +171,27 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  menuBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   hello: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '600' },
   name: { fontSize: 20, fontWeight: '900', color: theme.colors.textPrimary, marginTop: 1 },
-  org: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 1 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  org: { fontSize: 12, color: theme.colors.textSecondary, flexShrink: 1 },
+  yearBadge: {
+    backgroundColor: theme.colors.primary + '14',
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.primary + '22',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  yearTxt: { fontSize: 10, fontWeight: '700', color: theme.colors.primary },
   logoutBtn: {
     width: 40,
     height: 40,

@@ -45,9 +45,8 @@ import BookReaderScreen from '../screens/books/BookReaderScreen';
 import PayAmountScreen from '../screens/fees/PayAmountScreen';
 import TransportPayScreen from '../screens/fees/TransportPayScreen';
 import AdminLoginScreen from '../screens/auth/AdminLoginScreen';
-import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import AccountsLoginScreen from '../screens/auth/AccountsLoginScreen';
-import AccountsDashboardScreen from '../screens/accounts/AccountsDashboardScreen';
+import PanelDrawerNavigator from './PanelDrawerNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -145,11 +144,19 @@ const AppNavigator = () => {
       <Stack.Screen name="PayAmount" component={PayAmountScreen} />
       <Stack.Screen name="TransportPay" component={TransportPayScreen} />
 
-      {/* School Admin (Phase 0) */}
-      <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+      {/* School Admin (Phase 0) — dashboard + slide-out sidebar */}
+      <Stack.Screen
+        name="AdminDashboard"
+        component={PanelDrawerNavigator}
+        initialParams={{ panel: 'admin' }}
+      />
 
-      {/* Accounts (Phase 0) */}
-      <Stack.Screen name="AccountsDashboard" component={AccountsDashboardScreen} />
+      {/* Accounts (Phase 0) — dashboard + slide-out sidebar */}
+      <Stack.Screen
+        name="AccountsDashboard"
+        component={PanelDrawerNavigator}
+        initialParams={{ panel: 'accounts' }}
+      />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
