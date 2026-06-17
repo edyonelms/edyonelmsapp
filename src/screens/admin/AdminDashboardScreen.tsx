@@ -103,7 +103,7 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             </View>
           )}
         </TouchableOpacity>
-        <TouchableOpacity style={s.iconBtn} onPress={() => comingSoon('Profile')} activeOpacity={0.8}>
+        <TouchableOpacity style={s.iconBtn} onPress={() => navigation.navigate('AdminProfile')} activeOpacity={0.8}>
           <VectorIcon iconSet="Ionicons" iconName="person-circle-outline" size={22} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>

@@ -46,6 +46,7 @@ import PayAmountScreen from '../screens/fees/PayAmountScreen';
 import TransportPayScreen from '../screens/fees/TransportPayScreen';
 import AdminLoginScreen from '../screens/auth/AdminLoginScreen';
 import AccountsLoginScreen from '../screens/auth/AccountsLoginScreen';
+import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
 import PanelDrawerNavigator from './PanelDrawerNavigator';
 
 const Stack = createNativeStackNavigator();
@@ -150,6 +151,7 @@ const AppNavigator = () => {
         component={PanelDrawerNavigator}
         initialParams={{ panel: 'admin' }}
       />
+      <Stack.Screen name="AdminProfile" component={AdminProfileScreen} />
 
       {/* Accounts (Phase 0) — dashboard + slide-out sidebar */}
       <Stack.Screen
