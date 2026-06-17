@@ -20,6 +20,8 @@ const SelectUserScreen = () => {
       navigation.navigate('TeacherLogin');
     } else if (selectedUser === 'Student') {
       navigation.navigate('StudentLogin');
+    } else if (selectedUser === 'Admin') {
+      navigation.navigate('AdminLogin');
     }
   };
 
@@ -54,7 +56,7 @@ const SelectUserScreen = () => {
         </Text>
         <Text style={styles.title}>Edyone LMS</Text>
         <Text style={styles.subtitle}>
-          Continue as Student or Teacher to access your dashboard.
+          Continue as Student, Teacher or Admin to access your dashboard.
         </Text>
 
         <View style={styles.gridContainer}>
@@ -82,6 +84,21 @@ const SelectUserScreen = () => {
           >
             <Text style={styles.cardEmoji}>👩‍🏫</Text>
             <Text style={styles.gridTitle}>Teacher</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Admin */}
+        <View style={styles.adminRow}>
+          <TouchableOpacity
+            style={[
+              styles.adminCard,
+              selectedUser === 'Admin' && styles.selectedCard,
+            ]}
+            onPress={() => setSelectedUser('Admin')}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.adminEmoji}>🏫</Text>
+            <Text style={styles.gridTitle}>School Admin</Text>
           </TouchableOpacity>
         </View>
 
@@ -152,6 +169,27 @@ const __mk_styles = () => StyleSheet.create({
   },
   selectedCard: {
     borderColor: '#5B7FFF',
+  },
+  adminRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+  },
+  adminCard: {
+    width: '83%',
+    height: 96,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    padding: 12,
+  },
+  adminEmoji: {
+    fontSize: 40,
   },
   cardEmoji: {
     fontSize: 56,

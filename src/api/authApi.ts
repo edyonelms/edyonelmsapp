@@ -2,7 +2,7 @@ import apiClient from './apiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { syncDeviceToken, clearDeviceToken } from '../notifications';
 
-export type UserRole = 'student' | 'teacher';
+export type UserRole = 'student' | 'teacher' | 'admin';
 
 export interface StudentUser {
   id: string | number;
@@ -23,7 +23,21 @@ export interface TeacherUser {
   avatar?: string;
 }
 
-export type AuthUser = StudentUser | TeacherUser;
+export interface AdminUser {
+  id: string | number;
+  name: string;
+  email: string;
+  role: 'admin' | 'sub-admin';
+  image?: string | null;
+  organization?: {
+    id: number;
+    name: string;
+    logo?: string | null;
+    school_code?: string | null;
+  } | null;
+}
+
+export type AuthUser = StudentUser | TeacherUser | AdminUser;
 
 export interface AuthResponse {
   token: string;
@@ -80,6 +94,30 @@ export const teacherLogin = async (
   }
 
   await _persistAuth({ token, user }, 'teacher');
+  return { token, user };
+};
+
+// ─── Admin Login ──────────────────────────────────────────────────────────────
+export const adminLogin = async (
+  email: string,
+  password: string,
+): Promise<AuthResponse> => {
+  const form = new FormData();
+  form.append('email', email);
+  form.append('password', password);
+
+  const { data } = await apiClient.post<AuthResponse>('/admin/login', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  const token = (data as any)?.token ?? (data as any)?.data?.token ?? (data as any)?.access_token;
+  const user = (data as any)?.user ?? (data as any)?.data?.user ?? (data as any)?.data;
+
+  if (!token) {
+    throw new Error('No token in response: ' + JSON.stringify(data));
+  }
+
+  await _persistAuth({ token, user }, 'admin');
   return { token, user };
 };
 

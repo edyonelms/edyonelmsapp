@@ -47,6 +47,8 @@ const SplashScreen = ({ navigation }: any) => {
 
       if (!onboardingSeen) {
         navigation.replace('Onboarding');
+      } else if (token && role === 'admin') {
+        navigation.replace('AdminDashboard');
       } else if (token && role) {
         navigation.replace('DrawerRoot', { userRole: role });
       } else {

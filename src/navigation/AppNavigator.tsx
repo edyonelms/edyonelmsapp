@@ -44,6 +44,8 @@ import NotificationScreen from '../screens/notification/NotificationScreen';
 import BookReaderScreen from '../screens/books/BookReaderScreen';
 import PayAmountScreen from '../screens/fees/PayAmountScreen';
 import TransportPayScreen from '../screens/fees/TransportPayScreen';
+import AdminLoginScreen from '../screens/auth/AdminLoginScreen';
+import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -61,6 +63,7 @@ const AppNavigator = () => {
       <Stack.Screen name="SelectUser" component={SelectUserScreen} />
       <Stack.Screen name="TeacherLogin" component={LoginTeacherScreen} />
       <Stack.Screen name="StudentLogin" component={LoginStudentScreen} />
+      <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
 
       {/* Profile */}
@@ -138,6 +141,9 @@ const AppNavigator = () => {
       {/* Fee payment */}
       <Stack.Screen name="PayAmount" component={PayAmountScreen} />
       <Stack.Screen name="TransportPay" component={TransportPayScreen} />
+
+      {/* School Admin (Phase 0) */}
+      <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
 
       {/* Main App Flow */}
       <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
