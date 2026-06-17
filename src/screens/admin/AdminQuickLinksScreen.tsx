@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { DrawerActions, useNavigation } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
 import { theme } from '../../utils/theme';
 import { ADMIN_MODULES } from './adminModules';
@@ -39,8 +39,8 @@ const AdminQuickLinksScreen = () => {
   const activeOrder = ORDER_OPTIONS.find(o => o.key === order)!;
 
   const openModule = (m: { key: string; label: string }) => {
-    if (m.key === 'home') {
-      navigation.navigate('PanelHome');
+    if (m.key === 'dashboard') {
+      navigation.navigate('Dashboard');
       return;
     }
     Alert.alert(m.label, 'This module is coming soon to the admin app.');
@@ -54,7 +54,7 @@ const AdminQuickLinksScreen = () => {
       <View style={s.topbar}>
         <TouchableOpacity
           style={s.menuBtn}
-          onPress={() => navigation.openDrawer()}
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
           activeOpacity={0.8}
         >
           <VectorIcon iconSet="Feather" iconName="menu" size={20} color={theme.colors.primary} />

@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { DrawerActions } from '@react-navigation/native';
 import VectorIcon from '../../components/VectorIcon';
 import AppRefreshControl from '../../components/AppRefreshControl';
 import { useRefresh } from '../../hooks/useRefresh';
 import { theme } from '../../utils/theme';
 import { AdminDashboard, getAdminDashboard } from '../../api/adminApi';
-import { AdminUser, getStoredUser, logout } from '../../api/authApi';
+import { AdminUser, getStoredUser } from '../../api/authApi';
+import { useUnreadCount } from '../../notifications';
 import { ADMIN_MODULES as MODULES } from './adminModules';
 
 const inr = (n: number) => `₹ ${Number(n || 0).toLocaleString('en-IN')}`;
@@ -48,30 +50,19 @@ const AdminDashboardScreen = ({ navigation }: any) => {
   }, [load]);
 
   const { refreshing, onRefresh } = useRefresh(load);
-
-  const onLogout = () => {
-    Alert.alert('Logout', 'Sign out of the admin account?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          const rootNav = navigation.getParent?.() ?? navigation;
-          rootNav.reset({ index: 0, routes: [{ name: 'SelectUser' }] });
-        },
-      },
-    ]);
-  };
+  const unreadCount = useUnreadCount();
 
   const openModule = (m: { key: string; label: string }) => {
     if (m.key === 'quick-links') {
       navigation.navigate('QuickLinks');
       return;
     }
-    if (m.key === 'home') return; // already on the dashboard
+    if (m.key === 'dashboard') return; // already on the dashboard
     Alert.alert(m.label, 'This module is coming soon to the admin app.');
   };
+
+  const comingSoon = (label: string) =>
+    Alert.alert(label, 'This feature is coming soon to the admin app.');
 
   const statCards = [
     { label: 'Students', value: String(stats?.students ?? '—'), icon: 'people', color: '#6366F1' },
@@ -84,7 +75,11 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     <View style={s.root}>
       {/* Top bar */}
       <View style={s.topbar}>
-        <TouchableOpacity style={s.menuBtn} onPress={() => navigation.openDrawer()} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={s.menuBtn}
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          activeOpacity={0.8}
+        >
           <VectorIcon iconSet="Feather" iconName="menu" size={20} color={theme.colors.primary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -95,8 +90,21 @@ const AdminDashboardScreen = ({ navigation }: any) => {
             <View style={s.yearBadge}><Text style={s.yearTxt}>{academicYear()}</Text></View>
           </View>
         </View>
-        <TouchableOpacity style={s.logoutBtn} onPress={onLogout} activeOpacity={0.8}>
-          <VectorIcon iconSet="Ionicons" iconName="log-out-outline" size={20} color={theme.colors.danger} />
+
+        {/* Right actions — announcement · notifications · profile */}
+        <TouchableOpacity style={s.iconBtn} onPress={() => comingSoon('Announcement')} activeOpacity={0.8}>
+          <VectorIcon iconSet="Ionicons" iconName="megaphone-outline" size={19} color={theme.colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.iconBtn} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
+          <VectorIcon iconSet="Ionicons" iconName="notifications-outline" size={19} color={theme.colors.primary} />
+          {unreadCount > 0 && (
+            <View style={s.bellBadge}>
+              <Text style={s.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity style={s.iconBtn} onPress={() => comingSoon('Profile')} activeOpacity={0.8}>
+          <VectorIcon iconSet="Ionicons" iconName="person-circle-outline" size={22} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -149,7 +157,7 @@ const s = StyleSheet.create({
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 14,
@@ -178,14 +186,29 @@ const s = StyleSheet.create({
     paddingVertical: 2,
   },
   yearTxt: { fontSize: 10, fontWeight: '700', color: theme.colors.primary },
-  logoutBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.danger + '14',
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  bellBadge: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: theme.colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800', lineHeight: 11 },
   scroll: { padding: 16, paddingBottom: 40 },
 
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },

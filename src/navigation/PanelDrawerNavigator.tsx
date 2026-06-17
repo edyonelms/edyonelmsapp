@@ -15,8 +15,7 @@ import {
 import { CommonActions } from '@react-navigation/native';
 import { theme, onThemeChange } from '../utils/theme';
 import VectorIcon from '../components/VectorIcon';
-import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
-import AdminQuickLinksScreen from '../screens/admin/AdminQuickLinksScreen';
+import AdminTabNavigator from './AdminTabNavigator';
 import AccountsDashboardScreen from '../screens/accounts/AccountsDashboardScreen';
 import { AdminUser, AccountsUser, getStoredUser, logout } from '../api/authApi';
 
@@ -30,8 +29,7 @@ type MenuItem = { label: string; icon: string; route?: string };
 
 // Mirrors the web admin sidebar order (config/menu.php → 'admin').
 const ADMIN_MENU: MenuItem[] = [
-  { label: 'Quick Links', icon: 'link-outline', route: 'QuickLinks' },
-  { label: 'Home', icon: 'home-outline', route: 'PanelHome' },
+  { label: 'Dashboard', icon: 'grid-outline', route: 'PanelHome' },
   { label: 'Analytics', icon: 'analytics-outline' },
   { label: 'Standard', icon: 'book-outline' },
   { label: 'Students', icon: 'people-outline' },
@@ -288,11 +286,8 @@ const PanelDrawerNavigator = ({ route }: any) => {
     >
       <Drawer.Screen
         name="PanelHome"
-        component={panel === 'accounts' ? AccountsDashboardScreen : AdminDashboardScreen}
+        component={panel === 'accounts' ? AccountsDashboardScreen : AdminTabNavigator}
       />
-      {panel === 'admin' && (
-        <Drawer.Screen name="QuickLinks" component={AdminQuickLinksScreen} />
-      )}
     </Drawer.Navigator>
   );
 };

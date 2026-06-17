@@ -9,7 +9,7 @@ export interface AdminModule {
 
 export const ADMIN_MODULES: AdminModule[] = [
   { key: 'quick-links', label: 'Quick Links', icon: 'link', color: '#6366F1' },
-  { key: 'home', label: 'Home', icon: 'home', color: '#22C55E' },
+  { key: 'dashboard', label: 'Dashboard', icon: 'home', color: '#22C55E' },
   { key: 'analytics', label: 'Analytics', icon: 'bar-chart', color: '#0EA5E9' },
   { key: 'standard', label: 'Standard', icon: 'book', color: '#F59E0B' },
   { key: 'students', label: 'Students', icon: 'people', color: '#EC4899' },
