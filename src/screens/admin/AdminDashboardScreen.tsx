@@ -62,6 +62,10 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     teachers: 'AdminTeachers',
     'id-card': 'AdminIdCard',
     exam: 'AdminExam',
+    syllabus: 'AdminSyllabus',
+    content: 'AdminContent',
+    quiz: 'AdminQuiz',
+    book: 'AdminBook',
   };
 
   const openModule = (m: { key: string; label: string }) => {

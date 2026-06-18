@@ -24,6 +24,10 @@ import AdminStudentsScreen from '../screens/admin/AdminStudentsScreen';
 import AdminTeachersScreen from '../screens/admin/AdminTeachersScreen';
 import AdminIdCardScreen from '../screens/admin/AdminIdCardScreen';
 import AdminExamScreen from '../screens/admin/AdminExamScreen';
+import AdminSyllabusScreen from '../screens/admin/AdminSyllabusScreen';
+import AdminContentScreen from '../screens/admin/AdminContentScreen';
+import AdminQuizScreen from '../screens/admin/AdminQuizScreen';
+import AdminBookScreen from '../screens/admin/AdminBookScreen';
 import AccountsDashboardScreen from '../screens/accounts/AccountsDashboardScreen';
 import { AdminUser, AccountsUser, getStoredUser, logout } from '../api/authApi';
 
@@ -53,10 +57,10 @@ const ADMIN_MENU: MenuItem[] = [
   { label: 'Arrangement', icon: 'grid-outline' },
   { label: 'Announcement', icon: 'megaphone-outline', route: 'AdminAnnouncement' },
   { label: 'Calender', icon: 'calendar-outline', route: 'AdminCalendar' },
-  { label: 'Syllabus', icon: 'document-text-outline' },
-  { label: 'Content', icon: 'folder-outline' },
-  { label: 'Quiz', icon: 'help-circle-outline' },
-  { label: 'Book', icon: 'book-outline' },
+  { label: 'Syllabus', icon: 'document-text-outline', route: 'AdminSyllabus' },
+  { label: 'Content', icon: 'folder-outline', route: 'AdminContent' },
+  { label: 'Quiz', icon: 'help-circle-outline', route: 'AdminQuiz' },
+  { label: 'Book', icon: 'book-outline', route: 'AdminBook' },
   { label: 'Enquiries', icon: 'chatbubbles-outline', route: 'AdminEnquiries' },
   { label: 'ID Card', icon: 'id-card-outline', route: 'AdminIdCard' },
   { label: 'Exam', icon: 'school-outline', route: 'AdminExam' },
@@ -304,6 +308,10 @@ const PanelDrawerNavigator = ({ route }: any) => {
       {panel === 'admin' && <Drawer.Screen name="AdminTeachers" component={AdminTeachersScreen} />}
       {panel === 'admin' && <Drawer.Screen name="AdminIdCard" component={AdminIdCardScreen} />}
       {panel === 'admin' && <Drawer.Screen name="AdminExam" component={AdminExamScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminSyllabus" component={AdminSyllabusScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminContent" component={AdminContentScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminQuiz" component={AdminQuizScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminBook" component={AdminBookScreen} />}
     </Drawer.Navigator>
   );
 };
