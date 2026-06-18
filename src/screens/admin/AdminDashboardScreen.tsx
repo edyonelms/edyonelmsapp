@@ -66,6 +66,8 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     content: 'AdminContent',
     quiz: 'AdminQuiz',
     book: 'AdminBook',
+    timetable: 'AdminTimetable',
+    arrangement: 'AdminArrangement',
   };
 
   const openModule = (m: { key: string; label: string }) => {

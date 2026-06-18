@@ -28,6 +28,8 @@ import AdminSyllabusScreen from '../screens/admin/AdminSyllabusScreen';
 import AdminContentScreen from '../screens/admin/AdminContentScreen';
 import AdminQuizScreen from '../screens/admin/AdminQuizScreen';
 import AdminBookScreen from '../screens/admin/AdminBookScreen';
+import AdminTimetableScreen from '../screens/admin/AdminTimetableScreen';
+import AdminArrangementScreen from '../screens/admin/AdminArrangementScreen';
 import AccountsDashboardScreen from '../screens/accounts/AccountsDashboardScreen';
 import { AdminUser, AccountsUser, getStoredUser, logout } from '../api/authApi';
 
@@ -53,8 +55,8 @@ const ADMIN_MENU: MenuItem[] = [
   { label: 'Attendance', icon: 'clipboard-outline' },
   { label: 'Transportation', icon: 'bus-outline' },
   { label: 'Homework', icon: 'create-outline' },
-  { label: 'Time Table', icon: 'time-outline' },
-  { label: 'Arrangement', icon: 'grid-outline' },
+  { label: 'Time Table', icon: 'time-outline', route: 'AdminTimetable' },
+  { label: 'Arrangement', icon: 'grid-outline', route: 'AdminArrangement' },
   { label: 'Announcement', icon: 'megaphone-outline', route: 'AdminAnnouncement' },
   { label: 'Calender', icon: 'calendar-outline', route: 'AdminCalendar' },
   { label: 'Syllabus', icon: 'document-text-outline', route: 'AdminSyllabus' },
@@ -312,6 +314,8 @@ const PanelDrawerNavigator = ({ route }: any) => {
       {panel === 'admin' && <Drawer.Screen name="AdminContent" component={AdminContentScreen} />}
       {panel === 'admin' && <Drawer.Screen name="AdminQuiz" component={AdminQuizScreen} />}
       {panel === 'admin' && <Drawer.Screen name="AdminBook" component={AdminBookScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminTimetable" component={AdminTimetableScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminArrangement" component={AdminArrangementScreen} />}
     </Drawer.Navigator>
   );
 };
