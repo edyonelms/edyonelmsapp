@@ -57,6 +57,11 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     announcement: 'AdminAnnouncement',
     calender: 'AdminCalendar',
     enquiries: 'AdminEnquiries',
+    standard: 'AdminStandard',
+    students: 'AdminStudents',
+    teachers: 'AdminTeachers',
+    'id-card': 'AdminIdCard',
+    exam: 'AdminExam',
   };
 
   const openModule = (m: { key: string; label: string }) => {

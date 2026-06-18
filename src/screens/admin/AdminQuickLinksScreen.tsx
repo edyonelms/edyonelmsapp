@@ -38,9 +38,25 @@ const AdminQuickLinksScreen = () => {
 
   const activeOrder = ORDER_OPTIONS.find(o => o.key === order)!;
 
+  const moduleRoutes: Record<string, string> = {
+    announcement: 'AdminAnnouncement',
+    calender: 'AdminCalendar',
+    enquiries: 'AdminEnquiries',
+    standard: 'AdminStandard',
+    students: 'AdminStudents',
+    teachers: 'AdminTeachers',
+    'id-card': 'AdminIdCard',
+    exam: 'AdminExam',
+  };
+
   const openModule = (m: { key: string; label: string }) => {
     if (m.key === 'dashboard') {
       navigation.navigate('Dashboard');
+      return;
+    }
+    const route = moduleRoutes[m.key];
+    if (route) {
+      navigation.navigate(route);
       return;
     }
     Alert.alert(m.label, 'This module is coming soon to the admin app.');

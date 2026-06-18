@@ -19,6 +19,11 @@ import AdminTabNavigator from './AdminTabNavigator';
 import AdminAnnouncementScreen from '../screens/admin/AdminAnnouncementScreen';
 import AdminCalendarScreen from '../screens/admin/AdminCalendarScreen';
 import AdminEnquiriesScreen from '../screens/admin/AdminEnquiriesScreen';
+import AdminStandardScreen from '../screens/admin/AdminStandardScreen';
+import AdminStudentsScreen from '../screens/admin/AdminStudentsScreen';
+import AdminTeachersScreen from '../screens/admin/AdminTeachersScreen';
+import AdminIdCardScreen from '../screens/admin/AdminIdCardScreen';
+import AdminExamScreen from '../screens/admin/AdminExamScreen';
 import AccountsDashboardScreen from '../screens/accounts/AccountsDashboardScreen';
 import { AdminUser, AccountsUser, getStoredUser, logout } from '../api/authApi';
 
@@ -34,9 +39,9 @@ type MenuItem = { label: string; icon: string; route?: string };
 const ADMIN_MENU: MenuItem[] = [
   { label: 'Dashboard', icon: 'grid-outline', route: 'PanelHome' },
   { label: 'Analytics', icon: 'analytics-outline' },
-  { label: 'Standard', icon: 'book-outline' },
-  { label: 'Students', icon: 'people-outline' },
-  { label: 'Teachers', icon: 'person-outline' },
+  { label: 'Standard', icon: 'book-outline', route: 'AdminStandard' },
+  { label: 'Students', icon: 'people-outline', route: 'AdminStudents' },
+  { label: 'Teachers', icon: 'person-outline', route: 'AdminTeachers' },
   { label: 'Fees', icon: 'cash-outline' },
   { label: 'Ledger', icon: 'calculator-outline' },
   { label: 'Payroll', icon: 'wallet-outline' },
@@ -53,8 +58,8 @@ const ADMIN_MENU: MenuItem[] = [
   { label: 'Quiz', icon: 'help-circle-outline' },
   { label: 'Book', icon: 'book-outline' },
   { label: 'Enquiries', icon: 'chatbubbles-outline', route: 'AdminEnquiries' },
-  { label: 'ID Card', icon: 'id-card-outline' },
-  { label: 'Exam', icon: 'school-outline' },
+  { label: 'ID Card', icon: 'id-card-outline', route: 'AdminIdCard' },
+  { label: 'Exam', icon: 'school-outline', route: 'AdminExam' },
   { label: 'Admit Card', icon: 'ticket-outline' },
   { label: 'Seating Plan', icon: 'apps-outline' },
   { label: 'Performance', icon: 'speedometer-outline' },
@@ -294,6 +299,11 @@ const PanelDrawerNavigator = ({ route }: any) => {
       {panel === 'admin' && <Drawer.Screen name="AdminAnnouncement" component={AdminAnnouncementScreen} />}
       {panel === 'admin' && <Drawer.Screen name="AdminCalendar" component={AdminCalendarScreen} />}
       {panel === 'admin' && <Drawer.Screen name="AdminEnquiries" component={AdminEnquiriesScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminStandard" component={AdminStandardScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminStudents" component={AdminStudentsScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminTeachers" component={AdminTeachersScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminIdCard" component={AdminIdCardScreen} />}
+      {panel === 'admin' && <Drawer.Screen name="AdminExam" component={AdminExamScreen} />}
     </Drawer.Navigator>
   );
 };
