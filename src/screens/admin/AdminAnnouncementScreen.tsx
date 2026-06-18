@@ -139,8 +139,8 @@ const AdminAnnouncementScreen = ({ navigation }: any) => {
     <View style={s.root}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.card} />
       <View style={s.topbar}>
-        <TouchableOpacity style={s.menuBtn} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} activeOpacity={0.8}>
-          <VectorIcon iconSet="Feather" iconName="menu" size={20} color={theme.colors.primary} />
+        <TouchableOpacity style={s.menuBtn} onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('PanelHome'))} activeOpacity={0.8}>
+          <VectorIcon iconSet="Ionicons" iconName="arrow-back" size={22} color={theme.colors.primary} />
         </TouchableOpacity>
         <Text style={s.title}>Announcements</Text>
         {!!stats && <Text style={s.headCount}>{stats.total}</Text>}

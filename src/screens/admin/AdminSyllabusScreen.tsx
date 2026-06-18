@@ -161,8 +161,8 @@ const AdminSyllabusScreen = ({ navigation }: any) => {
     <View style={st.root}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.card} />
       <View style={st.topbar}>
-        <TouchableOpacity style={st.menuBtn} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} activeOpacity={0.8}>
-          <VectorIcon iconSet="Feather" iconName="menu" size={20} color={theme.colors.primary} />
+        <TouchableOpacity style={st.menuBtn} onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('PanelHome'))} activeOpacity={0.8}>
+          <VectorIcon iconSet="Ionicons" iconName="arrow-back" size={22} color={theme.colors.primary} />
         </TouchableOpacity>
         <Text style={st.title}>Syllabus</Text>
       </View>
