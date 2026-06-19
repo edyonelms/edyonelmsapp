@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Header from '../../components/Header';
 import VectorIcon from '../../components/VectorIcon';
+import AuthIllustration from '../../components/AuthIllustration';
 import { theme } from '../../utils/theme';
 import { adminLogin } from '../../api/authApi';
 
@@ -44,9 +45,7 @@ const AdminLoginScreen = ({ navigation }: any) => {
       <Header title="School Admin" onBackPress={() => navigation.goBack()} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <View style={s.iconBadge}>
-            <VectorIcon iconSet="Ionicons" iconName="shield-checkmark" size={44} color={theme.colors.primary} />
-          </View>
+          <AuthIllustration variant="login" />
           <Text style={s.title}>Admin Login</Text>
           <Text style={s.subtitle}>Sign in with your school admin email and password.</Text>
 
@@ -95,18 +94,8 @@ export default AdminLoginScreen;
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { padding: 24, paddingTop: 32 },
-  iconBadge: {
-    alignSelf: 'center',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: theme.colors.primary + '14',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  title: { fontSize: 24, fontWeight: '900', color: theme.colors.textPrimary, textAlign: 'center' },
+  scroll: { padding: 24, paddingTop: 24 },
+  title: { fontSize: 24, fontWeight: '900', color: theme.colors.textPrimary, textAlign: 'center', marginTop: 12 },
   subtitle: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 6, marginBottom: 28 },
   label: { fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary, marginBottom: 8, marginTop: 14 },
   inputRow: {
