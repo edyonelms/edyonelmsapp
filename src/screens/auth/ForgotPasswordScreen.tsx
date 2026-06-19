@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  Image,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,7 +15,6 @@ import {
 } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import VectorIcon from '../../components/VectorIcon';
-import AuthIllustration from '../../components/AuthIllustration';
 import { theme, onThemeChange } from '../../utils/theme';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
@@ -233,7 +233,9 @@ const ForgotPasswordScreen = () => {
       case 1:
         return (
           <>
-            <AuthIllustration variant="reset" />
+            <View style={styles.iconBadge}>
+              <Image source={{ uri: 'logo' }} style={styles.logo} />
+            </View>
             <Text style={styles.heading}>Reset Password</Text>
             <Text
               style={styles.desc}
@@ -312,10 +314,9 @@ const ForgotPasswordScreen = () => {
       case 2:
         return (
           <>
-            <AuthIllustration
-              variant="otp"
-              digits={[0, 1, 2, 3].map(i => otp[i] || '•')}
-            />
+            <View style={styles.iconBadge}>
+              <Image source={{ uri: 'logo' }} style={styles.logo} />
+            </View>
             <Text style={styles.heading}>Enter OTP</Text>
             <Text
               style={styles.desc}
@@ -420,7 +421,9 @@ const ForgotPasswordScreen = () => {
       case 3:
         return (
           <>
-            <AuthIllustration variant="password" />
+            <View style={styles.iconBadge}>
+              <Image source={{ uri: 'logo' }} style={styles.logo} />
+            </View>
             <Text style={styles.heading}>Set New Password</Text>
             <Text
               style={styles.desc}
@@ -700,8 +703,21 @@ const __mk_styles = () => StyleSheet.create({
     justifyContent: 'center',
     textAlign: 'center',
     color: theme.colors.textPrimary,
-    marginTop: theme.spacing.md,
     marginBottom: theme.spacing.sm,
+  },
+  iconBadge: {
+    width: 76,
+    height: 76,
+    borderRadius: theme.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 42,
+  },
+  logo: {
+    width: 140,
+    height: 140,
+    resizeMode: 'contain',
   },
   desc: {
     color: theme.colors.textSecondary,
