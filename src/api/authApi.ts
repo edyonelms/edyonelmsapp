@@ -58,6 +58,59 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+// ─── Unified Login ──────────────────────────────────────────────────────────
+// One login for every user type. Students enter their admission number, every
+// other role (teacher / admin / accounts) enters their email — the role is
+// auto-detected by the backend from the identifier. No "select user type" step.
+export interface UnifiedAuthResponse {
+  token: string;
+  user: AuthUser;
+  role: UserRole; // 'student' | 'teacher' | 'admin' | 'accounts'
+}
+
+export const login = async (
+  identifier: string,
+  password: string,
+): Promise<UnifiedAuthResponse> => {
+  const form = new FormData();
+  form.append('identifier', identifier);
+  form.append('password', password);
+
+  const { data } = await apiClient.post('/login', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  console.log('[login] Raw response:', JSON.stringify(data, null, 2));
+
+  const payload = (data as any)?.data ?? data;
+  const token = payload?.token ?? payload?.access_token;
+  const user = payload?.user ?? payload;
+  // Friendly account type chosen by the backend; fall back to mapping the raw role.
+  const role = normalizeRole(payload?.user_type ?? payload?.dashboard ?? user?.role);
+
+  if (!token) {
+    throw new Error('No token in response: ' + JSON.stringify(data));
+  }
+
+  await _persistAuth({ token, user }, role);
+  return { token, user, role };
+};
+
+// Map any backend role/user_type to the app's stored role values.
+const normalizeRole = (raw?: string): UserRole => {
+  switch (raw) {
+    case 'teacher':
+      return 'teacher';
+    case 'admin':
+    case 'sub-admin':
+      return 'admin';
+    case 'accounts':
+      return 'accounts';
+    default:
+      return 'student'; // 'user' / 'student' / anything else
+  }
+};
+
 // ─── Student Login ────────────────────────────────────────────────────────────
 export const studentLogin = async (
   admission_number: string,

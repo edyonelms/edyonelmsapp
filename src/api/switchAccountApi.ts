@@ -32,9 +32,9 @@ export const fetchCurrentSnapshot = async (): Promise<AccountSnapshot | null> =>
 // login throttle group) and returns a fresh token for the added account.
 
 export interface AddAccountInput {
-  identifier: string;          // admission number OR teacher email
+  identifier: string;          // admission number (student) OR email (any other role)
   password:   string;
-  login_type: AccountType;
+  login_type?: AccountType;    // optional — backend auto-detects from the identifier
 }
 
 export interface AddAccountResult {
@@ -49,7 +49,8 @@ export const addAccount = async (input: AddAccountInput): Promise<AddAccountResu
     {
       identifier: input.identifier.trim(),
       password:   input.password,
-      login_type: input.login_type,
+      // login_type omitted on purpose — the backend auto-detects the role.
+      ...(input.login_type ? { login_type: input.login_type } : {}),
     },
     {
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },

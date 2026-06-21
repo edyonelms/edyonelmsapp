@@ -79,7 +79,7 @@ const AccountsDashboardScreen = ({ navigation }: any) => {
         onPress: async () => {
           await logout();
           const rootNav = navigation.getParent?.() ?? navigation;
-          rootNav.reset({ index: 0, routes: [{ name: 'SelectUser' }] });
+          rootNav.reset({ index: 0, routes: [{ name: 'Login' }] });
         },
       },
     ]);

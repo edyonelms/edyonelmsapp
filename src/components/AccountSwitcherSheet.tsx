@@ -44,6 +44,32 @@ interface Props {
 const initialsOf = (name: string) =>
   name.trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() ?? '').join('') || '?';
 
+// Where each account type lands when it becomes active.
+const routeForType = (type: AccountType) => {
+  switch (type) {
+    case 'admin':
+      return { name: 'AdminDashboard', params: undefined as any };
+    case 'accounts':
+      return { name: 'AccountsDashboard', params: undefined as any };
+    default:
+      return { name: 'DrawerRoot', params: { userRole: type } };
+  }
+};
+
+// Human label for the account-type badge.
+const labelForType = (type: AccountType) => {
+  switch (type) {
+    case 'teacher':
+      return 'Teacher';
+    case 'admin':
+      return 'Admin';
+    case 'accounts':
+      return 'Accounts';
+    default:
+      return 'Student';
+  }
+};
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 const Avatar = ({ uri, name, size = 44 }: { uri?: string | null; name: string; size?: number }) => {
   const [broken, setBroken] = useState(false);
@@ -74,8 +100,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
   const [bootstrapping, setBoot]  = useState(false);
   const [removeTarget, setRemoveTarget] = useState<StoredAccount | null>(null);
 
-  // Add-account form state
-  const [role, setRole]           = useState<AccountType>('student');
+  // Add-account form state (role is auto-detected from the identifier)
   const [identifier, setIdent]    = useState('');
   const [password, setPassword]   = useState('');
   const [showPass, setShowPass]   = useState(false);
@@ -145,7 +170,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'DrawerRoot', params: { userRole: acct.user_type } }],
+          routes: [routeForType(acct.user_type)],
         }),
       );
     } finally {
@@ -181,13 +206,13 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'DrawerRoot', params: { userRole: next.user_type } }],
+            routes: [routeForType(next.user_type)],
           }),
         );
       } else {
         onClose();
         navigation.dispatch(
-          CommonActions.reset({ index: 0, routes: [{ name: 'SelectUser' }] }),
+          CommonActions.reset({ index: 0, routes: [{ name: 'Login' }] }),
         );
       }
     } finally {
@@ -206,7 +231,7 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
   const onSubmitAdd = async () => {
     const id = identifier.trim();
     if (!id) {
-      setAddError(role === 'teacher' ? 'Please enter your email.' : 'Please enter your admission number.');
+      setAddError('Please enter your email or admission number.');
       return;
     }
     if (!password) {
@@ -216,7 +241,8 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
     setAddError('');
     setAdding(true);
     try {
-      const { account, token } = await addAccount({ identifier: id, password, login_type: role });
+      // No login_type — the backend auto-detects the role from the identifier.
+      const { account, token } = await addAccount({ identifier: id, password });
 
       // Don't allow adding the same account twice — just refresh its token.
       await upsertAccount({
@@ -286,8 +312,6 @@ const AccountSwitcherSheet = ({ visible, onClose }: Props) => {
                 />
               ) : (
                 <AddBody
-                  role={role}
-                  onChangeRole={r => { setRole(r); setAddError(''); }}
                   identifier={identifier}
                   setIdentifier={t => { setIdent(t); setAddError(''); }}
                   password={password}
@@ -395,7 +419,7 @@ const ListBody = ({ bootstrapping, accounts, activeId, busyId, onSwitch, onRemov
                 <Text style={s.rowName} numberOfLines={1}>{acct.name}</Text>
                 <View style={s.typeBadge}>
                   <Text style={s.typeBadgeText}>
-                    {acct.user_type === 'teacher' ? 'Teacher' : 'Student'}
+                    {labelForType(acct.user_type)}
                   </Text>
                 </View>
               </View>
@@ -432,8 +456,6 @@ const ListBody = ({ bootstrapping, accounts, activeId, busyId, onSwitch, onRemov
 
 // ─── Add body ─────────────────────────────────────────────────────────────────
 interface AddBodyProps {
-  role:           AccountType;
-  onChangeRole:   (r: AccountType) => void;
   identifier:     string;
   setIdentifier:  (t: string) => void;
   password:       string;
@@ -447,37 +469,15 @@ interface AddBodyProps {
 
 const AddBody = (p: AddBodyProps) => (
   <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.addContent} showsVerticalScrollIndicator={false}>
-    {/* Role tabs */}
-    <View style={s.tabRow}>
-      {(['student', 'teacher'] as AccountType[]).map(r => {
-        const active = r === p.role;
-        return (
-          <TouchableOpacity
-            key={r}
-            activeOpacity={0.85}
-            onPress={() => p.onChangeRole(r)}
-            style={[s.tab, active && s.tabActive]}
-          >
-            <Text style={[s.tabText, active && s.tabTextActive]}>
-              {r === 'student' ? 'Student' : 'Teacher'}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-
-    {/* Identifier */}
-    <Text style={s.label}>
-      {p.role === 'teacher' ? 'Email' : 'Admission Number'}
-    </Text>
+    {/* Identifier — role is auto-detected (admission number = student, email = staff) */}
+    <Text style={s.label}>Email or Admission Number</Text>
     <TextInput
-      placeholder={p.role === 'teacher' ? 'teacher@school.com' : 'e.g. 2026DMO650015'}
+      placeholder="you@school.com  or  2026DMO650015"
       placeholderTextColor={theme.colors.textMuted}
       value={p.identifier}
       onChangeText={p.setIdentifier}
       autoCapitalize="none"
       autoCorrect={false}
-      keyboardType={p.role === 'teacher' ? 'email-address' : 'default'}
       style={s.input}
     />
 

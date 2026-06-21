@@ -586,7 +586,7 @@ const ForgotPasswordScreen = () => {
                     '[ChangePassword] ✅ Response:',
                     JSON.stringify(res, null, 2),
                   );
-                  navigation.replace('SelectUser');
+                  navigation.replace('Login');
                 } catch (e: any) {
                   console.log(
                     '[ChangePassword] ❌ Error:',

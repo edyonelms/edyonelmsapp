@@ -73,7 +73,7 @@ const OnboardingScreen: React.FC = () => {
   const onNext = () => {
     if (index === DATA.length - 1) {
       Storage.setOnboardingSeen();
-      navigation.replace('SelectUser');
+      navigation.replace('Login');
       return;
     }
     goToSlide(index + 1);
@@ -144,7 +144,7 @@ const OnboardingScreen: React.FC = () => {
           activeOpacity={0.9}
           onPress={async () => {
             await Storage.setOnboardingSeen();
-            navigation.replace('SelectUser');
+            navigation.replace('Login');
           }}
         >
           <Text style={styles.nextText}>Continue</Text>

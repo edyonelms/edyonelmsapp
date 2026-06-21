@@ -2,11 +2,9 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './DrawerNavigator';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
-import SelectUserScreen from '../screens/auth/SelectUserScreen';
+import LoginScreen from '../screens/auth/LoginScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import SplashScreen from '../screens/splash/SplashScreen';
-import LoginTeacherScreen from '../screens/auth/teacher/LoginTeacherScreen';
-import LoginStudentScreen from '../screens/auth/student/LoginStudentScreen';
 import AboutAppScreen from '../screens/more/AboutAppScreen';
 import SchoolInfoScreen from '../screens/more/SchoolInfoScreen';
 import RulesRegulationsScreen from '../screens/more/RulesRegulationsScreen';
@@ -44,8 +42,6 @@ import NotificationScreen from '../screens/notification/NotificationScreen';
 import BookReaderScreen from '../screens/books/BookReaderScreen';
 import PayAmountScreen from '../screens/fees/PayAmountScreen';
 import TransportPayScreen from '../screens/fees/TransportPayScreen';
-import AdminLoginScreen from '../screens/auth/AdminLoginScreen';
-import AccountsLoginScreen from '../screens/auth/AccountsLoginScreen';
 import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
 import PanelDrawerNavigator from './PanelDrawerNavigator';
 
@@ -61,12 +57,8 @@ const AppNavigator = () => {
       {/* Onboarding */}
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
 
-      {/* Auth Flow */}
-      <Stack.Screen name="SelectUser" component={SelectUserScreen} />
-      <Stack.Screen name="TeacherLogin" component={LoginTeacherScreen} />
-      <Stack.Screen name="StudentLogin" component={LoginStudentScreen} />
-      <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
-      <Stack.Screen name="AccountsLogin" component={AccountsLoginScreen} />
+      {/* Auth Flow — single global login (role auto-detected from credentials) */}
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
 
       {/* Profile */}

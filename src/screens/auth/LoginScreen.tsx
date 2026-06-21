@@ -12,18 +12,31 @@ import {
   Animated,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { theme, onThemeChange } from '../../../utils/theme';
-import { useNavigation } from '@react-navigation/native';
-import VectorIcon from '../../../components/VectorIcon';
-import { studentLogin } from '../../../api/authApi';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+import { theme, onThemeChange } from '../../utils/theme';
+import VectorIcon from '../../components/VectorIcon';
+import { login, type UserRole } from '../../api/authApi';
 
-const LoginStudentScreen = () => {
+// Where each role lands after a successful login.
+const destinationFor = (role: UserRole) => {
+  switch (role) {
+    case 'admin':
+      return { name: 'AdminDashboard' as const, params: undefined };
+    case 'accounts':
+      return { name: 'AccountsDashboard' as const, params: undefined };
+    default:
+      // student & teacher share the main drawer app.
+      return { name: 'DrawerRoot' as const, params: { userRole: role } };
+  }
+};
+
+const LoginScreen = () => {
   const navigation = useNavigation<any>();
   const scrollRef = useRef<ScrollView>(null);
-  const [admissionNo, setAdmissionNo] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [admissionFocused, setAdmissionFocused] = useState(false);
+  const [identifierFocused, setIdentifierFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,8 +64,7 @@ const LoginStudentScreen = () => {
   }, [error, errorAnim]);
 
   // Edge-to-edge Android ignores adjustResize, so scroll the form above the
-  // keyboard ourselves once the keyboard animation has started. Scroll only
-  // up to the subtitle so the view shows description → Continue button.
+  // keyboard ourselves once the keyboard animation has started.
   const subtitleYRef = useRef(0);
   const scrollFormIntoView = () => {
     setTimeout(
@@ -66,8 +78,8 @@ const LoginStudentScreen = () => {
   };
 
   const handleLogin = async () => {
-    if (!admissionNo.trim()) {
-      setError('Please enter your admission number.');
+    if (!identifier.trim()) {
+      setError('Please enter your email or admission number.');
       return;
     }
     if (!password.trim()) {
@@ -78,23 +90,19 @@ const LoginStudentScreen = () => {
     setError('');
     setLoading(true);
     try {
-      console.log('[StudentLogin] ➡️ Request:', {
-        url: 'POST /user/login',
-        admission_number: admissionNo.trim(),
-        password,
-      });
+      const res = await login(identifier.trim(), password);
+      console.log('[Login] Success:', JSON.stringify({ role: res.role }, null, 2));
 
-      const res = await studentLogin(admissionNo.trim(), password);
-
-      console.log('[StudentLogin] Success:', JSON.stringify(res, null, 2));
-      navigation.replace('DrawerRoot', { userRole: 'student' });
-    } catch (err: any) {
-      console.log('[StudentLogin] Error status:', err?.response?.status);
-      console.log(
-        '[StudentLogin] Error data:',
-        JSON.stringify(err?.response?.data, null, 2),
+      const dest = destinationFor(res.role);
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: dest.name, params: dest.params }],
+        }),
       );
-      console.log('[StudentLogin] Error message:', err?.message);
+    } catch (err: any) {
+      console.log('[Login] Error status:', err?.response?.status);
+      console.log('[Login] Error data:', JSON.stringify(err?.response?.data, null, 2));
 
       const msg =
         err?.response?.data?.message ??
@@ -114,20 +122,6 @@ const LoginStudentScreen = () => {
           backgroundColor={theme.colors.background}
         />
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        >
-          <VectorIcon
-            iconName="arrow-left"
-            iconSet="FontAwesome6"
-            size={20}
-            color={theme.colors.primary}
-          />
-          <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
-
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.container}
@@ -138,37 +132,39 @@ const LoginStudentScreen = () => {
             <Image source={{ uri: 'logo' }} style={styles.logo} />
           </View>
 
-          <Text style={styles.title}>Student Login</Text>
+          <Text style={styles.title}>Welcome to Edyone LMS</Text>
           <Text
             style={styles.subtitle}
             onLayout={e => {
               subtitleYRef.current = e.nativeEvent.layout.y;
             }}
           >
-            Enter your admission number and password to access your dashboard
+            Students sign in with their admission number, staff with their email —
+            we'll take you to the right dashboard.
           </Text>
 
           <View style={styles.formCard}>
-            {/* Admission Number */}
-            <Text style={styles.label}>Admission Number</Text>
+            {/* Identifier */}
+            <Text style={styles.label}>Email or Admission Number</Text>
             <TextInput
-              placeholder="e.g. 2026DMO650015"
+              placeholder="you@school.com  or  2026DMO650015"
               placeholderTextColor={theme.colors.textMuted}
               style={[
                 styles.input,
-                (admissionFocused || !!admissionNo) && styles.inputActive,
+                (identifierFocused || !!identifier) && styles.inputActive,
               ]}
-              value={admissionNo}
+              value={identifier}
               onChangeText={t => {
-                setAdmissionNo(t);
+                setIdentifier(t);
                 setError('');
               }}
               onFocus={() => {
-                setAdmissionFocused(true);
+                setIdentifierFocused(true);
                 scrollFormIntoView();
               }}
-              onBlur={() => setAdmissionFocused(false)}
+              onBlur={() => setIdentifierFocused(false)}
               autoCapitalize="none"
+              autoCorrect={false}
             />
 
             {/* Password */}
@@ -218,12 +214,12 @@ const LoginStudentScreen = () => {
             <TouchableOpacity
               style={[
                 styles.button,
-                (loading || !admissionNo.trim() || !password.trim()) &&
+                (loading || !identifier.trim() || !password.trim()) &&
                   styles.buttonDisabled,
               ]}
               activeOpacity={0.9}
               onPress={handleLogin}
-              disabled={loading || !admissionNo.trim() || !password.trim()}
+              disabled={loading || !identifier.trim() || !password.trim()}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -267,17 +263,10 @@ const LoginStudentScreen = () => {
   );
 };
 
-export default LoginStudentScreen;
+export default LoginScreen;
 
 const __mk_styles = () => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: theme.colors.card },
-  backBtn: {
-    padding: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  backText: { color: theme.colors.primary, fontSize: 16 },
   container: {
     flexGrow: 1,
     paddingHorizontal: theme.spacing.lg,
@@ -287,6 +276,7 @@ const __mk_styles = () => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
+    marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.md,
   },
   logo: { width: 150, height: 150, resizeMode: 'contain' },

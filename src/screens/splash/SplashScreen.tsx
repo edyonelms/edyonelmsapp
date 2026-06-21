@@ -54,7 +54,7 @@ const SplashScreen = ({ navigation }: any) => {
       } else if (token && role) {
         navigation.replace('DrawerRoot', { userRole: role });
       } else {
-        navigation.replace('SelectUser');
+        navigation.replace('Login');
       }
     });
   }, []);

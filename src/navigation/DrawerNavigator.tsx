@@ -227,7 +227,7 @@ const DrawerNavigator = ({ route }: any) => {
       rootNav.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'SelectUser' }],
+          routes: [{ name: 'Login' }],
         }),
       );
     };

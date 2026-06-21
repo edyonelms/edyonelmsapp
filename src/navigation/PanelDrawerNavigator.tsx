@@ -137,7 +137,7 @@ const PanelDrawerNavigator = ({ route }: any) => {
         console.log('[Panel logout] Error:', e);
       }
       rootNav.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: 'SelectUser' }] }),
+        CommonActions.reset({ index: 0, routes: [{ name: 'Login' }] }),
       );
     };
 

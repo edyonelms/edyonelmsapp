@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type AccountType = 'student' | 'teacher';
+export type AccountType = 'student' | 'teacher' | 'admin' | 'accounts';
 
 export interface OrgRef {
   id:   number;
